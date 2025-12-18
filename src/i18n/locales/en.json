@@ -1,0 +1,55 @@
+{
+  "app": {
+    "name": "OmniaPi Home",
+    "title": "Automation"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "loginTitle": "Login to your account",
+    "loginError": "Invalid credentials"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "impianti": "Systems",
+    "dispositivi": "Devices",
+    "scene": "Scenes",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "shortcuts": "Shortcuts",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions"
+  },
+  "impianti": {
+    "title": "My Systems",
+    "nuovo": "New System",
+    "nome": "Name",
+    "indirizzo": "Address",
+    "citta": "City",
+    "cap": "ZIP Code"
+  },
+  "dispositivi": {
+    "luci": "Lights",
+    "tapparelle": "Shutters",
+    "termostati": "Thermostats",
+    "accendi": "Turn On",
+    "spegni": "Turn Off",
+    "apri": "Open",
+    "chiudi": "Close"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  }
+}

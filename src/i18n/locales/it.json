@@ -1,0 +1,55 @@
+{
+  "app": {
+    "name": "OmniaPi Home",
+    "title": "Domotica"
+  },
+  "auth": {
+    "login": "Accedi",
+    "logout": "Esci",
+    "email": "Email",
+    "password": "Password",
+    "loginTitle": "Accedi al tuo account",
+    "loginError": "Credenziali non valide"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "impianti": "Impianti",
+    "dispositivi": "Dispositivi",
+    "scene": "Scene",
+    "settings": "Impostazioni"
+  },
+  "dashboard": {
+    "welcome": "Benvenuto",
+    "shortcuts": "Scorciatoie",
+    "recentActivity": "Attività recente",
+    "quickActions": "Azioni rapide"
+  },
+  "impianti": {
+    "title": "I Miei Impianti",
+    "nuovo": "Nuovo Impianto",
+    "nome": "Nome",
+    "indirizzo": "Indirizzo",
+    "citta": "Città",
+    "cap": "CAP"
+  },
+  "dispositivi": {
+    "luci": "Luci",
+    "tapparelle": "Tapparelle",
+    "termostati": "Termostati",
+    "accendi": "Accendi",
+    "spegni": "Spegni",
+    "apri": "Apri",
+    "chiudi": "Chiudi"
+  },
+  "common": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "close": "Chiudi",
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo"
+  }
+}
