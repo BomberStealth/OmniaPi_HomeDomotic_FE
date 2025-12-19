@@ -5,7 +5,9 @@ import type { ApiResponse, AuthResponse, Impianto, Dispositivo } from '@/types';
 // API CLIENT CONFIGURATION
 // ============================================
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.11:3000/api';
+// Se VITE_API_URL è vuoto, usa URL relativi (same-origin tramite Nginx)
+// Altrimenti usa l'URL specificato
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const api = axios.create({
   baseURL: API_URL,

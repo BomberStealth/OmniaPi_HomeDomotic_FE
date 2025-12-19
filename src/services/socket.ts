@@ -4,7 +4,9 @@ import { io, Socket } from 'socket.io-client';
 // WEBSOCKET SERVICE
 // ============================================
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://192.168.1.11:3000';
+// Se VITE_API_URL è vuoto, usa URL relativo (same-origin)
+// Socket.io si connetterà automaticamente allo stesso host del frontend
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || window.location.origin;
 
 class SocketService {
   private socket: Socket | null = null;
