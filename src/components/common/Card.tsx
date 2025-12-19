@@ -8,9 +8,10 @@ import { motion } from 'framer-motion';
 interface CardProps {
   children: ReactNode;
   className?: string;
-  variant?: 'glass' | 'glass-dark' | 'solid';
+  variant?: 'glass' | 'glass-dark' | 'solid' | 'glass-solid';
   padding?: boolean;
   hover?: boolean;
+  onClick?: () => void;
 }
 
 export const Card = ({
@@ -18,12 +19,14 @@ export const Card = ({
   className = '',
   variant = 'glass',
   padding = true,
-  hover = false
+  hover = false,
+  onClick
 }: CardProps) => {
   const variantClasses = {
     glass: 'glass',
     'glass-dark': 'glass-dark',
-    solid: 'glass-solid'
+    solid: 'glass-solid',
+    'glass-solid': 'glass-solid'
   };
 
   const paddingClass = padding ? 'p-6' : '';
@@ -40,6 +43,7 @@ export const Card = ({
   return (
     <Component
       className={`rounded-2xl ${variantClasses[variant]} ${paddingClass} ${hoverClass} ${className}`}
+      onClick={onClick}
       {...motionProps}
     >
       {children}

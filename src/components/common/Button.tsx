@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 // BUTTON COMPONENT (GLASS EFFECT)
 // ============================================
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag'> {
   children: ReactNode;
   variant?: 'primary' | 'secondary' | 'glass' | 'danger';
   size?: 'sm' | 'md' | 'lg';

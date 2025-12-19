@@ -12,9 +12,7 @@ import {
   Bell,
   Wifi,
   Database,
-  Shield,
-  Moon,
-  Sun
+  Shield
 } from 'lucide-react';
 
 // ============================================

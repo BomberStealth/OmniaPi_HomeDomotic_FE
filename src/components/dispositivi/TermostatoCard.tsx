@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Thermometer, Minus, Plus, Power } from 'lucide-react';
 import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
 import { Dispositivo, ConfigTermostato } from '@/types';
 import { dispositiviApi } from '@/services/api';
 
