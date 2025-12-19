@@ -43,7 +43,7 @@ api.interceptors.response.use(
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const { data } = await api.post<ApiResponse<AuthResponse>>('/auth/login', {
+    const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', {
       email,
       password
     });
@@ -51,7 +51,7 @@ export const authApi = {
   },
 
   getProfile: async () => {
-    const { data } = await api.get<ApiResponse>('/auth/profile');
+    const { data } = await api.get<ApiResponse>('/api/auth/profile');
     return data;
   }
 };
@@ -62,27 +62,27 @@ export const authApi = {
 
 export const impiantiApi = {
   getAll: async () => {
-    const { data } = await api.get<ApiResponse<Impianto[]>>('/impianti');
+    const { data } = await api.get<ApiResponse<Impianto[]>>('/api/impianti');
     return data;
   },
 
   getById: async (id: number) => {
-    const { data } = await api.get<ApiResponse<Impianto>>(`/impianti/${id}`);
+    const { data } = await api.get<ApiResponse<Impianto>>(`/api/impianti/${id}`);
     return data;
   },
 
   create: async (impianto: Partial<Impianto>) => {
-    const { data } = await api.post<ApiResponse>('/impianti', impianto);
+    const { data } = await api.post<ApiResponse>('/api/impianti', impianto);
     return data;
   },
 
   update: async (id: number, impianto: Partial<Impianto>) => {
-    const { data } = await api.put<ApiResponse>(`/impianti/${id}`, impianto);
+    const { data } = await api.put<ApiResponse>(`/api/impianti/${id}`, impianto);
     return data;
   },
 
   delete: async (id: number) => {
-    const { data } = await api.delete<ApiResponse>(`/impianti/${id}`);
+    const { data } = await api.delete<ApiResponse>(`/api/impianti/${id}`);
     return data;
   }
 };
@@ -94,26 +94,26 @@ export const impiantiApi = {
 export const dispositiviApi = {
   getByStanza: async (stanzaId: number) => {
     const { data } = await api.get<ApiResponse<Dispositivo[]>>(
-      `/dispositivi/stanza/${stanzaId}`
+      `/api/dispositivi/stanza/${stanzaId}`
     );
     return data;
   },
 
   create: async (dispositivo: Partial<Dispositivo>) => {
-    const { data } = await api.post<ApiResponse>('/dispositivi', dispositivo);
+    const { data } = await api.post<ApiResponse>('/api/dispositivi', dispositivo);
     return data;
   },
 
   control: async (id: number, comando: any) => {
     const { data } = await api.post<ApiResponse>(
-      `/dispositivi/${id}/control`,
+      `/api/dispositivi/${id}/control`,
       { comando }
     );
     return data;
   },
 
   delete: async (id: number) => {
-    const { data } = await api.delete<ApiResponse>(`/dispositivi/${id}`);
+    const { data } = await api.delete<ApiResponse>(`/api/dispositivi/${id}`);
     return data;
   }
 };
