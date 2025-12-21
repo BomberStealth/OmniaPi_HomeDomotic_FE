@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
-  Building2,
+  DoorOpen,
   Lightbulb,
   Sparkles,
   Settings
@@ -16,7 +16,7 @@ export const BottomNav = () => {
 
   const menuItems = [
     { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/impianti', icon: Building2, label: 'Impianti' },
+    { path: '/stanze', icon: DoorOpen, label: 'Stanze' },
     { path: '/dispositivi', icon: Lightbulb, label: 'Dispositivi' },
     { path: '/scene', icon: Sparkles, label: 'Scene' },
     { path: '/settings', icon: Settings, label: 'Altro' }

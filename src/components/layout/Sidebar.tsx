@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Home,
-  Building2,
   Lightbulb,
   Sparkles,
   Settings,
@@ -25,7 +24,6 @@ export const Sidebar = () => {
 
   const menuItems = [
     { path: '/dashboard', icon: Home, label: t('nav.dashboard') },
-    { path: '/impianti', icon: Building2, label: t('nav.impianti') },
     { path: '/stanze', icon: DoorOpen, label: 'Stanze' },
     { path: '/dispositivi', icon: Lightbulb, label: t('nav.dispositivi') },
     { path: '/scene', icon: Sparkles, label: t('nav.scene') },

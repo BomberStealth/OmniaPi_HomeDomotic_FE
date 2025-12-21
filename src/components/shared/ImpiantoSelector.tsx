@@ -1,6 +1,11 @@
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
-import { ChevronDown, Building2, Loader } from 'lucide-react';
+import { ChevronDown, Building2, Loader, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Modal } from '@/components/common/Modal';
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+import { impiantiApi } from '@/services/api';
+import { toast } from 'sonner';
 
 // ============================================
 // IMPIANTO SELECTOR - Dropdown Multi-impianto
@@ -11,8 +16,41 @@ interface ImpiantoSelectorProps {
 }
 
 export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) => {
-  const { impiantoCorrente, setImpiantoCorrente, impianti, loading } = useImpiantoContext();
+  const { impiantoCorrente, setImpiantoCorrente, impianti, loading, refresh } = useImpiantoContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newImpianto, setNewImpianto] = useState({
+    nome: '',
+    indirizzo: '',
+    citta: ''
+  });
+
+  const handleCreateNew = () => {
+    setIsOpen(false);
+    setCreateModalOpen(true);
+  };
+
+  const handleSubmitCreate = async () => {
+    if (!newImpianto.nome || !newImpianto.citta) {
+      toast.error('Nome e città sono richiesti');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      await impiantiApi.create(newImpianto);
+      toast.success('Impianto creato!');
+      setCreateModalOpen(false);
+      setNewImpianto({ nome: '', indirizzo: '', citta: '' });
+      await refresh();
+    } catch (error: any) {
+      console.error('Errore creazione impianto:', error);
+      toast.error(error.response?.data?.error || 'Errore durante la creazione');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -25,30 +63,22 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
     );
   }
 
+  // Nessun impianto - mostra solo "Crea nuovo"
   if (!impiantoCorrente || impianti.length === 0) {
     return (
-      <div className="px-3 py-2 text-sm dark:text-copy-lighter light:text-copy-lighter">
-        Nessun impianto disponibile
-      </div>
-    );
-  }
-
-  // Se c'è un solo impianto, mostra solo il nome senza dropdown
-  if (impianti.length === 1) {
-    return (
-      <div className={`flex items-center gap-2 px-3 py-2 ${
-        variant === 'desktop' ? 'glass rounded-lg' : ''
-      }`}>
-        <Building2 size={18} className="text-primary" />
-        <div className="flex-1">
-          <p className="text-sm font-semibold dark:text-copy light:text-copy-light">
-            {impiantoCorrente.nome}
-          </p>
-          <p className="text-xs dark:text-copy-lighter light:text-copy-lighter">
-            {impiantoCorrente.citta}
-          </p>
-        </div>
-      </div>
+      <button
+        onClick={handleCreateNew}
+        className={`w-full flex items-center gap-2 px-3 py-2 transition-all ${
+          variant === 'desktop'
+            ? 'glass rounded-lg hover:bg-opacity-80'
+            : 'hover:bg-white hover:bg-opacity-5'
+        }`}
+      >
+        <Plus size={18} className="text-primary" />
+        <span className="text-sm font-semibold text-primary">
+          Crea nuovo impianto
+        </span>
+      </button>
     );
   }
 
@@ -121,9 +151,62 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                 </div>
               </button>
             ))}
+
+            {/* Separatore + Crea Nuovo */}
+            <div className="border-t dark:border-border light:border-border-light">
+              <button
+                onClick={handleCreateNew}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-white hover:bg-opacity-10"
+              >
+                <Plus size={16} className="text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  Crea nuovo impianto
+                </span>
+              </button>
+            </div>
           </div>
         </>
       )}
+
+      {/* Modal Crea Nuovo Impianto */}
+      <Modal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Nuovo Impianto"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nome Impianto"
+            value={newImpianto.nome}
+            onChange={(e) => setNewImpianto({ ...newImpianto, nome: e.target.value })}
+            placeholder="es. Casa Principale"
+          />
+
+          <Input
+            label="Indirizzo"
+            value={newImpianto.indirizzo}
+            onChange={(e) => setNewImpianto({ ...newImpianto, indirizzo: e.target.value })}
+            placeholder="es. Via Roma 1"
+          />
+
+          <Input
+            label="Città"
+            value={newImpianto.citta}
+            onChange={(e) => setNewImpianto({ ...newImpianto, citta: e.target.value })}
+            placeholder="es. Milano"
+          />
+
+          <div className="flex gap-2 mt-4">
+            <Button variant="glass" onClick={() => setCreateModalOpen(false)} fullWidth>
+              Annulla
+            </Button>
+            <Button variant="primary" onClick={handleSubmitCreate} fullWidth disabled={creating}>
+              {creating ? 'Creazione...' : 'Crea'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -163,6 +163,12 @@ export const tasmotaApi = {
   toggleBlocco: async (id: number, bloccato: boolean) => {
     const { data } = await api.put(`/api/dispositivi/${id}/blocco`, { bloccato });
     return data;
+  },
+
+  // Assegna dispositivo a una stanza
+  assignToStanza: async (dispositivoId: number, stanzaId: number | null) => {
+    const { data } = await api.put(`/api/dispositivi/${dispositivoId}/stanza`, { stanza_id: stanzaId });
+    return data;
   }
 };
 
