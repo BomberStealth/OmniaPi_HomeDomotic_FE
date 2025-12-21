@@ -114,13 +114,16 @@ export const Stanze = () => {
     setMoveModalOpen(true);
   };
 
+  // Filtra dispositivi validi (no null/undefined)
+  const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
+
   // Raggruppa dispositivi per stanza
   const getDispositiviByStanza = (stanzaId: number) => {
-    return dispositivi.filter(d => d.stanza_id === stanzaId);
+    return dispositiviValidi.filter(d => d.stanza_id === stanzaId);
   };
 
   // Dispositivi senza stanza
-  const dispositiviNonAssegnati = dispositivi.filter(d => !d.stanza_id);
+  const dispositiviNonAssegnati = dispositiviValidi.filter(d => !d.stanza_id);
 
   return (
     <Layout>
@@ -132,7 +135,7 @@ export const Stanze = () => {
               Stanze
             </h1>
             <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
-              {stanze.length} stanze, {dispositivi.length} dispositivi
+              {stanze.length} stanze, {dispositiviValidi.length} dispositivi
             </p>
           </div>
 
