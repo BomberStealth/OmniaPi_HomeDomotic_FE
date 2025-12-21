@@ -114,7 +114,8 @@ export const Stanze = () => {
     setMoveModalOpen(true);
   };
 
-  // Filtra dispositivi validi (no null/undefined)
+  // Filtra valori validi (no null/undefined)
+  const stanzeValide = stanze.filter(s => s !== null && s !== undefined);
   const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
 
   // Raggruppa dispositivi per stanza
@@ -135,7 +136,7 @@ export const Stanze = () => {
               Stanze
             </h1>
             <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
-              {stanze.length} stanze, {dispositiviValidi.length} dispositivi
+              {stanzeValide.length} stanze, {dispositiviValidi.length} dispositivi
             </p>
           </div>
 
@@ -201,7 +202,7 @@ export const Stanze = () => {
             )}
 
             {/* Lista Stanze */}
-            {stanze.length === 0 ? (
+            {stanzeValide.length === 0 ? (
               <Card variant="glass" className="text-center py-8">
                 <DoorOpen size={32} className="mx-auto mb-2 dark:text-copy-lighter light:text-copy-lighter" />
                 <h3 className="font-semibold text-sm dark:text-copy light:text-copy-light mb-1">
@@ -219,7 +220,7 @@ export const Stanze = () => {
                 </button>
               </Card>
             ) : (
-              stanze.filter(s => s !== null).map((stanza) => {
+              stanzeValide.map((stanza) => {
                 const dispositiviStanza = getDispositiviByStanza(stanza.id);
                 return (
                   <Card key={stanza.id} variant="glass" className="!p-3">
@@ -382,7 +383,7 @@ export const Stanze = () => {
           </button>
 
           {/* Lista Stanze */}
-          {stanze.map((stanza) => (
+          {stanzeValide.map((stanza) => (
             <button
               key={stanza.id}
               onClick={() => handleMoveDispositivo(stanza.id)}
