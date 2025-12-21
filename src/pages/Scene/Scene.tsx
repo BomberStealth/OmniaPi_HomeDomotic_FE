@@ -182,21 +182,24 @@ export const Scene = () => {
   return (
     <Layout>
       <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        {/* Header - Compatto */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold dark:text-copy light:text-copy-light">
+            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
               Scene
             </h1>
-            <p className="text-sm sm:text-base dark:text-copy-lighter light:text-copy-lighter">
-              Automazioni e scorciatoie
+            <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
+              Tap per eseguire
             </p>
           </div>
 
-          <Button variant="primary" onClick={() => setModalOpen(true)}>
-            <Plus size={18} className="mr-2" />
-            Nuova Scena
-          </Button>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors"
+            title="Nuova Scena"
+          >
+            <Plus size={20} className="text-white" />
+          </button>
         </div>
 
         {/* Scene Grid */}

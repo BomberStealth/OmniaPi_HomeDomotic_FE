@@ -13,18 +13,16 @@ import { TapparellaCard } from '@/components/dispositivi/TapparellaCard';
 import { TermostatoCard } from '@/components/dispositivi/TermostatoCard';
 import {
   ArrowLeft,
-  Building2,
+  ChevronDown,
   Home,
   Plus,
   Settings,
   Lightbulb,
-  Blinds,
-  Thermometer,
   Trash2
 } from 'lucide-react';
 
 // ============================================
-// IMPIANTO DETTAGLIO PAGE
+// IMPIANTO DETTAGLIO - Redesign Mobile-First
 // ============================================
 
 export const ImpiantoDettaglio = () => {
@@ -35,6 +33,7 @@ export const ImpiantoDettaglio = () => {
   const [pianoSelezionato, setPianoSelezionato] = useState<number | null>(null);
   const [stanzaSelezionata, setStanzaSelezionata] = useState<number | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPianoDropdown, setShowPianoDropdown] = useState(false);
 
   const canEdit = user?.ruolo === UserRole.INSTALLATORE || user?.ruolo === UserRole.ADMIN;
 
@@ -66,7 +65,7 @@ export const ImpiantoDettaglio = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
-          <p className="text-copy-lighter">Caricamento...</p>
+          <p className="dark:text-copy-lighter light:text-copy-lighter">Caricamento...</p>
         </div>
       </Layout>
     );
@@ -87,182 +86,142 @@ export const ImpiantoDettaglio = () => {
     }
   };
 
-  const countDispositivi = (tipo: TipoDispositivo) => {
-    return dispositivi.filter(d => d.tipo === tipo).length;
-  };
-
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
+      <div className="space-y-3 sm:space-y-4">
+        {/* Header Compatto */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => navigate('/impianti')}
-              className="p-3 glass rounded-xl hover:bg-opacity-20 transition-colors"
+              className="p-2 glass rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
             >
-              <ArrowLeft size={24} />
+              <ArrowLeft size={18} />
             </button>
-
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <Building2 size={32} className="text-primary" />
-                <h1 className="text-4xl font-bold text-copy">{impiantoCorrente.nome}</h1>
-              </div>
-              <p className="text-copy-lighter">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold dark:text-copy light:text-copy-light truncate">
+                {impiantoCorrente.nome}
+              </h1>
+              <p className="text-[10px] sm:text-xs dark:text-copy-lighter light:text-copy-lighter truncate">
                 {impiantoCorrente.indirizzo}, {impiantoCorrente.citta}
               </p>
             </div>
           </div>
 
           {canEdit && (
-            <div className="hidden md:flex gap-3">
-              <Button variant="glass" onClick={() => navigate(`/impianti/${id}/settings`)}>
-                <Settings size={20} className="mr-2" />
-                Gestisci
-              </Button>
-              <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
-                <Trash2 size={20} className="mr-2" />
-                Elimina
-              </Button>
+            <div className="flex gap-1 flex-shrink-0">
+              <button
+                onClick={() => navigate(`/impianti/${id}/settings`)}
+                className="p-2 glass rounded-lg hover:bg-white/10 transition-colors"
+                title="Impostazioni"
+              >
+                <Settings size={18} className="dark:text-copy light:text-copy-light" />
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-2 rounded-lg hover:bg-error/20 transition-colors"
+                title="Elimina"
+              >
+                <Trash2 size={18} className="text-error" />
+              </button>
             </div>
           )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card variant="glass">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-warning bg-opacity-20">
-                <Lightbulb size={24} className="text-warning" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-copy">{countDispositivi(TipoDispositivo.LUCE)}</p>
-                <p className="text-sm text-copy-lighter">Luci</p>
-              </div>
-            </div>
-          </Card>
+        {/* Piano Dropdown */}
+        {impiantoCorrente.piani && impiantoCorrente.piani.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setShowPianoDropdown(!showPianoDropdown)}
+              className="w-full flex items-center justify-between p-3 glass rounded-xl"
+            >
+              <span className="font-medium dark:text-copy light:text-copy-light">
+                {piano?.nome || 'Seleziona piano'}
+              </span>
+              <ChevronDown size={18} className={`transition-transform ${showPianoDropdown ? 'rotate-180' : ''}`} />
+            </button>
 
-          <Card variant="glass">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-secondary bg-opacity-20">
-                <Blinds size={24} className="text-secondary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-copy">{countDispositivi(TipoDispositivo.TAPPARELLA)}</p>
-                <p className="text-sm text-copy-lighter">Tapparelle</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card variant="glass">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-xl bg-success bg-opacity-20">
-                <Thermometer size={24} className="text-success" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-copy">{countDispositivi(TipoDispositivo.TERMOSTATO)}</p>
-                <p className="text-sm text-copy-lighter">Termostati</p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Piani/Stanze */}
-          <Card variant="glass-solid" padding={false}>
-            <div className="p-4">
-              <h3 className="font-bold text-copy mb-4">Piani e Stanze</h3>
-
-              {impiantoCorrente.piani?.filter(p => p !== null && p !== undefined).map((p) => (
-                <div key={p.id} className="mb-4">
+            {showPianoDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 glass rounded-xl overflow-hidden z-20">
+                {impiantoCorrente.piani.filter(p => p !== null).map((p) => (
                   <button
-                    onClick={() => setPianoSelezionato(p.id)}
-                    className={`
-                      w-full text-left px-3 py-2 rounded-lg mb-2 transition-colors
-                      ${pianoSelezionato === p.id ? 'bg-primary text-white' : 'hover:bg-foreground'}
-                    `}
+                    key={p.id}
+                    onClick={() => {
+                      setPianoSelezionato(p.id);
+                      setShowPianoDropdown(false);
+                      // Seleziona prima stanza del piano
+                      if (p.stanze && p.stanze.length > 0) {
+                        setStanzaSelezionata(p.stanze[0].id);
+                      }
+                    }}
+                    className={`w-full text-left px-4 py-3 transition-colors ${
+                      pianoSelezionato === p.id
+                        ? 'bg-primary text-white'
+                        : 'hover:bg-white/10 dark:text-copy light:text-copy-light'
+                    }`}
                   >
                     {p.nome}
                   </button>
-
-                  {pianoSelezionato === p.id && p.stanze && (
-                    <div className="ml-4 space-y-1">
-                      {p.stanze.filter(s => s !== null && s !== undefined).map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => setStanzaSelezionata(s.id)}
-                          className={`
-                            w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2
-                            ${stanzaSelezionata === s.id
-                              ? 'bg-primary-light text-white'
-                              : 'text-copy-light hover:bg-foreground'
-                            }
-                          `}
-                        >
-                          <Home size={16} />
-                          {s.nome}
-                        </button>
-                      ))}
-
-                      {canEdit && (
-                        <button className="w-full text-left px-3 py-2 rounded-lg text-sm text-copy-lighter hover:bg-foreground flex items-center gap-2">
-                          <Plus size={16} />
-                          Nuova Stanza
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              {canEdit && (
-                <button className="w-full px-3 py-2 rounded-lg glass hover:bg-opacity-20 flex items-center gap-2">
-                  <Plus size={16} />
-                  Nuovo Piano
-                </button>
-              )}
-            </div>
-          </Card>
-
-          {/* Dispositivi Stanza */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-copy">
-                {stanza ? stanza.nome : 'Seleziona una stanza'}
-              </h2>
-
-              {canEdit && stanza && (
-                <Button variant="primary" size="sm">
-                  <Plus size={16} className="mr-2" />
-                  Aggiungi Dispositivo
-                </Button>
-              )}
-            </div>
-
-            {dispositivi.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dispositivi.filter(d => d !== null && d !== undefined).map(renderDispositivo)}
-              </div>
-            ) : (
-              <Card variant="glass-solid" className="text-center py-16">
-                <Lightbulb size={64} className="mx-auto mb-4 text-copy-lighter" />
-                <h3 className="text-xl font-semibold text-copy mb-2">Nessun dispositivo</h3>
-                <p className="text-copy-lighter mb-6">
-                  {canEdit
-                    ? 'Aggiungi il primo dispositivo a questa stanza'
-                    : 'Non ci sono dispositivi in questa stanza'}
-                </p>
+                ))}
                 {canEdit && (
-                  <Button variant="primary">
-                    <Plus size={20} className="mr-2" />
-                    Aggiungi Dispositivo
-                  </Button>
+                  <button className="w-full text-left px-4 py-3 border-t dark:border-border light:border-border-light dark:text-copy-lighter light:text-copy-lighter hover:bg-white/10 flex items-center gap-2">
+                    <Plus size={14} />
+                    Nuovo Piano
+                  </button>
                 )}
-              </Card>
+              </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Stanze Chip Scrollabili */}
+        {piano?.stanze && piano.stanze.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {piano.stanze.filter(s => s !== null).map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setStanzaSelezionata(s.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full whitespace-nowrap text-sm transition-colors flex-shrink-0 ${
+                  stanzaSelezionata === s.id
+                    ? 'bg-primary text-white'
+                    : 'glass dark:text-copy light:text-copy-light'
+                }`}
+              >
+                <Home size={14} />
+                {s.nome}
+              </button>
+            ))}
+            {canEdit && (
+              <button className="flex items-center gap-1.5 px-3 py-2 rounded-full whitespace-nowrap text-sm glass dark:text-copy-lighter light:text-copy-lighter flex-shrink-0">
+                <Plus size={14} />
+                Nuova
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Dispositivi Grid */}
+        {dispositivi.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+            {dispositivi.filter(d => d !== null && d !== undefined).map(renderDispositivo)}
+          </div>
+        ) : (
+          <Card variant="glass" className="text-center py-8">
+            <Lightbulb size={32} className="mx-auto mb-2 dark:text-copy-lighter light:text-copy-lighter" />
+            <h3 className="text-sm font-semibold dark:text-copy light:text-copy-light mb-1">
+              Nessun dispositivo
+            </h3>
+            <p className="text-xs dark:text-copy-lighter light:text-copy-lighter mb-3">
+              {stanza ? `Aggiungi dispositivi a ${stanza.nome}` : 'Seleziona una stanza'}
+            </p>
+            {canEdit && stanza && (
+              <button className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium">
+                <Plus size={14} className="inline mr-1" />
+                Aggiungi
+              </button>
+            )}
+          </Card>
+        )}
       </div>
 
       {/* Modal Conferma Eliminazione */}
@@ -273,18 +232,18 @@ export const ImpiantoDettaglio = () => {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="dark:text-copy light:text-copy-light">
+          <p className="dark:text-copy light:text-copy-light text-sm">
             Sei sicuro di voler eliminare <strong>"{impiantoCorrente?.nome}"</strong>?
           </p>
-          <p className="text-error font-semibold">
-            ⚠️ Questa azione è irreversibile e eliminerà tutti i dati associati all'impianto (piani, stanze, dispositivi)!
+          <p className="text-error text-xs">
+            Questa azione eliminerà tutti i dati associati.
           </p>
-          <div className="flex gap-3 mt-6">
-            <Button variant="glass" onClick={() => setShowDeleteModal(false)}>
+          <div className="flex gap-2">
+            <Button variant="glass" onClick={() => setShowDeleteModal(false)} fullWidth>
               Annulla
             </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Conferma Eliminazione
+            <Button variant="danger" onClick={handleDelete} fullWidth>
+              Elimina
             </Button>
           </div>
         </div>

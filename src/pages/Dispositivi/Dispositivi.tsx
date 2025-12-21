@@ -150,46 +150,39 @@ export const Dispositivi = () => {
   return (
     <Layout>
       <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        {/* Header Compatto */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold dark:text-copy light:text-copy-light">
-              Dispositivi Tasmota
+            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
+              Dispositivi
             </h1>
-            <p className="text-sm sm:text-base dark:text-copy-lighter light:text-copy-lighter">
-              Gestisci i tuoi dispositivi smart
+            <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
+              {dispositivi.length} dispositivi
             </p>
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              variant="glass"
+          <div className="flex gap-2">
+            <button
               onClick={handleScanRete}
               disabled={scanning || !impiantoId}
-              className="flex-1 sm:flex-none"
+              className="p-2 rounded-xl glass hover:bg-white/10 dark:hover:bg-white/10 light:hover:bg-black/5 transition-colors disabled:opacity-50"
+              title="Scan Rete"
             >
               {scanning ? (
-                <>
-                  <Loader size={18} className="mr-2 animate-spin" />
-                  Scansione...
-                </>
+                <Loader size={20} className="animate-spin dark:text-copy light:text-copy-light" />
               ) : (
-                <>
-                  <Search size={18} className="mr-2" />
-                  Scan Rete
-                </>
+                <Search size={20} className="dark:text-copy light:text-copy-light" />
               )}
-            </Button>
+            </button>
 
-            <Button
-              variant="primary"
+            <button
               onClick={() => setModalOpen(true)}
               disabled={!impiantoId}
-              className="flex-1 sm:flex-none"
+              className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50"
+              title="Aggiungi Dispositivo"
             >
-              <Plus size={18} className="mr-2" />
-              Aggiungi
-            </Button>
+              <Plus size={20} className="text-white" />
+            </button>
           </div>
         </div>
 

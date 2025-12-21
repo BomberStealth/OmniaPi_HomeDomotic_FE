@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
-import { Button } from '@/components/common/Button';
 import { WizardNuovoImpianto } from '@/components/impianti/WizardNuovoImpianto';
 import { useImpiantiStore } from '@/store/impiantiStore';
-import { Building2, MapPin, Plus } from 'lucide-react';
+import { Building2, Home, MapPin, Plus, ChevronRight } from 'lucide-react';
 
 // ============================================
-// IMPIANTI PAGE
+// IMPIANTI PAGE - Redesign Lista Compatta
 // ============================================
 
 export const Impianti = () => {
@@ -22,9 +21,6 @@ export const Impianti = () => {
     fetchImpianti();
   }, []);
 
-  // Tutti gli utenti autenticati possono creare impianti
-  const canCreateImpianto = true;
-
   const handleSelectImpianto = (impianto: any) => {
     setImpiantoCorrente(impianto);
     navigate(`/impianti/${impianto.id}`);
@@ -36,74 +32,80 @@ export const Impianti = () => {
 
   return (
     <Layout>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+      <div className="space-y-3 sm:space-y-4">
+        {/* Header Compatto */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-copy mb-1 sm:mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
               {t('impianti.title')}
             </h1>
-            <p className="text-sm sm:text-base dark:text-copy-lighter light:text-copy-lighter">{impianti.length} impianti totali</p>
+            <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
+              {impianti.length} impianti
+            </p>
           </div>
 
-          {canCreateImpianto && (
-            <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
-              <Plus size={20} className="mr-2" />
-              <span className="text-sm sm:text-base">{t('impianti.nuovo')}</span>
-            </Button>
-          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors"
+            title="Nuovo Impianto"
+          >
+            <Plus size={20} className="text-white" />
+          </button>
         </div>
 
-        {/* Impianti Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {impianti.filter(i => i !== null && i !== undefined).map((impianto) => (
-            <Card
-              key={impianto.id}
-              variant="glass"
-              hover
-              className="cursor-pointer"
-              onClick={() => handleSelectImpianto(impianto)}
-            >
-              <div className="flex items-start gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl bg-primary bg-opacity-20 flex-shrink-0">
-                  <Building2 size={28} className="sm:w-8 sm:h-8 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-copy mb-1">
-                    {impianto.nome}
-                  </h3>
-                  {impianto.indirizzo && (
-                    <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
-                      <MapPin size={14} className="flex-shrink-0" />
-                      <span className="truncate">{impianto.indirizzo}, {impianto.citta}</span>
-                    </div>
-                  )}
-                  <div className="mt-2 sm:mt-3 text-xs dark:text-copy-lighter light:text-copy-lighter">
-                    Creato il {new Date(impianto.creato_il).toLocaleDateString('it-IT')}
+        {/* Lista Impianti Compatta */}
+        {impianti.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {impianti.filter(i => i !== null && i !== undefined).map((impianto) => (
+              <Card
+                key={impianto.id}
+                variant="glass"
+                hover
+                padding={false}
+                className="cursor-pointer"
+                onClick={() => handleSelectImpianto(impianto)}
+              >
+                <div className="flex items-center gap-3 p-3">
+                  {/* Icona */}
+                  <div className="p-2 rounded-lg bg-primary/20 flex-shrink-0">
+                    <Home size={18} className="text-primary" />
                   </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
 
-        {impianti.length === 0 && (
-          <Card variant="glass-solid" className="text-center py-12 sm:py-16">
-            <Building2 size={48} className="sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 dark:text-copy-lighter light:text-copy-lighter" />
-            <h3 className="text-lg sm:text-xl font-semibold text-copy mb-2">
-              Nessun impianto trovato
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm dark:text-copy light:text-copy-light truncate">
+                      {impianto.nome}
+                    </h3>
+                    {impianto.indirizzo && (
+                      <p className="text-[11px] dark:text-copy-lighter light:text-copy-lighter truncate flex items-center gap-1">
+                        <MapPin size={10} className="flex-shrink-0" />
+                        {impianto.indirizzo}, {impianto.citta}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Chevron */}
+                  <ChevronRight size={18} className="dark:text-copy-lighter light:text-copy-lighter flex-shrink-0" />
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card variant="glass" className="text-center py-8">
+            <Building2 size={40} className="mx-auto mb-3 dark:text-copy-lighter light:text-copy-lighter" />
+            <h3 className="text-base font-semibold dark:text-copy light:text-copy-light mb-1">
+              Nessun impianto
             </h3>
-            <p className="text-sm sm:text-base text-copy-lighter mb-4 sm:mb-6 px-4">
-              {canCreateImpianto
-                ? 'Crea il tuo primo impianto per iniziare'
-                : 'Contatta un installatore per creare un impianto'}
+            <p className="text-xs dark:text-copy-lighter light:text-copy-lighter mb-4">
+              Aggiungi il tuo primo impianto
             </p>
-            {canCreateImpianto && (
-              <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-                <Plus size={20} className="mr-2" />
-                <span className="text-sm sm:text-base">{t('impianti.nuovo')}</span>
-              </Button>
-            )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors"
+            >
+              <Plus size={16} className="inline mr-1" />
+              Nuovo Impianto
+            </button>
           </Card>
         )}
 

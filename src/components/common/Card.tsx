@@ -11,7 +11,7 @@ interface CardProps {
   variant?: 'glass' | 'glass-dark' | 'solid' | 'glass-solid';
   padding?: boolean;
   hover?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 export const Card = ({

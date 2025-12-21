@@ -1,7 +1,8 @@
 import { SceneCard } from './SceneCard';
 
 // ============================================
-// SCENE LIST - Griglia scene
+// SCENE LIST - Layout verticale compatto
+// Mobile-first design
 // ============================================
 
 interface SceneListProps {
@@ -14,7 +15,7 @@ interface SceneListProps {
 
 export const SceneList = ({ scene, executingId, onExecute, onDelete, onSchedule }: SceneListProps) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="flex flex-col gap-2">
       {scene.filter(s => s !== null && s !== undefined).map((scena) => (
         <SceneCard
           key={scena.id}
