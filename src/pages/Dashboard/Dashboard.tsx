@@ -66,10 +66,11 @@ export const Dashboard = () => {
     }
   };
 
-  // Calcola statistiche dai dispositivi
-  const luciOn = dispositivi.filter(d => d.tipo === 'luce' && d.power_state).length;
-  const totLuci = dispositivi.filter(d => d.tipo === 'luce').length;
-  const termostati = dispositivi.filter(d => d.tipo === 'termostato').length;
+  // Calcola statistiche dai dispositivi (filtra null/undefined)
+  const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
+  const luciOn = dispositiviValidi.filter(d => d.tipo === 'luce' && d.power_state).length;
+  const totLuci = dispositiviValidi.filter(d => d.tipo === 'luce').length;
+  const termostati = dispositiviValidi.filter(d => d.tipo === 'termostato').length;
 
   // Saluto dinamico basato sull'ora
   const getGreeting = () => {
@@ -139,7 +140,7 @@ export const Dashboard = () => {
               </div>
               <div className="text-center">
                 <p className="text-sm sm:text-lg font-bold dark:text-copy light:text-copy-light leading-none">
-                  {dispositivi.length}
+                  {dispositiviValidi.length}
                 </p>
                 <p className="text-[9px] sm:text-[10px] dark:text-copy-lighter light:text-copy-lighter">
                   Dispositivi
