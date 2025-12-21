@@ -1,11 +1,20 @@
 /* ============================================
    NEON TOGGLE SWITCH CSS
    From CodePen jkantner/MWzqMrp
-   ORIGINALE - Senza modifiche
+   ORIGINALE - Solo adattato per React
    ============================================ */
 
 .neon-toggle-wrapper {
   width: 100%;
+  /* Variabili CSS originali da CodePen */
+  --hue: 223;
+  --off-hue: 3;
+  --on-hue1: 123;
+  --on-hue2: 168;
+  --fg: hsl(var(--hue),10%,90%);
+  --primary: hsl(var(--hue),90%,50%);
+  --trans-dur: 0.6s;
+  --trans-timing: cubic-bezier(0.65,0,0.35,1);
 }
 
 .switch,
@@ -14,18 +23,12 @@
 }
 
 .switch {
-  --hue: 223;
-  --off-hue: 3;
-  --on-hue1: 123;
-  --on-hue2: 168;
-  --trans-dur: 0.6s;
-  --trans-timing: cubic-bezier(0.65, 0, 0.35, 1);
-
   display: block;
   position: relative;
   width: 5em;
   height: 3em;
   font-size: 40px;
+  margin: auto;
 }
 
 .switch__base-outer,
@@ -80,7 +83,6 @@
   height: 100%;
   -webkit-appearance: none;
   appearance: none;
-  cursor: pointer;
 }
 
 .switch__input:disabled {
@@ -90,8 +92,8 @@
 
 .switch__input:before {
   border-radius: 0.125em;
-  box-shadow: 0 0 0 0.125em hsla(var(--hue), 90%, 50%, 0);
-  content: '';
+  box-shadow: 0 0 0 0.125em hsla(var(--hue),90%,50%,0);
+  content: "";
   display: block;
   position: absolute;
   inset: -0.125em;
@@ -99,7 +101,7 @@
 }
 
 .switch__input:focus-visible:before {
-  box-shadow: 0 0 0 0.125em hsl(var(--hue), 90%, 50%);
+  box-shadow: 0 0 0 0.125em var(--primary);
 }
 
 .switch__knob,
@@ -110,25 +112,15 @@
 }
 
 .switch__knob {
-  background-color: hsl(var(--hue), 10%, 15%);
-  background-image: radial-gradient(
-      88% 88% at 50% 50%,
-      hsl(var(--hue), 10%, 20%) 47%,
-      hsla(var(--hue), 10%, 20%, 0) 50%
-    ),
-    radial-gradient(
-      88% 88% at 47% 47%,
-      hsl(var(--hue), 10%, 85%) 45%,
-      hsla(var(--hue), 10%, 85%, 0) 50%
-    ),
-    radial-gradient(
-      65% 70% at 40% 60%,
-      hsl(var(--hue), 10%, 20%) 46%,
-      hsla(var(--hue), 10%, 20%, 0) 50%
-    );
-  box-shadow: -0.0625em -0.0625em 0.0625em hsl(var(--hue), 10%, 15%) inset,
-    -0.125em -0.125em 0.0625em hsl(var(--hue), 10%, 5%) inset,
-    0.75em 0.25em 0.125em hsla(0, 0%, 0%, 0.8);
+  background-color: hsl(var(--hue),10%,15%);
+  background-image:
+    radial-gradient(88% 88% at 50% 50%,hsl(var(--hue),10%,20%) 47%,hsla(var(--hue),10%,20%,0) 50%),
+    radial-gradient(88% 88% at 47% 47%,hsl(var(--hue),10%,85%) 45%,hsla(var(--hue),10%,85%,0) 50%),
+    radial-gradient(65% 70% at 40% 60%,hsl(var(--hue),10%,20%) 46%,hsla(var(--hue),10%,20%,0) 50%);
+  box-shadow:
+    -0.0625em -0.0625em 0.0625em hsl(var(--hue),10%,15%) inset,
+    -0.125em -0.125em 0.0625em hsl(var(--hue),10%,5%) inset,
+    0.75em 0.25em 0.125em hsla(0,0%,0%,0.8);
   width: 2em;
   height: 2em;
   transition: transform var(--trans-dur) var(--trans-timing);
@@ -151,13 +143,14 @@
 .switch__knob-neon circle {
   opacity: 0;
   stroke-dasharray: 0 90.32 0 54.19;
-  transition: opacity var(--trans-dur) steps(1, end),
+  transition:
+    opacity var(--trans-dur) steps(1,end),
     stroke-dasharray var(--trans-dur) var(--trans-timing);
 }
 
 .switch__knob-shadow {
   border-radius: 50%;
-  box-shadow: 0.125em 0.125em 0.125em hsla(0, 0%, 0%, 0.9);
+  box-shadow: 0.125em 0.125em 0.125em hsla(0,0%,0%,0.9);
   display: block;
   position: absolute;
   top: 0.5em;
@@ -168,19 +161,21 @@
 }
 
 .switch__led {
-  background-color: hsl(var(--off-hue), 90%, 70%);
+  background-color: hsl(var(--off-hue),90%,70%);
   border-radius: 50%;
-  box-shadow: 0 -0.0625em 0.0625em hsl(var(--off-hue), 90%, 40%) inset,
-    0 0 0.125em hsla(var(--off-hue), 90%, 70%, 0.3),
-    0 0 0.125em hsla(var(--off-hue), 90%, 70%, 0.3),
-    0.125em 0.125em 0.125em hsla(0, 0%, 0%, 0.5);
+  box-shadow:
+    0 -0.0625em 0.0625em hsl(var(--off-hue),90%,40%) inset,
+    0 0 0.125em hsla(var(--off-hue),90%,70%,0.3),
+    0 0 0.125em hsla(var(--off-hue),90%,70%,0.3),
+    0.125em 0.125em 0.125em hsla(0,0%,0%,0.5);
   display: block;
   position: absolute;
   top: 0;
   left: 0;
   width: 0.25em;
   height: 0.25em;
-  transition: background-color var(--trans-dur) var(--trans-timing),
+  transition:
+    background-color var(--trans-dur) var(--trans-timing),
     box-shadow var(--trans-dur) var(--trans-timing);
 }
 
@@ -192,11 +187,12 @@
 }
 
 .switch__input:checked ~ .switch__led {
-  background-color: hsl(var(--on-hue1), 90%, 70%);
-  box-shadow: 0 -0.0625em 0.0625em hsl(var(--on-hue1), 90%, 40%) inset,
-    0 -0.125em 0.125em hsla(var(--on-hue1), 90%, 70%, 0.3),
-    0 0.125em 0.125em hsla(var(--on-hue1), 90%, 70%, 0.3),
-    0.125em 0.125em 0.125em hsla(0, 0%, 0%, 0.5);
+  background-color: hsl(var(--on-hue1),90%,70%);
+  box-shadow:
+    0 -0.0625em 0.0625em hsl(var(--on-hue1),90%,40%) inset,
+    0 -0.125em 0.125em hsla(var(--on-hue1),90%,70%,0.3),
+    0 0.125em 0.125em hsla(var(--on-hue1),90%,70%,0.3),
+    0.125em 0.125em 0.125em hsla(0,0%,0%,0.5);
 }
 
 .switch__input:checked ~ .switch__base-neon path {
@@ -211,5 +207,5 @@
 .switch__input:checked ~ .switch__knob-container .switch__knob-neon circle {
   opacity: 1;
   stroke-dasharray: 45.16 0 45.16 54.19;
-  transition-timing-function: steps(1, start), var(--trans-timing);
+  transition-timing-function: steps(1,start), var(--trans-timing);
 }

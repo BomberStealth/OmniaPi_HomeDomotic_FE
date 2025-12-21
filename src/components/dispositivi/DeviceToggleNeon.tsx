@@ -3,7 +3,8 @@ import './DeviceToggleNeon.css';
 
 // ============================================
 // DEVICE TOGGLE NEON - Original from CodePen
-// Esattamente come da CodePen jkantner/MWzqMrp
+// CodePen: jkantner/MWzqMrp
+// Solo funzioni ON/OFF aggiunte per React
 // ============================================
 
 interface DeviceToggleNeonProps {
@@ -90,19 +91,6 @@ export const DeviceToggleNeon = ({ isOn, disabled, onChange }: DeviceToggleNeonP
         <span className="switch__led"></span>
         <span className="switch__text">Power</span>
       </label>
-
-      {/* Status Badge */}
-      <div className="mt-2 text-center">
-        <span
-          className={`inline-block px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${
-            checked
-              ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
-          }`}
-        >
-          {checked ? '⚡ Acceso' : '⭕ Spento'}
-        </span>
-      </div>
     </div>
   );
 };
