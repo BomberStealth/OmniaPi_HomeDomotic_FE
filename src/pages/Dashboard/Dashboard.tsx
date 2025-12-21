@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
-import { useAuthStore } from '@/store/authStore';
-import { useImpiantiStore } from '@/store/impiantiStore';
+import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { sceneApi } from '@/services/api';
 import { Home, Lightbulb, Thermometer, Blinds } from 'lucide-react';
 
 // ============================================
@@ -12,12 +12,37 @@ import { Home, Lightbulb, Thermometer, Blinds } from 'lucide-react';
 
 export const Dashboard = () => {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
-  const { impianti, fetchImpianti } = useImpiantiStore();
+  const { impiantoCorrente, impianti } = useImpiantoContext();
+  const [sceneBase, setSceneBase] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchImpianti();
-  }, []);
+    if (impiantoCorrente) {
+      loadScene();
+    }
+  }, [impiantoCorrente]);
+
+  const loadScene = async () => {
+    if (!impiantoCorrente) return;
+
+    try {
+      const data = await sceneApi.getScene(impiantoCorrente.id);
+      // Filtra solo le scene base
+      const scenes = Array.isArray(data) ? data : [];
+      const base = scenes.filter((s: any) => s.is_base);
+      setSceneBase(base);
+    } catch (error) {
+      console.error('Errore caricamento scene:', error);
+      setSceneBase([]);
+    }
+  };
+
+  const executeScene = async (scenaId: number) => {
+    try {
+      await sceneApi.executeScena(scenaId);
+    } catch (error) {
+      console.error('Errore esecuzione scena:', error);
+    }
+  };
 
   const stats = [
     { icon: Home, label: 'Impianti', value: impianti.length, color: 'primary' },
@@ -28,70 +53,51 @@ export const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-copy mb-2">
-            {t('dashboard.welcome')}, {user?.nome}!
-          </h1>
-          <p className="text-copy-lighter">
-            {new Date().toLocaleDateString('it-IT', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Stats Grid - Ultra Compact for Mobile */}
+        <div className="grid grid-cols-4 gap-1 sm:gap-2 md:gap-3">
           {stats.map((stat) => (
-            <Card key={stat.label} variant="glass" hover>
-              <div className="flex items-center gap-4">
-                <div className={`p-4 rounded-xl bg-${stat.color} bg-opacity-20`}>
-                  <stat.icon size={32} className={`text-${stat.color}`} />
+            <Card key={stat.label} variant="glass" hover className="p-2 sm:p-3">
+              <div className="flex flex-col items-center justify-center gap-1">
+                <div className={`p-1.5 sm:p-2 rounded-lg bg-${stat.color} bg-opacity-20`}>
+                  <stat.icon size={16} className={`text-${stat.color} sm:w-5 sm:h-5`} />
                 </div>
-                <div>
-                  <p className="text-3xl font-bold text-copy">{stat.value}</p>
-                  <p className="text-sm text-copy-lighter">{stat.label}</p>
-                </div>
+                <p className="text-lg sm:text-2xl font-bold dark:text-copy light:text-copy-light">{stat.value}</p>
+                <p className="text-[10px] sm:text-xs dark:text-copy-lighter light:text-copy-lighter text-center leading-tight">
+                  {stat.label}
+                </p>
               </div>
             </Card>
           ))}
         </div>
 
-        {/* Shortcuts */}
-        <div>
-          <h2 className="text-2xl font-bold text-copy mb-4">
-            {t('dashboard.shortcuts')}
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {['Buongiorno', 'Buonanotte', 'Esco', 'Torno'].map((scena) => (
-              <Card
-                key={scena}
-                variant="glass-dark"
-                padding={false}
-                hover
-                className="text-center py-8"
-              >
-                <p className="text-lg font-medium text-copy">{scena}</p>
-              </Card>
-            ))}
+        {/* Shortcuts Scene - Ultra Compact */}
+        {sceneBase.length > 0 && (
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold dark:text-copy light:text-copy-light mb-2 sm:mb-3">
+              {t('dashboard.shortcuts')}
+            </h2>
+            <div className="grid grid-cols-4 gap-1 sm:gap-2">
+              {sceneBase.filter(s => s !== null && s !== undefined).map((scena) => (
+                <Card
+                  key={scena.id}
+                  variant="glass-dark"
+                  padding={false}
+                  hover
+                  className="cursor-pointer p-2 sm:p-3"
+                  onClick={() => executeScene(scena.id)}
+                >
+                  <div className="flex flex-col items-center justify-center gap-0.5 sm:gap-1">
+                    <span className="text-lg sm:text-2xl">{scena.icona}</span>
+                    <p className="text-[10px] sm:text-xs font-medium dark:text-copy light:text-copy-light text-center leading-tight">
+                      {scena.nome}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div>
-          <h2 className="text-2xl font-bold text-copy mb-4">
-            {t('dashboard.recentActivity')}
-          </h2>
-          <Card variant="glass-solid">
-            <p className="text-copy-lighter text-center py-8">
-              Nessuna attività recente
-            </p>
-          </Card>
-        </div>
+        )}
       </div>
     </Layout>
   );

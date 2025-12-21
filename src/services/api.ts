@@ -50,6 +50,11 @@ export const authApi = {
     return data;
   },
 
+  register: async (userData: { nome: string; cognome: string; email: string; password: string }) => {
+    const { data } = await api.post<ApiResponse>('/api/auth/register', userData);
+    return data;
+  },
+
   getProfile: async () => {
     const { data } = await api.get<ApiResponse>('/api/auth/profile');
     return data;
@@ -84,6 +89,13 @@ export const impiantiApi = {
   delete: async (id: number) => {
     const { data } = await api.delete<ApiResponse>(`/api/impianti/${id}`);
     return data;
+  },
+
+  connect: async (codiceCondivisione: string) => {
+    const { data } = await api.post<ApiResponse>('/api/impianti/connetti', {
+      codice_condivisione: codiceCondivisione
+    });
+    return data;
   }
 };
 
@@ -114,6 +126,135 @@ export const dispositiviApi = {
 
   delete: async (id: number) => {
     const { data } = await api.delete<ApiResponse>(`/api/dispositivi/${id}`);
+    return data;
+  }
+};
+
+// ============================================
+// TASMOTA API
+// ============================================
+
+export const tasmotaApi = {
+  getDispositivi: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/dispositivi`);
+    return data;
+  },
+
+  scanRete: async (impiantoId: number) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/dispositivi/scan`);
+    return data;
+  },
+
+  addDispositivo: async (impiantoId: number, dispositivo: any) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/dispositivi`, dispositivo);
+    return data;
+  },
+
+  deleteDispositivo: async (id: number) => {
+    const { data } = await api.delete(`/api/dispositivi/${id}`);
+    return data;
+  },
+
+  controlDispositivo: async (id: number, comando: string) => {
+    const { data } = await api.post(`/api/dispositivi/${id}/control`, { comando });
+    return data;
+  },
+
+  toggleBlocco: async (id: number, bloccato: boolean) => {
+    const { data } = await api.put(`/api/dispositivi/${id}/blocco`, { bloccato });
+    return data;
+  }
+};
+
+// ============================================
+// SCENE API
+// ============================================
+
+export const sceneApi = {
+  getScene: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/scene`);
+    return data;
+  },
+
+  createScena: async (impiantoId: number, scena: any) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/scene`, scena);
+    return data;
+  },
+
+  updateScena: async (id: number, scena: any) => {
+    const { data } = await api.put(`/api/scene/${id}`, scena);
+    return data;
+  },
+
+  deleteScena: async (id: number) => {
+    const { data } = await api.delete(`/api/scene/${id}`);
+    return data;
+  },
+
+  executeScena: async (id: number) => {
+    const { data } = await api.post(`/api/scene/${id}/execute`);
+    return data;
+  }
+};
+
+// ============================================
+// STANZE API
+// ============================================
+
+export const stanzeApi = {
+  getStanze: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/stanze`);
+    return data;
+  },
+
+  createStanza: async (impiantoId: number, stanza: any) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/stanze`, stanza);
+    return data;
+  },
+
+  updateStanza: async (id: number, stanza: any) => {
+    const { data } = await api.put(`/api/stanze/${id}`, stanza);
+    return data;
+  },
+
+  deleteStanza: async (id: number) => {
+    const { data } = await api.delete(`/api/stanze/${id}`);
+    return data;
+  }
+};
+
+// ============================================
+// ADMIN API
+// ============================================
+
+export const adminApi = {
+  getAllUsers: async () => {
+    const { data } = await api.get('/api/admin/users');
+    return data;
+  },
+
+  searchUsers: async (query: string) => {
+    const { data } = await api.get(`/api/admin/users/search?q=${query}`);
+    return data;
+  },
+
+  getUserPermissions: async (userId: number) => {
+    const { data } = await api.get(`/api/admin/users/${userId}/permissions`);
+    return data;
+  },
+
+  updateUserPermissions: async (userId: number, permessi: any) => {
+    const { data } = await api.put(`/api/admin/users/${userId}/permissions`, { permessi });
+    return data;
+  },
+
+  updateUserRole: async (userId: number, ruolo: string) => {
+    const { data } = await api.put(`/api/admin/users/${userId}/role`, { ruolo });
+    return data;
+  },
+
+  deleteUser: async (userId: number) => {
+    const { data } = await api.delete(`/api/admin/users/${userId}`);
     return data;
   }
 };

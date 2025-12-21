@@ -13,10 +13,41 @@
 }
 
 body {
-  @apply bg-background text-copy;
+  @apply bg-background text-copy transition-colors duration-300;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ============================================ */
+/* LIGHT MODE THEME */
+/* ============================================ */
+
+.light body {
+  @apply bg-background-light;
+  color: #0f172a !important; /* slate-900 - VERY DARK for excellent contrast */
+}
+
+.light {
+  /* Override all text colors in light mode for proper contrast */
+  color: #0f172a;
+}
+
+/* Force dark text colors in light mode */
+.light .text-copy,
+.light .text-copy-light,
+.light .text-copy-lighter,
+.light .dark\:text-copy,
+.light .dark\:text-copy-light,
+.light .dark\:text-copy-lighter {
+  color: #0f172a !important; /* Very dark text */
+}
+
+.light .light\:text-copy-light,
+.light .light\:text-copy,
+.light .light\:text-copy-lighter {
+  color: #0f172a !important; /* Very dark text */
 }
 
 /* ============================================ */
@@ -24,22 +55,39 @@ body {
 /* ============================================ */
 
 .glass {
-  @apply backdrop-blur-lg bg-opacity-10 border border-opacity-20;
+  @apply backdrop-blur-lg bg-opacity-10 border border-opacity-20 transition-all duration-300;
   background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
+.light .glass {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+}
+
 .glass-dark {
-  @apply backdrop-blur-lg bg-opacity-20 border border-opacity-30;
+  @apply backdrop-blur-lg bg-opacity-20 border border-opacity-30 transition-all duration-300;
   background: rgba(0, 0, 0, 0.3);
   border-color: rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
+.light .glass-dark {
+  background: rgba(248, 250, 252, 0.95); /* slate-50 */
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.06);
+}
+
 .glass-solid {
-  @apply bg-foreground border border-border;
+  @apply bg-foreground border border-border transition-all duration-300;
   box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+}
+
+.light .glass-solid {
+  @apply bg-foreground-light border-border-light;
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* ============================================ */
@@ -55,11 +103,23 @@ body {
   @apply bg-background;
 }
 
+.light ::-webkit-scrollbar-track {
+  @apply bg-background-light;
+}
+
 ::-webkit-scrollbar-thumb {
   @apply bg-border rounded-full;
 }
 
+.light ::-webkit-scrollbar-thumb {
+  @apply bg-border-light rounded-full;
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  @apply bg-copy-lighter;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
   @apply bg-copy-lighter;
 }
 

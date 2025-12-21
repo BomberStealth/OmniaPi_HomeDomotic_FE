@@ -89,8 +89,35 @@ export interface Impianto {
   cap: string;
   cliente_id: number;
   installatore_id: number;
+  utente_id?: number;
+  email_proprietario?: string;
+  codice_condivisione?: string;
+  ha_fotovoltaico?: boolean;
+  fotovoltaico_potenza?: number;
+  latitudine?: number;
+  longitudine?: number;
   creato_il: string;
   piani?: Piano[];
+}
+
+export interface ScheduleConfig {
+  enabled: boolean;
+  time: string; // HH:mm
+  days?: number[]; // 0-6 (domenica-sabato)
+  mode?: 'daily' | 'weekly' | 'once';
+  date?: string; // YYYY-MM-DD per mode='once'
+}
+
+export interface Condition {
+  type: 'time' | 'weekday' | 'date';
+  operator?: 'before' | 'after' | 'between' | 'equals';
+  value?: string | number;
+  value2?: string | number;
+}
+
+export interface ConditionalScene {
+  conditions: Condition[];
+  mode: 'all' | 'any'; // all = AND, any = OR
 }
 
 export interface Scena {
@@ -99,6 +126,9 @@ export interface Scena {
   nome: string;
   icona: string;
   azioni: any[];
+  scheduling?: ScheduleConfig;
+  conditions?: ConditionalScene;
+  is_base?: boolean;
   creato_il: string;
 }
 

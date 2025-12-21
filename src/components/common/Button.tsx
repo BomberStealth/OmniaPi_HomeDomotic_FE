@@ -23,10 +23,10 @@ export const Button = ({
   const baseClasses = 'rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variantClasses = {
-    primary: 'bg-primary hover:bg-primary-dark text-primary-content shadow-lg shadow-primary/50',
-    secondary: 'bg-secondary hover:bg-secondary-dark text-primary-content shadow-lg shadow-secondary/50',
-    glass: 'glass hover:bg-opacity-20 text-copy',
-    danger: 'bg-error hover:bg-red-600 text-white shadow-lg shadow-error/50'
+    primary: 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/50 dark:shadow-primary/50 light:shadow-primary/20',
+    secondary: 'bg-secondary hover:bg-secondary-dark text-white shadow-lg shadow-secondary/50 dark:shadow-secondary/50 light:shadow-secondary/20',
+    glass: 'glass hover:bg-opacity-20 dark:text-copy light:text-copy-light',
+    danger: 'bg-error hover:bg-error-dark text-white shadow-lg shadow-error/50 dark:shadow-error/50 light:shadow-error/20'
   };
 
   const sizeClasses = {

@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
+import { Modal } from '@/components/common/Modal';
 import { useImpiantiStore } from '@/store/impiantiStore';
 import { useAuthStore } from '@/store/authStore';
+import { impiantiApi } from '@/services/api';
 import { UserRole, TipoDispositivo } from '@/types';
 import { LuceCard } from '@/components/dispositivi/LuceCard';
 import { TapparellaCard } from '@/components/dispositivi/TapparellaCard';
@@ -17,7 +19,8 @@ import {
   Settings,
   Lightbulb,
   Blinds,
-  Thermometer
+  Thermometer,
+  Trash2
 } from 'lucide-react';
 
 // ============================================
@@ -31,8 +34,18 @@ export const ImpiantoDettaglio = () => {
   const { impiantoCorrente, fetchImpianto } = useImpiantiStore();
   const [pianoSelezionato, setPianoSelezionato] = useState<number | null>(null);
   const [stanzaSelezionata, setStanzaSelezionata] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const canEdit = user?.ruolo === UserRole.INSTALLATORE || user?.ruolo === UserRole.ADMIN;
+
+  const handleDelete = async () => {
+    try {
+      await impiantiApi.delete(impiantoCorrente!.id);
+      navigate('/impianti');
+    } catch (error) {
+      console.error('Errore durante eliminazione impianto:', error);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -103,10 +116,16 @@ export const ImpiantoDettaglio = () => {
           </div>
 
           {canEdit && (
-            <Button variant="glass">
-              <Settings size={20} className="mr-2" />
-              Gestisci
-            </Button>
+            <div className="hidden md:flex gap-3">
+              <Button variant="glass" onClick={() => navigate(`/impianti/${id}/settings`)}>
+                <Settings size={20} className="mr-2" />
+                Gestisci
+              </Button>
+              <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
+                <Trash2 size={20} className="mr-2" />
+                Elimina
+              </Button>
+            </div>
           )}
         </div>
 
@@ -155,7 +174,7 @@ export const ImpiantoDettaglio = () => {
             <div className="p-4">
               <h3 className="font-bold text-copy mb-4">Piani e Stanze</h3>
 
-              {impiantoCorrente.piani?.map((p) => (
+              {impiantoCorrente.piani?.filter(p => p !== null && p !== undefined).map((p) => (
                 <div key={p.id} className="mb-4">
                   <button
                     onClick={() => setPianoSelezionato(p.id)}
@@ -169,7 +188,7 @@ export const ImpiantoDettaglio = () => {
 
                   {pianoSelezionato === p.id && p.stanze && (
                     <div className="ml-4 space-y-1">
-                      {p.stanze.map((s) => (
+                      {p.stanze.filter(s => s !== null && s !== undefined).map((s) => (
                         <button
                           key={s.id}
                           onClick={() => setStanzaSelezionata(s.id)}
@@ -223,7 +242,7 @@ export const ImpiantoDettaglio = () => {
 
             {dispositivi.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dispositivi.map(renderDispositivo)}
+                {dispositivi.filter(d => d !== null && d !== undefined).map(renderDispositivo)}
               </div>
             ) : (
               <Card variant="glass-solid" className="text-center py-16">
@@ -245,6 +264,31 @@ export const ImpiantoDettaglio = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal Conferma Eliminazione */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Elimina Impianto"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="dark:text-copy light:text-copy-light">
+            Sei sicuro di voler eliminare <strong>"{impiantoCorrente?.nome}"</strong>?
+          </p>
+          <p className="text-error font-semibold">
+            ⚠️ Questa azione è irreversibile e eliminerà tutti i dati associati all'impianto (piani, stanze, dispositivi)!
+          </p>
+          <div className="flex gap-3 mt-6">
+            <Button variant="glass" onClick={() => setShowDeleteModal(false)}>
+              Annulla
+            </Button>
+            <Button variant="danger" onClick={handleDelete}>
+              Conferma Eliminazione
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

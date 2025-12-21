@@ -1,5 +1,8 @@
+const plugin = require('tailwindcss/plugin');
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,33 +10,88 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#6b56ff",
-        "primary-content": "#ffffff",
-        "primary-dark": "#3e23ff",
-        "primary-light": "#9889ff",
+        // Primary colors
+        primary: {
+          DEFAULT: "#6b56ff",
+          dark: "#3e23ff",
+          light: "#9889ff",
+          content: "#ffffff",
+        },
 
-        secondary: "#bf56ff",
-        "secondary-content": "#350056",
-        "secondary-dark": "#ac23ff",
-        "secondary-light": "#d289ff",
+        // Secondary colors
+        secondary: {
+          DEFAULT: "#bf56ff",
+          dark: "#ac23ff",
+          light: "#d289ff",
+          content: "#ffffff",
+        },
 
-        background: "#1a1a1a",
-        foreground: "#262626",
-        border: "#404040",
+        // Background colors
+        background: {
+          DEFAULT: "#1a1a1a",   // dark theme
+          light: "#f8fafc",     // light theme - slate-50 molto chiaro
+        },
+        foreground: {
+          DEFAULT: "#262626",   // dark theme
+          light: "#ffffff",     // light theme - bianco puro
+        },
+        border: {
+          DEFAULT: "#404040",   // dark theme
+          light: "#cbd5e1",     // light theme - slate-300 visibile
+        },
 
-        copy: "#fbfbfb",
-        "copy-light": "#d9d9d9",
-        "copy-lighter": "#a6a6a6",
+        // Text colors
+        copy: {
+          DEFAULT: "#fbfbfb",   // dark theme
+          light: "#0f172a",     // light theme - slate-900 MOLTO SCURO
+        },
+        "copy-light": {
+          DEFAULT: "#d9d9d9",   // dark theme
+          light: "#1e293b",     // light theme - slate-800 SCURO
+        },
+        "copy-lighter": {
+          DEFAULT: "#a6a6a6",   // dark theme
+          light: "#475569",     // light theme - slate-600 medio scuro
+        },
+        // Semantic text colors for easy use
+        "text-primary": {
+          DEFAULT: "#fbfbfb",   // dark theme - same as copy
+          light: "#0f172a",     // light theme - dark text
+        },
+        "text-secondary": {
+          DEFAULT: "#d9d9d9",   // dark theme - same as copy-light
+          light: "#1e293b",     // light theme - dark text
+        },
+        "text-tertiary": {
+          DEFAULT: "#a6a6a6",   // dark theme - same as copy-lighter
+          light: "#475569",     // light theme - medium dark text
+        },
 
-        success: "#56ff56",
-        warning: "#ffff56",
-        error: "#ff5656",
-
-        "success-content": "#005600",
-        "warning-content": "#565600",
-        "error-content": "#560000"
+        // Status colors
+        success: {
+          DEFAULT: "#10b981",
+          dark: "#059669",
+          light: "#34d399",
+          content: "#ffffff",
+        },
+        warning: {
+          DEFAULT: "#f59e0b",
+          dark: "#d97706",
+          light: "#fbbf24",
+          content: "#ffffff",
+        },
+        error: {
+          DEFAULT: "#ef4444",
+          dark: "#dc2626",
+          light: "#f87171",
+          content: "#ffffff",
+        },
       },
     }
   },
-  plugins: [],
+  plugins: [
+    plugin(function({ addVariant }) {
+      addVariant('light', '.light &');
+    })
+  ],
 }

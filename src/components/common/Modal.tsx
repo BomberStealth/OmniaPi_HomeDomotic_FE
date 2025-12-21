@@ -56,11 +56,11 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           >
             <Card variant="glass-solid" padding={false}>
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-2xl font-bold text-copy">{title}</h2>
+              <div className="flex items-center justify-between p-6 border-b dark:border-border light:border-border-light">
+                <h2 className="text-2xl font-bold dark:text-copy light:text-copy-light">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-foreground transition-colors"
+                  className="p-2 rounded-lg dark:hover:bg-foreground light:hover:bg-background-light dark:text-copy light:text-copy-light transition-colors"
                 >
                   <X size={24} />
                 </button>
