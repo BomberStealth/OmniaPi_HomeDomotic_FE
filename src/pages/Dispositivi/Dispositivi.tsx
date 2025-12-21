@@ -5,7 +5,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { SkeletonList } from '@/components/common/Skeleton';
-import { DeviceToggleNeon } from '@/components/dispositivi/DeviceToggleNeon';
+import { DeviceToggleNeonUnified } from '@/components/dispositivi/DeviceToggleNeonUnified';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { tasmotaApi } from '@/services/api';
@@ -213,23 +213,23 @@ export const Dispositivi = () => {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {dispositivi.filter(d => d !== null && d !== undefined).map((dispositivo) => (
-              <Card key={dispositivo.id} variant="glass" hover>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
+              <Card key={dispositivo.id} variant="glass" hover className="!p-2.5 sm:!p-3 overflow-hidden">
+                <div className="flex items-center justify-between gap-1 mb-2">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className={`p-1 sm:p-1.5 rounded-lg flex-shrink-0 ${
                       dispositivo.stato === 'online' ? 'bg-success' : 'bg-error'
                     } bg-opacity-20`}>
-                      <Lightbulb size={24} className={
+                      <Lightbulb size={14} className={
                         dispositivo.stato === 'online' ? 'text-success' : 'text-error'
                       } />
                     </div>
-                    <div>
-                      <h3 className="font-bold dark:text-copy light:text-copy-light">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-xs sm:text-sm dark:text-copy light:text-copy-light leading-tight truncate">
                         {dispositivo.nome}
                       </h3>
-                      <p className="text-xs dark:text-copy-lighter light:text-copy-lighter">
+                      <p className="text-[9px] sm:text-[10px] dark:text-copy-lighter light:text-copy-lighter truncate">
                         {dispositivo.ip_address}
                       </p>
                     </div>
@@ -238,14 +238,15 @@ export const Dispositivi = () => {
                     variant="glass"
                     size="sm"
                     onClick={() => handleDeleteDispositivo(dispositivo.id)}
+                    className="!p-1 flex-shrink-0"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={12} className="sm:w-[14px] sm:h-[14px]" />
                   </Button>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-2" style={{ fontSize: '12px' }}>
                   {/* Usa il nuovo toggle neon con colori del tema */}
-                  <DeviceToggleNeon
+                  <DeviceToggleNeonUnified
                     isOn={dispositivo.power_state || false}
                     disabled={dispositivo.bloccato}
                     onChange={(isOn) => {
@@ -255,14 +256,14 @@ export const Dispositivi = () => {
                 </div>
 
                 {isAdmin && (
-                  <div className="mt-3 space-y-2">
-                    <div className="text-xs dark:text-copy-lighter light:text-copy-lighter">
-                      <p>Tipo: {dispositivo.tipo}</p>
-                      <p>Topic: {dispositivo.topic_mqtt}</p>
+                  <div className="mt-2 space-y-1">
+                    <div className="text-[9px] sm:text-[10px] dark:text-copy-lighter light:text-copy-lighter leading-tight">
+                      <p className="truncate">Tipo: {dispositivo.tipo}</p>
+                      <p className="truncate" title={dispositivo.topic_mqtt}>Topic: {dispositivo.topic_mqtt}</p>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 glass rounded-lg">
-                      <span className="text-xs font-medium dark:text-copy light:text-copy-light">
+                    <div className="flex items-center justify-between p-1 sm:p-1.5 glass rounded-lg gap-1">
+                      <span className="text-[9px] sm:text-[10px] font-medium dark:text-copy light:text-copy-light truncate">
                         {dispositivo.bloccato ? '🔒 Bloccato' : '🔓 Sbloccato'}
                       </span>
                       <button
@@ -275,13 +276,13 @@ export const Dispositivi = () => {
                             toast.error(error.response?.data?.error || 'Errore durante il blocco/sblocco');
                           }
                         }}
-                        className={`w-10 h-5 rounded-full transition-colors ${
+                        className={`w-7 sm:w-8 h-3.5 sm:h-4 rounded-full transition-colors flex-shrink-0 ${
                           dispositivo.bloccato ? 'bg-warning' : 'bg-success'
                         }`}
                       >
                         <div
-                          className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${
-                            dispositivo.bloccato ? 'translate-x-1' : 'translate-x-5'
+                          className={`w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white rounded-full shadow transform transition-transform ${
+                            dispositivo.bloccato ? 'translate-x-0.5' : 'translate-x-[10px] sm:translate-x-[11px]'
                           }`}
                         />
                       </button>

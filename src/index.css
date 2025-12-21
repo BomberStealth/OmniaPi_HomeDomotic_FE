@@ -3,6 +3,67 @@
 @tailwind utilities;
 
 /* ============================================ */
+/* CSS VARIABLES - Theme Colors */
+/* ============================================ */
+
+:root {
+  /* Primary: #6b56ff → HSL(250, 100%, 67%) */
+  --color-primary: #6b56ff;
+  --color-primary-hue: 250;
+
+  /* Secondary: #bf56ff → HSL(280, 100%, 67%) */
+  --color-secondary: #bf56ff;
+  --color-secondary-hue: 280;
+
+  /* Success: #10b981 → HSL(160, 84%, 39%) */
+  --color-success: #10b981;
+  --color-success-hue: 160;
+
+  /* Error: #ef4444 → HSL(0, 84%, 60%) */
+  --color-error: #ef4444;
+  --color-error-hue: 0;
+
+  /* Warning: #f59e0b → HSL(38, 92%, 50%) */
+  --color-warning: #f59e0b;
+  --color-warning-hue: 38;
+
+  /* Shadows - tema scuro */
+  --shadow-color-light: hsl(250, 10%, 30%);
+  --shadow-color-dark: hsl(250, 10%, 5%);
+  --shadow-color-black: hsla(0, 0%, 0%, 0.8);
+
+  /* Toggle knob - tema scuro */
+  --knob-bg: hsl(250, 10%, 15%);
+  --knob-bg-light: hsl(250, 10%, 20%);
+  --knob-highlight: hsl(250, 10%, 85%);
+
+  /* Ombre predefinite */
+  --shadow-sm: 0 1px 2px var(--shadow-color-black);
+  --shadow-md: 0 4px 6px var(--shadow-color-black);
+  --shadow-lg: 0 8px 16px var(--shadow-color-black);
+  --shadow-glow: 0 0 20px var(--color-primary);
+}
+
+/* Tema chiaro - override delle variabili */
+.light {
+  /* Shadows - tema chiaro (più delicate) */
+  --shadow-color-light: hsl(250, 10%, 75%);
+  --shadow-color-dark: hsl(250, 10%, 50%);
+  --shadow-color-black: hsla(0, 0%, 0%, 0.25);
+
+  /* Toggle knob - tema chiaro (più chiaro) */
+  --knob-bg: hsl(250, 10%, 85%);
+  --knob-bg-light: hsl(250, 10%, 90%);
+  --knob-highlight: hsl(250, 10%, 98%);
+
+  /* Ombre predefinite - più leggere */
+  --shadow-sm: 0 1px 3px var(--shadow-color-black);
+  --shadow-md: 0 4px 8px var(--shadow-color-black);
+  --shadow-lg: 0 8px 20px var(--shadow-color-black);
+  --shadow-glow: 0 0 15px hsla(250, 90%, 60%, 0.4);
+}
+
+/* ============================================ */
 /* GLOBAL STYLES */
 /* ============================================ */
 
