@@ -9,62 +9,78 @@ export default {
   ],
   theme: {
     extend: {
+      // Plus Jakarta Sans font
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
       colors: {
-        // Primary colors
+        // Primary colors - Emerald (gestito anche da CSS vars)
         primary: {
-          DEFAULT: "#6b56ff",
-          dark: "#3e23ff",
-          light: "#9889ff",
+          DEFAULT: "#10b981",
+          dark: "#059669",
+          light: "#34d399",
           content: "#ffffff",
         },
 
-        // Secondary colors
+        // Secondary colors - Emerald variants
         secondary: {
-          DEFAULT: "#bf56ff",
-          dark: "#ac23ff",
-          light: "#d289ff",
+          DEFAULT: "#34d399",
+          dark: "#10b981",
+          light: "#6ee7b7",
           content: "#ffffff",
         },
 
-        // Background colors
+        // Accent colors - per tema dinamico
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          light: "var(--color-accent-light)",
+          glow: "var(--color-accent-glow)",
+          dark: "var(--color-accent-dark)",
+        },
+
+        // Dark Luxury Background colors
         background: {
-          DEFAULT: "#1a1a1a",   // dark theme
-          light: "#f8fafc",     // light theme - slate-50 molto chiaro
+          DEFAULT: "#0a0a0c",   // dark theme - molto scuro
+          light: "#f8fafc",     // light theme - slate-50
+          elevated: "#12121a",  // card elevata
+          card: "#18182a",      // sfondo card
+          hover: "#1f1f35",     // stato hover
         },
         foreground: {
-          DEFAULT: "#262626",   // dark theme
+          DEFAULT: "#12121a",   // dark theme
           light: "#ffffff",     // light theme - bianco puro
         },
         border: {
-          DEFAULT: "#404040",   // dark theme
-          light: "#cbd5e1",     // light theme - slate-300 visibile
+          DEFAULT: "#2a2a40",   // dark theme - più morbido
+          light: "#cbd5e1",     // light theme - slate-300
+          accent: "rgba(106, 212, 160, 0.2)", // bordo accent
         },
 
-        // Text colors
+        // Text colors - Dark Luxury
         copy: {
-          DEFAULT: "#fbfbfb",   // dark theme
-          light: "#0f172a",     // light theme - slate-900 MOLTO SCURO
+          DEFAULT: "#f8fafc",   // dark theme - molto chiaro
+          light: "#0f172a",     // light theme - slate-900
         },
         "copy-light": {
-          DEFAULT: "#d9d9d9",   // dark theme
-          light: "#1e293b",     // light theme - slate-800 SCURO
+          DEFAULT: "#cbd5e1",   // dark theme - slate-300
+          light: "#1e293b",     // light theme - slate-800
         },
         "copy-lighter": {
-          DEFAULT: "#a6a6a6",   // dark theme
-          light: "#475569",     // light theme - slate-600 medio scuro
+          DEFAULT: "#64748b",   // dark theme - slate-500
+          light: "#475569",     // light theme - slate-600
         },
-        // Semantic text colors for easy use
+        // Semantic text colors
         "text-primary": {
-          DEFAULT: "#fbfbfb",   // dark theme - same as copy
-          light: "#0f172a",     // light theme - dark text
+          DEFAULT: "#f8fafc",   // dark theme
+          light: "#0f172a",     // light theme
         },
         "text-secondary": {
-          DEFAULT: "#d9d9d9",   // dark theme - same as copy-light
-          light: "#1e293b",     // light theme - dark text
+          DEFAULT: "#cbd5e1",   // dark theme
+          light: "#1e293b",     // light theme
         },
         "text-tertiary": {
-          DEFAULT: "#a6a6a6",   // dark theme - same as copy-lighter
-          light: "#475569",     // light theme - medium dark text
+          DEFAULT: "#64748b",   // dark theme
+          light: "#475569",     // light theme
         },
 
         // Status colors
@@ -86,6 +102,13 @@ export default {
           light: "#f87171",
           content: "#ffffff",
         },
+      },
+      // Box shadows Dark Luxury
+      boxShadow: {
+        'glow': '0 0 20px var(--color-accent)',
+        'glow-sm': '0 0 10px var(--color-accent)',
+        'luxury': '0 8px 32px rgba(0, 0, 0, 0.4)',
+        'luxury-lg': '0 16px 48px rgba(0, 0, 0, 0.5)',
       },
     }
   },

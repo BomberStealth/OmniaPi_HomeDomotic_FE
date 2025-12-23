@@ -1,41 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { stanzeApi, tasmotaApi } from '@/services/api';
-import { DoorOpen, Plus, Loader, Settings, Trash2, Lightbulb, ChevronDown, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { DoorOpen, Plus, Loader2, Settings, Trash2, Lightbulb, ArrowRight, Edit3, Package } from 'lucide-react';
 import { toast } from 'sonner';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
-// STANZE PAGE - Mobile-First Redesign
+// STANZE PAGE - Dark Luxury Style
+// Con supporto tema dinamico
 // ============================================
+
+// Colori base (invarianti)
+const baseColors = {
+  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+  textPrimary: '#ffffff',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+  success: '#10b981',
+  error: '#ef4444',
+  warning: '#f59e0b',
+};
+
+// Helper per convertire hex a rgb
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  return '106, 212, 160';
+};
 
 export const Stanze = () => {
   const { impiantoCorrente } = useImpiantoContext();
+  const { colors: themeColors } = useThemeColor();
+
+  // Colori dinamici basati sul tema
+  const colors = useMemo(() => ({
+    ...baseColors,
+    accent: themeColors.accent,
+    accentLight: themeColors.accentLight,
+    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
+    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
+  }), [themeColors]);
+
   const [stanze, setStanze] = useState<any[]>([]);
   const [dispositivi, setDispositivi] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [deviceListModalOpen, setDeviceListModalOpen] = useState(false);
+  const [deviceActionModalOpen, setDeviceActionModalOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [selectedStanza, setSelectedStanza] = useState<any | null>(null);
   const [selectedDispositivo, setSelectedDispositivo] = useState<any | null>(null);
+  const [isNonAssegnatiMode, setIsNonAssegnatiMode] = useState(false);
   const [newStanza, setNewStanza] = useState({ nome: '', icona: '🚪' });
+  const [newDeviceName, setNewDeviceName] = useState('');
 
   const impiantoId = impiantoCorrente?.id || 0;
 
   useEffect(() => {
-    if (impiantoId) {
-      loadData();
-    }
+    if (impiantoId) loadData();
   }, [impiantoId]);
 
   const loadData = async () => {
     if (!impiantoId) return;
-
     try {
       setLoading(true);
       const [stanzeData, dispositiviData] = await Promise.all([
@@ -58,7 +93,6 @@ export const Stanze = () => {
       toast.error('Inserisci il nome della stanza');
       return;
     }
-
     try {
       setLoading(true);
       await stanzeApi.createStanza(impiantoId, newStanza);
@@ -67,7 +101,6 @@ export const Stanze = () => {
       setNewStanza({ nome: '', icona: '🚪' });
       await loadData();
     } catch (error: any) {
-      console.error('Errore creazione stanza:', error);
       toast.error(error.response?.data?.error || 'Errore durante la creazione');
     } finally {
       setLoading(false);
@@ -76,7 +109,6 @@ export const Stanze = () => {
 
   const handleDeleteStanza = async () => {
     if (!selectedStanza) return;
-
     try {
       await stanzeApi.deleteStanza(selectedStanza.id);
       toast.success('Stanza eliminata!');
@@ -84,191 +116,310 @@ export const Stanze = () => {
       setSelectedStanza(null);
       await loadData();
     } catch (error: any) {
-      console.error('Errore eliminazione stanza:', error);
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
     }
   };
 
   const handleMoveDispositivo = async (stanzaId: number | null) => {
     if (!selectedDispositivo) return;
-
     try {
       await tasmotaApi.assignToStanza(selectedDispositivo.id, stanzaId);
       toast.success('Dispositivo spostato!');
       setMoveModalOpen(false);
+      setDeviceActionModalOpen(false);
       setSelectedDispositivo(null);
       await loadData();
     } catch (error: any) {
-      console.error('Errore spostamento dispositivo:', error);
       toast.error(error.response?.data?.error || 'Errore durante lo spostamento');
+    }
+  };
+
+  const handleRenameDispositivo = async () => {
+    if (!selectedDispositivo || !newDeviceName.trim()) {
+      toast.error('Inserisci un nome valido');
+      return;
+    }
+    try {
+      await tasmotaApi.renameDispositivo(selectedDispositivo.id, newDeviceName.trim());
+      toast.success('Dispositivo rinominato!');
+      setRenameModalOpen(false);
+      setDeviceActionModalOpen(false);
+      setNewDeviceName('');
+      setSelectedDispositivo(null);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante la rinomina');
+    }
+  };
+
+  const handleDeleteDispositivo = async () => {
+    if (!selectedDispositivo) return;
+    if (!confirm(`Eliminare "${selectedDispositivo.nome}"?`)) return;
+    try {
+      await tasmotaApi.deleteDispositivo(selectedDispositivo.id);
+      toast.success('Dispositivo eliminato!');
+      setDeviceActionModalOpen(false);
+      setSelectedDispositivo(null);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
     }
   };
 
   const openSettings = (stanza: any) => {
     setSelectedStanza(stanza);
+    setIsNonAssegnatiMode(false);
     setSettingsModalOpen(true);
   };
 
-  const openMoveModal = (dispositivo: any) => {
+  const openNonAssegnatiSettings = () => {
+    setSelectedStanza(null);
+    setIsNonAssegnatiMode(true);
+    setDeviceListModalOpen(true);
+  };
+
+  const openDeviceList = () => {
+    setSettingsModalOpen(false);
+    setDeviceListModalOpen(true);
+  };
+
+  const openDeviceAction = (dispositivo: any) => {
     setSelectedDispositivo(dispositivo);
+    setDeviceActionModalOpen(true);
+  };
+
+  const openMoveModal = () => {
+    setDeviceActionModalOpen(false);
     setMoveModalOpen(true);
   };
 
-  // Filtra valori validi (no null/undefined)
-  const stanzeValide = stanze.filter(s => s !== null && s !== undefined);
-  const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
-
-  // Raggruppa dispositivi per stanza
-  const getDispositiviByStanza = (stanzaId: number) => {
-    return dispositiviValidi.filter(d => d.stanza_id === stanzaId);
+  const openRenameModal = () => {
+    setNewDeviceName(selectedDispositivo?.nome || '');
+    setDeviceActionModalOpen(false);
+    setRenameModalOpen(true);
   };
 
-  // Dispositivi senza stanza
+  const stanzeValide = stanze.filter(s => s !== null && s !== undefined);
+  const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
+  const getDispositiviByStanza = (stanzaId: number) => dispositiviValidi.filter(d => d.stanza_id === stanzaId);
   const dispositiviNonAssegnati = dispositiviValidi.filter(d => !d.stanza_id);
+
+  const getCurrentDeviceList = () => {
+    if (isNonAssegnatiMode) return dispositiviNonAssegnati;
+    return selectedStanza ? getDispositiviByStanza(selectedStanza.id) : [];
+  };
 
   return (
     <Layout>
-      <div className="space-y-4">
-        {/* Header Compatto */}
-        <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
-              Stanze
-            </h1>
-            <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary, margin: 0 }}>Stanze</h1>
+            <p style={{ fontSize: '13px', color: colors.textMuted, margin: '4px 0 0 0' }}>
               {stanzeValide.length} stanze, {dispositiviValidi.length} dispositivi
             </p>
           </div>
-
-          <button
+          <motion.button
             onClick={() => setModalOpen(true)}
             disabled={!impiantoId}
-            className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors disabled:opacity-50"
-            title="Nuova Stanza"
+            style={{
+              padding: '10px',
+              borderRadius: '16px',
+              background: `linear-gradient(165deg, ${colors.accent}, #4aa870)`,
+              border: 'none',
+              cursor: !impiantoId ? 'not-allowed' : 'pointer',
+              opacity: !impiantoId ? 0.5 : 1,
+              boxShadow: `0 4px 16px ${colors.accent}40`,
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <Plus size={20} className="text-white" />
-          </button>
+            <Plus size={20} style={{ color: '#0a0a0c' }} />
+          </motion.button>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader size={32} className="animate-spin text-primary" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} className="animate-spin" style={{ color: colors.accent }} />
           </div>
         ) : !impiantoId ? (
-          <Card variant="glass" className="text-center py-8">
-            <p className="dark:text-copy-lighter light:text-copy-lighter text-sm">
+          <div
+            style={{
+              background: colors.bgCardLit,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '24px',
+              boxShadow: colors.cardShadowLit,
+              padding: '32px',
+              textAlign: 'center',
+            }}
+          >
+            <p style={{ color: colors.textMuted, fontSize: '14px', margin: 0 }}>
               Seleziona un impianto per vedere le stanze
             </p>
-          </Card>
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Dispositivi Non Assegnati */}
             {dispositiviNonAssegnati.length > 0 && (
-              <Card variant="glass" className="!p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">📦</span>
-                    <h3 className="font-semibold text-sm dark:text-copy light:text-copy-light">
-                      Non assegnati
-                    </h3>
+              <motion.div
+                style={{
+                  background: colors.bgCardLit,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: '20px',
+                  boxShadow: colors.cardShadowLit,
+                  padding: '12px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+                whileHover={{ borderColor: colors.borderHover }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: '25%',
+                    right: '25%',
+                    height: '1px',
+                    background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+                  }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Package size={18} style={{ color: colors.warning }} />
+                    <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>Non assegnati</h3>
                   </div>
-                  <span className="text-xs dark:text-copy-lighter light:text-copy-lighter">
-                    {dispositiviNonAssegnati.length} dispositivi
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {dispositiviNonAssegnati.map((disp) => (
-                    <button
-                      key={disp.id}
-                      onClick={() => openMoveModal(disp)}
-                      className={`
-                        flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs
-                        glass hover:bg-white/10 transition-colors
-                        ${disp.power_state ? 'ring-1 ring-success' : ''}
-                      `}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: colors.textMuted }}>{dispositiviNonAssegnati.length}</span>
+                    <motion.button
+                      onClick={openNonAssegnatiSettings}
+                      style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                      whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                     >
-                      <Lightbulb
-                        size={12}
-                        className={disp.power_state ? 'text-success' : 'dark:text-copy-lighter light:text-copy-lighter'}
-                      />
-                      <span className="dark:text-copy light:text-copy-light truncate max-w-[80px]">
+                      <Settings size={16} style={{ color: colors.textMuted }} />
+                    </motion.button>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {dispositiviNonAssegnati.slice(0, 6).map((disp) => (
+                    <div
+                      key={disp.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 10px',
+                        borderRadius: '10px',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: disp.power_state ? `1px solid ${colors.success}` : '1px solid transparent',
+                      }}
+                    >
+                      <Lightbulb size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                      <span style={{ fontSize: '11px', color: colors.textPrimary, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {disp.nome}
                       </span>
-                    </button>
+                    </div>
                   ))}
+                  {dispositiviNonAssegnati.length > 6 && (
+                    <span style={{ fontSize: '11px', color: colors.textMuted, alignSelf: 'center' }}>+{dispositiviNonAssegnati.length - 6} altri</span>
+                  )}
                 </div>
-              </Card>
+              </motion.div>
             )}
 
             {/* Lista Stanze */}
             {stanzeValide.length === 0 ? (
-              <Card variant="glass" className="text-center py-8">
-                <DoorOpen size={32} className="mx-auto mb-2 dark:text-copy-lighter light:text-copy-lighter" />
-                <h3 className="font-semibold text-sm dark:text-copy light:text-copy-light mb-1">
-                  Nessuna stanza
-                </h3>
-                <p className="text-xs dark:text-copy-lighter light:text-copy-lighter mb-3">
-                  Crea la tua prima stanza
-                </p>
-                <button
-                  onClick={() => setModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium"
-                >
-                  <Plus size={14} className="inline mr-1" />
+              <div
+                style={{
+                  background: colors.bgCardLit,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: '24px',
+                  boxShadow: colors.cardShadowLit,
+                  padding: '32px',
+                  textAlign: 'center',
+                }}
+              >
+                <DoorOpen size={32} style={{ color: colors.textMuted, marginBottom: '8px' }} />
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, marginBottom: '4px' }}>Nessuna stanza</h3>
+                <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '12px' }}>Crea la tua prima stanza</p>
+                <Button variant="primary" onClick={() => setModalOpen(true)}>
+                  <Plus size={14} style={{ marginRight: '4px' }} />
                   Nuova Stanza
-                </button>
-              </Card>
+                </Button>
+              </div>
             ) : (
               stanzeValide.map((stanza) => {
                 const dispositiviStanza = getDispositiviByStanza(stanza.id);
                 return (
-                  <Card key={stanza.id} variant="glass" className="!p-3">
-                    {/* Header Stanza */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{stanza.icona || '🚪'}</span>
-                        <h3 className="font-semibold text-sm dark:text-copy light:text-copy-light">
-                          {stanza.nome}
-                        </h3>
+                  <motion.div
+                    key={stanza.id}
+                    style={{
+                      background: colors.bgCardLit,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: '20px',
+                      boxShadow: colors.cardShadowLit,
+                      padding: '12px',
+                      position: 'relative',
+                      overflow: 'hidden',
+                    }}
+                    whileHover={{ borderColor: colors.borderHover }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '25%',
+                        right: '25%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+                      }}
+                    />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px' }}>{stanza.icona || '🚪'}</span>
+                        <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>{stanza.nome}</h3>
                       </div>
-                      <button
-                        onClick={() => openSettings(stanza)}
-                        className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        <Settings size={16} className="dark:text-copy-lighter light:text-copy-lighter" />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: colors.textMuted }}>{dispositiviStanza.length}</span>
+                        <motion.button
+                          onClick={() => openSettings(stanza)}
+                          style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                          whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                        >
+                          <Settings size={16} style={{ color: colors.textMuted }} />
+                        </motion.button>
+                      </div>
                     </div>
-
-                    {/* Dispositivi della Stanza */}
                     {dispositiviStanza.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {dispositiviStanza.map((disp) => (
-                          <button
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {dispositiviStanza.slice(0, 6).map((disp) => (
+                          <div
                             key={disp.id}
-                            onClick={() => openMoveModal(disp)}
-                            className={`
-                              flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs
-                              glass hover:bg-white/10 transition-colors
-                              ${disp.power_state ? 'ring-1 ring-success' : ''}
-                            `}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 10px',
+                              borderRadius: '10px',
+                              background: 'rgba(255,255,255,0.05)',
+                              border: disp.power_state ? `1px solid ${colors.success}` : '1px solid transparent',
+                            }}
                           >
-                            <Lightbulb
-                              size={12}
-                              className={disp.power_state ? 'text-success' : 'dark:text-copy-lighter light:text-copy-lighter'}
-                            />
-                            <span className="dark:text-copy light:text-copy-light truncate max-w-[80px]">
+                            <Lightbulb size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                            <span style={{ fontSize: '11px', color: colors.textPrimary, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {disp.nome}
                             </span>
-                          </button>
+                          </div>
                         ))}
+                        {dispositiviStanza.length > 6 && (
+                          <span style={{ fontSize: '11px', color: colors.textMuted, alignSelf: 'center' }}>+{dispositiviStanza.length - 6} altri</span>
+                        )}
                       </div>
                     ) : (
-                      <p className="text-xs dark:text-copy-lighter light:text-copy-lighter italic">
-                        Nessun dispositivo
-                      </p>
+                      <p style={{ fontSize: '12px', color: colors.textMuted, fontStyle: 'italic', margin: 0 }}>Nessun dispositivo</p>
                     )}
-                  </Card>
+                  </motion.div>
                 );
               })
             )}
@@ -277,138 +428,161 @@ export const Stanze = () => {
       </div>
 
       {/* Modal Nuova Stanza */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Nuova Stanza"
-        size="sm"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Nome Stanza"
-            value={newStanza.nome}
-            onChange={(e) => setNewStanza({ ...newStanza, nome: e.target.value })}
-            placeholder="es. Soggiorno"
-          />
-
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Nuova Stanza" size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Nome Stanza" value={newStanza.nome} onChange={(e) => setNewStanza({ ...newStanza, nome: e.target.value })} placeholder="es. Soggiorno" />
           <div>
-            <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-              Icona
-            </label>
-            <div className="grid grid-cols-6 gap-1.5">
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
               {['🚪', '🛋️', '🍳', '🛏️', '🚿', '🏢', '🏠', '📺', '💻', '🌳', '🚗', '🎮'].map((icon) => (
-                <button
+                <motion.button
                   key={icon}
                   onClick={() => setNewStanza({ ...newStanza, icona: icon })}
-                  className={`p-2 text-xl rounded-lg border-2 transition-colors ${
-                    newStanza.icona === icon
-                      ? 'border-primary bg-primary/20'
-                      : 'dark:border-border light:border-border-light'
-                  }`}
+                  style={{
+                    padding: '10px',
+                    fontSize: '20px',
+                    borderRadius: '12px',
+                    border: newStanza.icona === icon ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                    background: newStanza.icona === icon ? `${colors.accent}20` : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {icon}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
-
-          <div className="flex gap-2 mt-4">
-            <Button variant="glass" onClick={() => setModalOpen(false)} fullWidth>
-              Annulla
-            </Button>
-            <Button variant="primary" onClick={handleCreateStanza} fullWidth disabled={loading}>
-              {loading ? 'Creazione...' : 'Crea'}
-            </Button>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <Button variant="ghost" onClick={() => setModalOpen(false)} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleCreateStanza} fullWidth disabled={loading}>{loading ? 'Creazione...' : 'Crea'}</Button>
           </div>
         </div>
       </Modal>
 
       {/* Modal Impostazioni Stanza */}
-      <Modal
-        isOpen={settingsModalOpen}
-        onClose={() => setSettingsModalOpen(false)}
-        title={`Impostazioni - ${selectedStanza?.nome || ''}`}
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm dark:text-copy-lighter light:text-copy-lighter">
-            Gestisci la stanza "{selectedStanza?.nome}"
-          </p>
-
-          <div className="p-3 glass rounded-lg">
-            <p className="text-xs dark:text-copy-lighter light:text-copy-lighter mb-1">
-              Dispositivi assegnati
-            </p>
-            <p className="text-lg font-bold dark:text-copy light:text-copy-light">
-              {selectedStanza ? getDispositiviByStanza(selectedStanza.id).length : 0}
-            </p>
-          </div>
-
-          <Button
-            variant="danger"
-            fullWidth
-            onClick={handleDeleteStanza}
+      <Modal isOpen={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} title={`${selectedStanza?.icona || '🚪'} ${selectedStanza?.nome || ''}`} size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <motion.button
+            onClick={openDeviceList}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+            whileHover={{ background: 'rgba(255,255,255,0.1)' }}
           >
-            <Trash2 size={16} className="mr-2" />
-            Elimina Stanza
-          </Button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Lightbulb size={18} style={{ color: colors.accent }} />
+              <span style={{ fontSize: '14px', color: colors.textPrimary }}>Gestisci dispositivi</span>
+            </div>
+            <ArrowRight size={16} style={{ color: colors.textMuted }} />
+          </motion.button>
+          <motion.button
+            onClick={handleDeleteStanza}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+            whileHover={{ background: `${colors.error}20` }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Trash2 size={18} style={{ color: colors.error }} />
+              <span style={{ fontSize: '14px', color: colors.error }}>Elimina stanza</span>
+            </div>
+          </motion.button>
+          <Button variant="ghost" onClick={() => setSettingsModalOpen(false)} fullWidth style={{ marginTop: '8px' }}>Chiudi</Button>
+        </div>
+      </Modal>
 
-          <Button variant="glass" onClick={() => setSettingsModalOpen(false)} fullWidth>
-            Chiudi
-          </Button>
+      {/* Modal Lista Dispositivi */}
+      <Modal isOpen={deviceListModalOpen} onClose={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} title={isNonAssegnatiMode ? '📦 Non assegnati' : `${selectedStanza?.icona || ''} ${selectedStanza?.nome || ''}`} size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '8px' }}>{isNonAssegnatiMode ? 'Clicca su un dispositivo per assegnarlo a una stanza' : 'Clicca su un dispositivo per gestirlo'}</p>
+          {getCurrentDeviceList().length === 0 ? (
+            <p style={{ textAlign: 'center', fontSize: '14px', color: colors.textMuted, padding: '24px 0' }}>Nessun dispositivo</p>
+          ) : (
+            <div style={{ maxHeight: '256px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {getCurrentDeviceList().map((disp) => (
+                <motion.button
+                  key={disp.id}
+                  onClick={() => openDeviceAction(disp)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+                  whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Lightbulb size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                    <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
+                  </div>
+                  <ArrowRight size={14} style={{ color: colors.textMuted }} />
+                </motion.button>
+              ))}
+            </div>
+          )}
+          <Button variant="ghost" onClick={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} fullWidth style={{ marginTop: '12px' }}>Chiudi</Button>
+        </div>
+      </Modal>
+
+      {/* Modal Azioni Dispositivo */}
+      <Modal isOpen={deviceActionModalOpen} onClose={() => setDeviceActionModalOpen(false)} title={selectedDispositivo?.nome || ''} size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <motion.button onClick={openMoveModal} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: 'rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <ArrowRight size={18} style={{ color: colors.accent }} />
+              <span style={{ fontSize: '14px', color: colors.textPrimary }}>Sposta in altra stanza</span>
+            </div>
+          </motion.button>
+          <motion.button onClick={openRenameModal} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: 'rgba(255,255,255,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Edit3 size={18} style={{ color: colors.warning }} />
+              <span style={{ fontSize: '14px', color: colors.textPrimary }}>Rinomina dispositivo</span>
+            </div>
+          </motion.button>
+          <motion.button onClick={handleDeleteDispositivo} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: `${colors.error}20` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Trash2 size={18} style={{ color: colors.error }} />
+              <span style={{ fontSize: '14px', color: colors.error }}>Elimina dispositivo</span>
+            </div>
+          </motion.button>
+          <Button variant="ghost" onClick={() => setDeviceActionModalOpen(false)} fullWidth style={{ marginTop: '8px' }}>Annulla</Button>
         </div>
       </Modal>
 
       {/* Modal Sposta Dispositivo */}
-      <Modal
-        isOpen={moveModalOpen}
-        onClose={() => setMoveModalOpen(false)}
-        title={`Sposta - ${selectedDispositivo?.nome || ''}`}
-        size="sm"
-      >
-        <div className="space-y-3">
-          <p className="text-sm dark:text-copy-lighter light:text-copy-lighter">
-            Seleziona la stanza di destinazione
-          </p>
-
-          {/* Opzione: Rimuovi da stanza */}
-          <button
+      <Modal isOpen={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={`Sposta "${selectedDispositivo?.nome || ''}"`} size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '8px' }}>Seleziona la stanza di destinazione</p>
+          <motion.button
             onClick={() => handleMoveDispositivo(null)}
-            className="w-full flex items-center gap-2 p-3 rounded-lg glass hover:bg-white/10 transition-colors text-left"
+            disabled={!selectedDispositivo?.stanza_id}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: !selectedDispositivo?.stanza_id ? `${colors.accent}20` : 'rgba(255,255,255,0.05)', border: !selectedDispositivo?.stanza_id ? `1px solid ${colors.accent}` : 'none', cursor: !selectedDispositivo?.stanza_id ? 'default' : 'pointer' }}
+            whileHover={selectedDispositivo?.stanza_id ? { background: 'rgba(255,255,255,0.1)' } : undefined}
           >
-            <X size={16} className="text-error" />
-            <span className="text-sm dark:text-copy light:text-copy-light">
-              Rimuovi dalla stanza
-            </span>
-          </button>
+            <Package size={18} style={{ color: colors.warning }} />
+            <span style={{ fontSize: '14px', color: colors.textPrimary, flex: 1, textAlign: 'left' }}>Non assegnato</span>
+            {!selectedDispositivo?.stanza_id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
+          </motion.button>
+          <div style={{ maxHeight: '192px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {stanzeValide.map((stanza) => (
+              <motion.button
+                key={stanza.id}
+                onClick={() => handleMoveDispositivo(stanza.id)}
+                disabled={selectedDispositivo?.stanza_id === stanza.id}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: selectedDispositivo?.stanza_id === stanza.id ? `${colors.accent}20` : 'rgba(255,255,255,0.05)', border: selectedDispositivo?.stanza_id === stanza.id ? `1px solid ${colors.accent}` : 'none', cursor: selectedDispositivo?.stanza_id === stanza.id ? 'default' : 'pointer' }}
+                whileHover={selectedDispositivo?.stanza_id !== stanza.id ? { background: 'rgba(255,255,255,0.1)' } : undefined}
+              >
+                <span style={{ fontSize: '18px' }}>{stanza.icona || '🚪'}</span>
+                <span style={{ fontSize: '14px', color: colors.textPrimary, flex: 1, textAlign: 'left' }}>{stanza.nome}</span>
+                {selectedDispositivo?.stanza_id === stanza.id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
+              </motion.button>
+            ))}
+          </div>
+          <Button variant="ghost" onClick={() => setMoveModalOpen(false)} fullWidth style={{ marginTop: '12px' }}>Annulla</Button>
+        </div>
+      </Modal>
 
-          {/* Lista Stanze */}
-          {stanzeValide.map((stanza) => (
-            <button
-              key={stanza.id}
-              onClick={() => handleMoveDispositivo(stanza.id)}
-              disabled={selectedDispositivo?.stanza_id === stanza.id}
-              className={`
-                w-full flex items-center gap-2 p-3 rounded-lg transition-colors text-left
-                ${selectedDispositivo?.stanza_id === stanza.id
-                  ? 'bg-primary/20 border border-primary cursor-default'
-                  : 'glass hover:bg-white/10'
-                }
-              `}
-            >
-              <span className="text-lg">{stanza.icona || '🚪'}</span>
-              <span className="text-sm dark:text-copy light:text-copy-light flex-1">
-                {stanza.nome}
-              </span>
-              {selectedDispositivo?.stanza_id === stanza.id && (
-                <span className="text-xs text-primary">Attuale</span>
-              )}
-            </button>
-          ))}
-
-          <Button variant="glass" onClick={() => setMoveModalOpen(false)} fullWidth>
-            Annulla
-          </Button>
+      {/* Modal Rinomina Dispositivo */}
+      <Modal isOpen={renameModalOpen} onClose={() => setRenameModalOpen(false)} title="Rinomina dispositivo" size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Nuovo nome" value={newDeviceName} onChange={(e) => setNewDeviceName(e.target.value)} placeholder="es. Luce Soggiorno" autoFocus />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button variant="ghost" onClick={() => setRenameModalOpen(false)} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleRenameDispositivo} fullWidth disabled={!newDeviceName.trim()}>Salva</Button>
+          </div>
         </div>
       </Modal>
     </Layout>

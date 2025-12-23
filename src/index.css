@@ -1,66 +1,77 @@
+/* ============================================ */
+/* GOOGLE FONTS - Plus Jakarta Sans */
+/* ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ============================================ */
-/* CSS VARIABLES - Theme Colors */
+/* CSS VARIABLES - Dark Luxury Theme */
 /* ============================================ */
 
 :root {
-  /* Primary: #6b56ff → HSL(250, 100%, 67%) */
-  --color-primary: #6b56ff;
-  --color-primary-hue: 250;
+  /* Background Colors - Very Dark */
+  --bg-base: #0a0a0c;
+  --bg-gradient: radial-gradient(ellipse 80% 50% at 50% -10%, var(--color-accent)14 0%, transparent 60%),
+                 linear-gradient(to bottom, #12110f 0%, #0a0a0c 100%);
 
-  /* Secondary: #bf56ff → HSL(280, 100%, 67%) */
-  --color-secondary: #bf56ff;
-  --color-secondary-hue: 280;
+  /* Card Backgrounds */
+  --bg-card: #1e1c18;
+  --bg-card-hover: #262420;
+  --bg-card-solid: #1a1816;
+  --bg-card-gradient: linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%);
 
-  /* Success: #10b981 → HSL(160, 84%, 39%) */
+  /* Accent Colors - Default Emerald (managed by ThemeColorContext) */
+  --color-accent: #6ad4a0;
+  --color-accent-light: #a0e8c4;
+  --color-accent-glow: #b8f0d4;
+  --color-accent-dark: #4aa870;
+
+  /* Primary/Secondary for Tailwind compatibility */
+  --color-primary: #6ad4a0;
+  --color-primary-hue: 160;
+  --color-secondary: #4aa870;
+  --color-secondary-hue: 160;
+
+  /* Status Colors */
   --color-success: #10b981;
   --color-success-hue: 160;
-
-  /* Error: #ef4444 → HSL(0, 84%, 60%) */
   --color-error: #ef4444;
   --color-error-hue: 0;
-
-  /* Warning: #f59e0b → HSL(38, 92%, 50%) */
   --color-warning: #f59e0b;
   --color-warning-hue: 38;
 
-  /* Shadows - tema scuro */
-  --shadow-color-light: hsl(250, 10%, 30%);
-  --shadow-color-dark: hsl(250, 10%, 5%);
-  --shadow-color-black: hsla(0, 0%, 0%, 0.8);
+  /* Borders */
+  --border-color: rgba(106, 212, 160, 0.15);
+  --border-hover: rgba(106, 212, 160, 0.35);
+  --border-active: rgba(160, 232, 196, 0.5);
 
-  /* Toggle knob - tema scuro */
-  --knob-bg: hsl(250, 10%, 15%);
-  --knob-bg-light: hsl(250, 10%, 20%);
-  --knob-highlight: hsl(250, 10%, 85%);
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --text-muted: rgba(255, 255, 255, 0.5);
 
-  /* Ombre predefinite */
-  --shadow-sm: 0 1px 2px var(--shadow-color-black);
-  --shadow-md: 0 4px 6px var(--shadow-color-black);
-  --shadow-lg: 0 8px 16px var(--shadow-color-black);
-  --shadow-glow: 0 0 20px var(--color-primary);
-}
+  /* Shadows */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-card-lit: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-glow: 0 0 20px var(--color-accent);
 
-/* Tema chiaro - override delle variabili */
-.light {
-  /* Shadows - tema chiaro (più delicate) */
-  --shadow-color-light: hsl(250, 10%, 75%);
-  --shadow-color-dark: hsl(250, 10%, 50%);
-  --shadow-color-black: hsla(0, 0%, 0%, 0.25);
+  /* Toggle */
+  --toggle-track: rgba(50, 45, 38, 1);
+  --toggle-track-border: rgba(70, 62, 50, 0.8);
+  --knob-bg: hsl(160, 10%, 12%);
+  --knob-bg-light: hsl(160, 10%, 18%);
+  --knob-highlight: hsl(160, 10%, 85%);
 
-  /* Toggle knob - tema chiaro (più chiaro) */
-  --knob-bg: hsl(250, 10%, 85%);
-  --knob-bg-light: hsl(250, 10%, 90%);
-  --knob-highlight: hsl(250, 10%, 98%);
-
-  /* Ombre predefinite - più leggere */
-  --shadow-sm: 0 1px 3px var(--shadow-color-black);
-  --shadow-md: 0 4px 8px var(--shadow-color-black);
-  --shadow-lg: 0 8px 20px var(--shadow-color-black);
-  --shadow-glow: 0 0 15px hsla(250, 90%, 60%, 0.4);
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
 }
 
 /* ============================================ */
@@ -73,82 +84,209 @@
   box-sizing: border-box;
 }
 
+html, body, #root {
+  min-height: 100%;
+  height: 100%;
+}
+
 body {
-  @apply bg-background text-copy transition-colors duration-300;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
 /* ============================================ */
-/* LIGHT MODE THEME */
+/* DARK LUXURY CARD STYLES */
 /* ============================================ */
 
-.light body {
-  @apply bg-background-light;
-  color: #0f172a !important; /* slate-900 - VERY DARK for excellent contrast */
+.luxury-card {
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card-lit);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
-.light {
-  /* Override all text colors in light mode for proper contrast */
-  color: #0f172a;
+.luxury-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-accent-light), transparent);
+  opacity: 0.3;
+  pointer-events: none;
 }
 
-/* Force dark text colors in light mode */
-.light .text-copy,
-.light .text-copy-light,
-.light .text-copy-lighter,
-.light .dark\:text-copy,
-.light .dark\:text-copy-light,
-.light .dark\:text-copy-lighter {
-  color: #0f172a !important; /* Very dark text */
+.luxury-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
 }
 
-.light .light\:text-copy-light,
-.light .light\:text-copy,
-.light .light\:text-copy-lighter {
-  color: #0f172a !important; /* Very dark text */
+.luxury-card-active {
+  background: linear-gradient(165deg, rgba(106, 212, 160, 0.12), var(--bg-card));
+  border-color: var(--color-accent);
+  box-shadow: 0 6px 28px rgba(106, 212, 160, 0.2), var(--shadow-card);
 }
 
 /* ============================================ */
-/* GLASS EFFECT UTILITIES */
+/* DARK LUXURY BUTTON STYLES */
+/* ============================================ */
+
+.luxury-btn {
+  background: linear-gradient(165deg, var(--color-accent-dark), var(--color-accent));
+  border: none;
+  border-radius: var(--radius-lg);
+  color: #0a0a0c;
+  font-weight: 600;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(106, 212, 160, 0.3);
+}
+
+.luxury-btn:hover {
+  box-shadow: 0 6px 24px rgba(106, 212, 160, 0.5);
+  transform: translateY(-2px);
+}
+
+.luxury-btn:active {
+  transform: translateY(0);
+}
+
+.luxury-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.luxury-btn-ghost {
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.luxury-btn-ghost:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ============================================ */
+/* DARK LUXURY INPUT STYLES */
+/* ============================================ */
+
+.luxury-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.luxury-input::placeholder {
+  color: var(--text-muted);
+}
+
+.luxury-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 3px rgba(106, 212, 160, 0.15);
+}
+
+.luxury-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.luxury-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ============================================ */
+/* TYPOGRAPHY CLASSES */
+/* ============================================ */
+
+.text-luxury-primary {
+  color: var(--text-primary);
+}
+
+.text-luxury-secondary {
+  color: var(--text-secondary);
+}
+
+.text-luxury-muted {
+  color: var(--text-muted);
+}
+
+.text-luxury-accent {
+  color: var(--color-accent-light);
+  text-shadow: 0 0 20px rgba(106, 212, 160, 0.4);
+}
+
+/* ============================================ */
+/* AMBIENT GLOW EFFECTS */
+/* ============================================ */
+
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 100% 40% at 50% 0%, rgba(106, 212, 160, 0.06) 0%, transparent 70%);
+  z-index: 0;
+}
+
+/* ============================================ */
+/* LEGACY GLASS CLASSES (compatibility) */
 /* ============================================ */
 
 .glass {
-  @apply backdrop-blur-lg bg-opacity-10 border border-opacity-20 transition-all duration-300;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.light .glass {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
 }
 
 .glass-dark {
-  @apply backdrop-blur-lg bg-opacity-20 border border-opacity-30 transition-all duration-300;
-  background: rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-}
-
-.light .glass-dark {
-  background: rgba(248, 250, 252, 0.95); /* slate-50 */
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.06);
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
 }
 
 .glass-solid {
-  @apply bg-foreground border border-border transition-all duration-300;
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.3);
+  background: var(--bg-card-gradient);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card-lit);
+  position: relative;
 }
 
-.light .glass-solid {
-  @apply bg-foreground-light border-border-light;
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.05);
+.glass-solid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  pointer-events: none;
 }
 
 /* ============================================ */
@@ -156,32 +294,55 @@ body {
 /* ============================================ */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-background;
-}
-
-.light ::-webkit-scrollbar-track {
-  @apply bg-background-light;
+  background: var(--bg-base);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full;
-}
-
-.light ::-webkit-scrollbar-thumb {
-  @apply bg-border-light rounded-full;
+  background: var(--border-color);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-copy-lighter;
+  background: var(--border-hover);
 }
 
-.light ::-webkit-scrollbar-thumb:hover {
-  @apply bg-copy-lighter;
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================ */
+/* LIGHT MODE OVERRIDES */
+/* ============================================ */
+
+.light {
+  --bg-base: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-card-solid: #ffffff;
+  --bg-card-gradient: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(106, 212, 160, 0.4);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-card-lit: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.light body {
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
 /* ============================================ */
@@ -189,35 +350,21 @@ body {
 /* ============================================ */
 
 @keyframes shimmer {
-  0% {
-    background-position: -1000px 0;
-  }
-  100% {
-    background-position: 1000px 0;
-  }
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
 }
 
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
   background-size: 1000px 100%;
 }
 
-/* ============================================ */
-/* UTILITY CLASSES */
-/* ============================================ */
-
-/* Hide scrollbar but keep functionality */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(106, 212, 160, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(106, 212, 160, 0.5); }
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }

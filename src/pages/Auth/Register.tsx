@@ -7,8 +7,18 @@ import { Shield, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { authApi } from '@/services/api';
 
 // ============================================
-// REGISTER PAGE (con validazione avanzata)
+// REGISTER PAGE - Dark Luxury Style
+// Valori esatti copiati da StylePreview.tsx
 // ============================================
+
+// Colori esatti dal preview
+const colors = {
+  accent: '#6ad4a0',
+  accentLight: '#a0e8c4',
+  accentDark: '#4aa870',
+  border: 'rgba(106, 212, 160, 0.15)',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+};
 
 // Validazione email
 const isValidEmail = (email: string): boolean => {
@@ -47,9 +57,9 @@ const getPasswordStrength = (password: string): { strength: number; label: strin
   if (/\d/.test(password)) strength++;
   if (/[^a-zA-Z\d]/.test(password)) strength++;
 
-  if (strength <= 2) return { strength, label: 'Debole', color: 'bg-error' };
-  if (strength <= 4) return { strength, label: 'Media', color: 'bg-warning' };
-  return { strength, label: 'Forte', color: 'bg-success' };
+  if (strength <= 2) return { strength, label: 'Debole', color: '#ef4444' };
+  if (strength <= 4) return { strength, label: 'Media', color: '#f59e0b' };
+  return { strength, label: 'Forte', color: '#10b981' };
 };
 
 // Sanitizza input
@@ -79,22 +89,17 @@ export const Register = () => {
   const validateForm = (): boolean => {
     const errors: string[] = [];
 
-    // Nome e Cognome
     if (!formData.nome || formData.nome.length < 2) {
       errors.push('Nome troppo corto (minimo 2 caratteri)');
     }
     if (!formData.cognome || formData.cognome.length < 2) {
       errors.push('Cognome troppo corto (minimo 2 caratteri)');
     }
-
-    // Email
     if (!formData.email) {
       errors.push('Email richiesta');
     } else if (!isValidEmail(formData.email)) {
       errors.push('Email non valida');
     }
-
-    // Password
     if (!formData.password) {
       errors.push('Password richiesta');
     } else {
@@ -103,8 +108,6 @@ export const Register = () => {
         errors.push(...passErrors.map(e => `Password: ${e}`));
       }
     }
-
-    // Conferma Password
     if (!formData.confirmPassword) {
       errors.push('Conferma password richiesta');
     } else if (formData.password !== formData.confirmPassword) {
@@ -120,7 +123,6 @@ export const Register = () => {
       ...prev,
       [e.target.name]: e.target.value
     }));
-    // Pulisci errori quando l'utente modifica
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
@@ -131,35 +133,27 @@ export const Register = () => {
     setError('');
     setValidationErrors([]);
 
-    // Validazione client-side
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsLoading(true);
 
     try {
-      // Sanitizza input
       const sanitizedData = {
         nome: sanitizeInput(formData.nome),
         cognome: sanitizeInput(formData.cognome),
         email: sanitizeInput(formData.email).toLowerCase(),
-        password: formData.password // Non sanitizzare la password
+        password: formData.password
       };
 
-      // Chiamata API registrazione
       await authApi.register(sanitizedData);
-
       setSuccess(true);
 
-      // Reindirizza al login dopo 2 secondi
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err: any) {
       setIsLoading(false);
 
-      // Gestisci errori specifici
       if (err.response?.status === 429) {
         setError('Troppi tentativi di registrazione. Riprova tra un\'ora.');
       } else if (err.response?.status === 400) {
@@ -180,18 +174,51 @@ export const Register = () => {
   // Mostra messaggio successo
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background dark:bg-background light:bg-foreground-light p-4">
-        <Card className="w-full max-w-md" variant="glass-solid">
+      <div
+        className="min-h-screen flex items-center justify-center p-4 relative"
+        style={{
+          background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(106, 212, 160, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)',
+          fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+        }}
+      >
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 100% 40% at 50% 0%, rgba(106, 212, 160, 0.06) 0%, transparent 70%)',
+          }}
+        />
+
+        <Card className="w-full max-w-md relative z-10">
           <div className="text-center py-8">
             <div className="flex justify-center mb-4">
-              <div className="p-4 rounded-full bg-success bg-opacity-20">
-                <CheckCircle2 size={48} className="text-success" />
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '24px',
+                  background: 'linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1))',
+                  boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)',
+                }}
+              >
+                <CheckCircle2
+                  size={48}
+                  style={{
+                    color: '#10b981',
+                    filter: 'drop-shadow(0 0 8px #10b981)',
+                  }}
+                />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-copy mb-2">
+            <h2
+              className="text-2xl font-bold mb-2"
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #6ad4a0)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
               Registrazione Completata!
             </h2>
-            <p className="text-copy-lighter mb-4">
+            <p style={{ color: colors.textMuted, fontSize: '14px', marginBottom: '16px' }}>
               Account creato con successo. Verrai reindirizzato al login...
             </p>
             <div className="animate-spin mx-auto w-6 h-6">⚙️</div>
@@ -202,19 +229,53 @@ export const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background dark:bg-background light:bg-foreground-light p-4">
-      <Card className="w-full max-w-md" variant="glass-solid">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(106, 212, 160, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)',
+        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+      }}
+    >
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 100% 40% at 50% 0%, rgba(106, 212, 160, 0.06) 0%, transparent 70%)',
+        }}
+      />
+
+      <Card className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
-            <div className="p-3 sm:p-4 rounded-full bg-secondary bg-opacity-20">
-              <Shield size={32} className="sm:w-10 sm:h-10 text-secondary" />
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '24px',
+                background: `linear-gradient(145deg, ${colors.accent}33, ${colors.accent}1A)`,
+                boxShadow: `0 4px 20px ${colors.accent}33`,
+              }}
+            >
+              <Shield
+                size={32}
+                style={{
+                  color: colors.accentLight,
+                  filter: `drop-shadow(0 0 8px ${colors.accent})`,
+                }}
+              />
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+          <h1
+            className="text-2xl sm:text-3xl font-bold mb-2"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accentLight}, ${colors.accent}, ${colors.accentDark})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: `0 0 40px ${colors.accent}30`,
+            }}
+          >
             Crea Account
           </h1>
-          <p className="text-sm sm:text-base text-copy-lighter">
+          <p style={{ color: colors.textMuted, fontSize: '14px' }}>
             Registrati per accedere a OmniaPi
           </p>
         </div>
@@ -244,7 +305,6 @@ export const Register = () => {
             />
           </div>
 
-          {/* Email */}
           <Input
             type="email"
             name="email"
@@ -275,24 +335,29 @@ export const Register = () => {
             {formData.password && (
               <div className="mt-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
+                  <div
+                    className="flex-1 h-2 rounded-full overflow-hidden"
+                    style={{ background: colors.border }}
+                  >
                     <div
-                      className={`h-full ${passwordStrength.color} transition-all duration-300`}
-                      style={{ width: `${(passwordStrength.strength / 6) * 100}%` }}
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: `${(passwordStrength.strength / 6) * 100}%`,
+                        background: passwordStrength.color,
+                      }}
                     />
                   </div>
-                  <span className="text-xs text-copy-lighter whitespace-nowrap">
+                  <span style={{ fontSize: '11px', color: colors.textMuted, whiteSpace: 'nowrap' }}>
                     {passwordStrength.label}
                   </span>
                 </div>
-                <p className="text-xs text-copy-lighter">
+                <p style={{ fontSize: '11px', color: colors.textMuted }}>
                   Requisiti: 8+ caratteri, maiuscola, minuscola, numero
                 </p>
               </div>
             )}
           </div>
 
-          {/* Conferma Password */}
           <Input
             type="password"
             name="confirmPassword"
@@ -307,12 +372,19 @@ export const Register = () => {
 
           {/* Errori di validazione */}
           {validationErrors.length > 0 && (
-            <div className="p-3 rounded-lg bg-warning bg-opacity-20 border border-warning">
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+              }}
+            >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} className="text-warning flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+                <div>
                   {validationErrors.map((err, i) => (
-                    <p key={i} className="text-sm text-warning">{err}</p>
+                    <p key={i} style={{ fontSize: '13px', color: '#f59e0b' }}>{err}</p>
                   ))}
                 </div>
               </div>
@@ -321,15 +393,21 @@ export const Register = () => {
 
           {/* Errore generale */}
           {error && (
-            <div className="p-3 rounded-lg bg-error bg-opacity-20 border border-error">
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} className="text-error flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-error flex-1">{error}</p>
+                <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                <p style={{ fontSize: '13px', color: '#ef4444' }}>{error}</p>
               </div>
             </div>
           )}
 
-          {/* Pulsante Registrazione */}
           <Button
             type="submit"
             fullWidth
@@ -346,11 +424,14 @@ export const Register = () => {
             )}
           </Button>
 
-          {/* Link al Login */}
           <div className="text-center pt-2">
             <Link
               to="/login"
-              className="text-sm text-primary hover:text-primary-light transition-colors inline-flex items-center gap-1"
+              className="inline-flex items-center gap-1 transition-all"
+              style={{
+                fontSize: '13px',
+                color: colors.accentLight,
+              }}
             >
               <ArrowLeft size={16} />
               <span>Hai già un account? Accedi</span>
@@ -358,12 +439,36 @@ export const Register = () => {
           </div>
         </form>
 
-        {/* Info sicurezza */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="text-xs text-copy-lighter text-center">
-            🔒 Password criptata con bcrypt - Connessione SSL/TLS
+        <div
+          className="mt-6 pt-4"
+          style={{ borderTop: `1px solid ${colors.border}` }}
+        >
+          <p style={{ fontSize: '11px', color: colors.textMuted, textAlign: 'center' }}>
+            Password criptata con bcrypt - Connessione SSL/TLS
           </p>
         </div>
+
+        <div className="mt-4 flex justify-center gap-4">
+          <Link
+            to="/privacy"
+            style={{ fontSize: '11px', color: colors.textMuted }}
+            className="hover:opacity-80 transition-opacity"
+          >
+            Privacy Policy
+          </Link>
+          <span style={{ color: colors.textMuted }}>|</span>
+          <Link
+            to="/terms"
+            style={{ fontSize: '11px', color: colors.textMuted }}
+            className="hover:opacity-80 transition-opacity"
+          >
+            Termini di Servizio
+          </Link>
+        </div>
+
+        <p style={{ marginTop: '8px', fontSize: '10px', color: colors.textMuted, textAlign: 'center' }}>
+          Registrandoti accetti i Termini di Servizio e la Privacy Policy
+        </p>
       </Card>
     </div>
   );

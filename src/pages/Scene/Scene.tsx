@@ -1,31 +1,100 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SceneList } from '@/components/scene/SceneList';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { sceneApi, tasmotaApi } from '@/services/api';
-import { Plus, Play, Loader } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  Plus, Play, Loader2, Lightbulb, Check, Power,
+  Zap, Sun, Moon, DoorOpen, Hand, Clapperboard,
+  Sunrise, Sunset, Home, Flame, Snowflake,
+  Coffee, Bed, Tv, Music, Shield, Heart,
+  type LucideIcon
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { ScheduleConfig } from '@/types';
 
 // ============================================
-// SCENE PAGE
+// SCENE PAGE - Dark Luxury Style
+// Con supporto tema dinamico
 // ============================================
+
+// Colori base (invarianti)
+const baseColors = {
+  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+  textPrimary: '#ffffff',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+  success: '#10b981',
+};
+
+// Helper per convertire hex a rgb
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  return '106, 212, 160';
+};
+
+// Icone scene con Lucide
+const sceneIcons: { id: string; icon: LucideIcon; label: string }[] = [
+  { id: 'zap', icon: Zap, label: 'Energia' },
+  { id: 'sun', icon: Sun, label: 'Giorno' },
+  { id: 'moon', icon: Moon, label: 'Notte' },
+  { id: 'door', icon: DoorOpen, label: 'Porta' },
+  { id: 'hand', icon: Hand, label: 'Ciao' },
+  { id: 'movie', icon: Clapperboard, label: 'Cinema' },
+  { id: 'lightbulb', icon: Lightbulb, label: 'Luce' },
+  { id: 'sunrise', icon: Sunrise, label: 'Alba' },
+  { id: 'sunset', icon: Sunset, label: 'Tramonto' },
+  { id: 'home', icon: Home, label: 'Casa' },
+  { id: 'flame', icon: Flame, label: 'Fuoco' },
+  { id: 'snow', icon: Snowflake, label: 'Freddo' },
+  { id: 'coffee', icon: Coffee, label: 'Caffè' },
+  { id: 'bed', icon: Bed, label: 'Letto' },
+  { id: 'tv', icon: Tv, label: 'TV' },
+  { id: 'music', icon: Music, label: 'Musica' },
+  { id: 'shield', icon: Shield, label: 'Sicurezza' },
+  { id: 'heart', icon: Heart, label: 'Amore' },
+];
+
+// Funzione per ottenere icona da ID o emoji legacy
+export const getSceneIcon = (iconId: string): LucideIcon => {
+  const found = sceneIcons.find(i => i.id === iconId);
+  if (found) return found.icon;
+  // Fallback per emoji legacy
+  return Zap;
+};
+
+// Componente per renderizzare icona scena
+export const SceneIcon = ({ iconId, size = 24, style }: { iconId: string; size?: number; style?: React.CSSProperties }) => {
+  const Icon = getSceneIcon(iconId);
+  // Se è un emoji legacy, mostralo come testo
+  if (!sceneIcons.find(i => i.id === iconId) && iconId.length <= 2) {
+    return <span style={{ fontSize: size, ...style }}>{iconId}</span>;
+  }
+  return <Icon size={size} style={style} />;
+};
 
 export const Scene = () => {
   const { impiantoCorrente } = useImpiantoContext();
+  const { colors: themeColors } = useThemeColor();
   const [scene, setScene] = useState<any[]>([]);
   const [dispositivi, setDispositivi] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingScene, setEditingScene] = useState<any | null>(null);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedSceneForSchedule, setSelectedSceneForSchedule] = useState<any | null>(null);
-  const [newScene, setNewScene] = useState({ nome: '', icona: '⚡', azioni: [] as any[] });
+  const [newScene, setNewScene] = useState({ nome: '', icona: 'zap', azioni: [] as any[] });
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>({
     enabled: false,
     time: '18:00',
@@ -33,9 +102,18 @@ export const Scene = () => {
     days: []
   });
 
+  // Colori dinamici basati sul tema
+  const colors = useMemo(() => ({
+    ...baseColors,
+    accent: themeColors.accent,
+    accentLight: themeColors.accentLight,
+    accentDark: themeColors.accentDark,
+    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
+    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
+  }), [themeColors]);
+
   const impiantoId = impiantoCorrente?.id || 0;
 
-  // Ricarica dati quando cambia impianto
   useEffect(() => {
     if (impiantoId) {
       loadScene();
@@ -45,17 +123,12 @@ export const Scene = () => {
 
   const loadScene = async () => {
     if (!impiantoId) return;
-
     try {
       setLoading(true);
-      console.log('📍 Caricamento scene per impianto ID:', impiantoId);
       const data = await sceneApi.getScene(impiantoId);
-      console.log('📦 Scene caricate:', data);
-      const sceneArray = Array.isArray(data) ? data : [];
-      console.log('✅ Scene totali:', sceneArray.length);
-      setScene(sceneArray);
+      setScene(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('❌ Errore caricamento scene:', error);
+      console.error('Errore caricamento scene:', error);
       setScene([]);
     } finally {
       setLoading(false);
@@ -64,7 +137,6 @@ export const Scene = () => {
 
   const loadDispositivi = async () => {
     if (!impiantoId) return;
-
     try {
       const data = await tasmotaApi.getDispositivi(impiantoId);
       setDispositivi(Array.isArray(data) ? data : []);
@@ -77,9 +149,16 @@ export const Scene = () => {
   const executeScene = async (scenaId: number) => {
     setExecuting(scenaId);
     try {
-      await sceneApi.executeScena(scenaId);
+      const result = await sceneApi.executeScena(scenaId);
+      // Mostra messaggio appropriato in base ai dispositivi bloccati
+      if (result?.bloccati && result.bloccati > 0) {
+        toast.warning(`Eseguita (${result.bloccati} bloccat${result.bloccati === 1 ? 'o' : 'i'})`);
+      } else {
+        toast.success('OK');
+      }
     } catch (error) {
       console.error('Errore esecuzione scena:', error);
+      toast.error('Errore');
     } finally {
       setExecuting(null);
     }
@@ -87,32 +166,72 @@ export const Scene = () => {
 
   const handleCreateScene = async () => {
     if (!newScene.nome) {
-      toast.error('Inserisci il nome della scena');
+      toast.error('Nome richiesto');
       return;
     }
-
     try {
       await sceneApi.createScena(impiantoId, newScene);
-      toast.success('Scena creata con successo!');
+      toast.success('Creata');
       setModalOpen(false);
-      setNewScene({ nome: '', icona: '⚡', azioni: [] });
+      setNewScene({ nome: '', icona: 'zap', azioni: [] });
       await loadScene();
     } catch (error: any) {
-      console.error('Errore creazione scena:', error);
-      toast.error(error.response?.data?.error || 'Errore durante la creazione della scena');
+      toast.error('Errore');
     }
   };
 
   const handleDeleteScene = async (id: number) => {
-    if (!confirm('Sei sicuro di voler eliminare questa scena?')) return;
-
+    if (!confirm('Eliminare la scena?')) return;
     try {
       await sceneApi.deleteScena(id);
-      toast.success('Scena eliminata con successo!');
+      toast.success('Eliminata');
       await loadScene();
     } catch (error: any) {
-      console.error('Errore eliminazione scena:', error);
-      toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione della scena');
+      toast.error('Errore');
+    }
+  };
+
+  const handleToggleShortcut = async (scenaId: number, isShortcut: boolean) => {
+    try {
+      await sceneApi.toggleShortcut(scenaId, isShortcut);
+      toast.success(isShortcut ? 'Aggiunta' : 'Rimossa');
+      await loadScene();
+    } catch (error: any) {
+      toast.error('Errore');
+    }
+  };
+
+  const handleEditScene = (scena: any) => {
+    setEditingScene(scena);
+    let azioni = [];
+    try {
+      if (typeof scena.azioni === 'string') {
+        azioni = JSON.parse(scena.azioni || '[]');
+      } else if (Array.isArray(scena.azioni)) {
+        azioni = scena.azioni;
+      }
+    } catch {
+      azioni = [];
+    }
+    setNewScene({ nome: scena.nome, icona: scena.icona, azioni });
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateScene = async () => {
+    if (!editingScene) return;
+    try {
+      await sceneApi.updateScena(editingScene.id, {
+        nome: newScene.nome,
+        icona: newScene.icona,
+        azioni: newScene.azioni
+      });
+      toast.success('Salvata');
+      setEditModalOpen(false);
+      setEditingScene(null);
+      setNewScene({ nome: '', icona: 'zap', azioni: [] });
+      await loadScene();
+    } catch (error: any) {
+      toast.error('Errore');
     }
   };
 
@@ -142,31 +261,21 @@ export const Scene = () => {
 
   const openScheduleModal = (scena: any) => {
     setSelectedSceneForSchedule(scena);
-    if (scena.scheduling) {
-      setScheduleConfig(scena.scheduling);
-    } else {
-      setScheduleConfig({
-        enabled: false,
-        time: '18:00',
-        mode: 'daily',
-        days: []
-      });
-    }
+    setScheduleConfig(scena.scheduling || { enabled: false, time: '18:00', mode: 'daily', days: [] });
     setScheduleModalOpen(true);
   };
 
   const handleSaveSchedule = async () => {
     if (!selectedSceneForSchedule) return;
-
     try {
       await sceneApi.updateScena(selectedSceneForSchedule.id, {
         scheduling: scheduleConfig.enabled ? scheduleConfig : null
       });
-      toast.success('Programmazione salvata!');
+      toast.success('Salvata');
       setScheduleModalOpen(false);
       await loadScene();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Errore durante il salvataggio');
+      toast.error('Errore');
     }
   };
 
@@ -179,40 +288,114 @@ export const Scene = () => {
     }
   };
 
+  const renderDeviceSelector = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+      {dispositivi.filter(d => d !== null && d !== undefined).map((disp) => {
+        const azione = newScene.azioni.find((a: any) => a.dispositivo_id === disp.id);
+        const isSelected = !!azione;
+        return (
+          <div
+            key={disp.id}
+            style={{
+              padding: '12px',
+              borderRadius: '16px',
+              background: isSelected ? `${colors.accent}15` : 'rgba(255,255,255,0.05)',
+              border: isSelected ? `2px solid ${colors.accent}` : '2px solid transparent',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <motion.button
+                onClick={() => toggleDispositivoInScene(disp.id, disp.topic_mqtt)}
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}
+              >
+                <div
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: isSelected ? colors.accent : 'transparent',
+                    border: isSelected ? 'none' : `2px solid ${colors.border}`,
+                  }}
+                >
+                  {isSelected && <Check size={14} style={{ color: '#0a0a0c' }} />}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Lightbulb size={16} style={{ color: isSelected ? colors.accent : colors.textMuted }} />
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: isSelected ? colors.textPrimary : colors.textMuted }}>{disp.nome}</span>
+                </div>
+              </motion.button>
+              {isSelected && (
+                <motion.button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateAzioneStato(disp.id, azione.stato === 'ON' ? 'OFF' : 'ON');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    background: azione.stato === 'ON' ? `${colors.accent}20` : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${azione.stato === 'ON' ? colors.accent : colors.border}`,
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Power size={14} style={{ color: azione.stato === 'ON' ? colors.accent : colors.textMuted }} />
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: azione.stato === 'ON' ? colors.accent : colors.textMuted,
+                  }}>
+                    {azione.stato}
+                  </span>
+                </motion.button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <Layout>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header - Compatto */}
-        <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
-              Scene
-            </h1>
-            <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
-              Tap per eseguire
-            </p>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, color: colors.textPrimary, margin: 0 }}>Scene</h1>
+            <p style={{ fontSize: '13px', color: colors.textMuted, margin: '4px 0 0 0' }}>Tap per eseguire</p>
           </div>
-
-          <button
+          <motion.button
             onClick={() => setModalOpen(true)}
-            className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors"
-            title="Nuova Scena"
+            style={{
+              padding: '10px',
+              borderRadius: '16px',
+              background: `linear-gradient(165deg, ${colors.accent}, #4aa870)`,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: `0 4px 16px ${colors.accent}40`,
+            }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <Plus size={20} className="text-white" />
-          </button>
+            <Plus size={20} style={{ color: '#0a0a0c' }} />
+          </motion.button>
         </div>
 
-        {/* Scene Grid */}
+        {/* Content */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader size={32} className="animate-spin text-primary" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} className="animate-spin" style={{ color: colors.accent }} />
           </div>
         ) : scene.length === 0 ? (
-          <EmptyState
-            icon={Play}
-            title="Nessuna scena"
-            description="Crea la tua prima scena usando il pulsante in alto"
-          />
+          <EmptyState icon={Play} title="Nessuna scena" description="Crea la tua prima scena usando il pulsante in alto" />
         ) : (
           <SceneList
             scene={scene}
@@ -220,217 +403,209 @@ export const Scene = () => {
             onExecute={executeScene}
             onDelete={handleDeleteScene}
             onSchedule={openScheduleModal}
+            onToggleShortcut={handleToggleShortcut}
+            onEdit={handleEditScene}
           />
         )}
       </div>
 
       {/* Modal Nuova Scena */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title="Nuova Scena"
-        size="md"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Nome Scena"
-            value={newScene.nome}
-            onChange={(e) => setNewScene({ ...newScene, nome: e.target.value })}
-            placeholder="es. Cinema"
-          />
-
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Nuova Scena" size="md">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Nome Scena" value={newScene.nome} onChange={(e) => setNewScene({ ...newScene, nome: e.target.value })} placeholder="es. Cinema" />
           <div>
-            <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-              Icona
-            </label>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {['⚡', '☀️', '🌙', '🚪', '👋', '🎬', '💡', '🌅', '🌆', '🏠', '🔥', '❄️'].map((icon) => (
-                <button
-                  key={icon}
-                  onClick={() => setNewScene({ ...newScene, icona: icon })}
-                  className={`p-2 sm:p-3 text-xl sm:text-2xl rounded-lg border-2 ${
-                    newScene.icona === icon
-                      ? 'border-primary bg-primary bg-opacity-20'
-                      : 'dark:border-border light:border-border-light'
-                  }`}
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+              {sceneIcons.map(({ id, icon: IconComponent, label }) => (
+                <motion.button
+                  key={id}
+                  onClick={() => setNewScene({ ...newScene, icona: id })}
+                  title={label}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: newScene.icona === id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                    background: newScene.icona === id ? `${colors.accent}20` : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  whileHover={{ scale: 1.05, borderColor: colors.borderHover }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {icon}
-                </button>
+                  <IconComponent
+                    size={22}
+                    style={{
+                      color: newScene.icona === id ? colors.accent : colors.textMuted,
+                      filter: newScene.icona === id ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
+                    }}
+                  />
+                </motion.button>
               ))}
             </div>
           </div>
-
           <div>
-            <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>
               Dispositivi ({newScene.azioni.length} selezionati)
             </label>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {dispositivi.filter(d => d !== null && d !== undefined).map((disp) => {
-                const azione = newScene.azioni.find((a: any) => a.dispositivo_id === disp.id);
-                return (
-                  <Card key={disp.id} variant="glass-solid" className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={!!azione}
-                          onChange={() => toggleDispositivoInScene(disp.id, disp.topic_mqtt)}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-medium dark:text-copy light:text-copy-light">
-                          {disp.nome}
-                        </span>
-                      </div>
-                    </div>
-                    {azione && (
-                      <div className="flex gap-2 ml-6">
-                        <button
-                          onClick={() => updateAzioneStato(disp.id, 'ON')}
-                          className={`flex-1 px-3 py-1 text-xs rounded ${
-                            azione.stato === 'ON'
-                              ? 'bg-success text-white'
-                              : 'dark:bg-foreground light:bg-foreground-light'
-                          }`}
-                        >
-                          ON
-                        </button>
-                        <button
-                          onClick={() => updateAzioneStato(disp.id, 'OFF')}
-                          className={`flex-1 px-3 py-1 text-xs rounded ${
-                            azione.stato === 'OFF'
-                              ? 'bg-error text-white'
-                              : 'dark:bg-foreground light:bg-foreground-light'
-                          }`}
-                        >
-                          OFF
-                        </button>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
+            {renderDeviceSelector()}
           </div>
-
-          <div className="flex gap-3 mt-6">
-            <Button variant="glass" onClick={() => setModalOpen(false)} fullWidth>
-              Annulla
-            </Button>
-            <Button variant="primary" onClick={handleCreateScene} fullWidth disabled={loading}>
-              {loading ? 'Creazione...' : 'Crea Scena'}
-            </Button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <Button variant="ghost" onClick={() => setModalOpen(false)} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleCreateScene} fullWidth disabled={loading}>{loading ? 'Creazione...' : 'Crea Scena'}</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Modal Programmazione Scena */}
-      <Modal
-        isOpen={scheduleModalOpen}
-        onClose={() => setScheduleModalOpen(false)}
-        title="Programmazione Scena"
-        size="md"
-      >
-        <div className="space-y-4">
-          {/* Toggle Abilitazione */}
-          <div className="flex items-center justify-between p-3 glass rounded-lg">
-            <span className="font-medium dark:text-copy light:text-copy-light">Programmazione Attiva</span>
+      {/* Modal Programmazione */}
+      <Modal isOpen={scheduleModalOpen} onClose={() => setScheduleModalOpen(false)} title="Programmazione Scena" size="md">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px' }}>
+            <span style={{ fontWeight: 500, color: colors.textPrimary }}>Programmazione Attiva</span>
             <button
               onClick={() => setScheduleConfig({ ...scheduleConfig, enabled: !scheduleConfig.enabled })}
-              className={`w-12 h-6 rounded-full transition-colors ${
-                scheduleConfig.enabled ? 'bg-success' : 'bg-gray-400'
-              }`}
+              style={{
+                width: '48px',
+                height: '24px',
+                borderRadius: '9999px',
+                background: scheduleConfig.enabled ? colors.success : '#6b7280',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
             >
               <div
-                className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${
-                  scheduleConfig.enabled ? 'translate-x-6' : 'translate-x-1'
-                }`}
+                style={{
+                  width: '20px',
+                  height: '20px',
+                  background: '#ffffff',
+                  borderRadius: '50%',
+                  position: 'absolute',
+                  top: '2px',
+                  left: scheduleConfig.enabled ? '26px' : '2px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }}
               />
             </button>
           </div>
 
           {scheduleConfig.enabled && (
             <>
-              {/* Orario */}
+              <Input label="Orario" type="time" value={scheduleConfig.time} onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })} />
               <div>
-                <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                  Orario
-                </label>
-                <Input
-                  type="time"
-                  value={scheduleConfig.time}
-                  onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
-                />
-              </div>
-
-              {/* Modalità */}
-              <div>
-                <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                  Modalità
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['daily', 'weekly', 'once'].map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setScheduleConfig({ ...scheduleConfig, mode: mode as any })}
-                      className={`p-2 text-sm rounded-lg border-2 ${
-                        scheduleConfig.mode === mode
-                          ? 'border-primary bg-primary bg-opacity-20 dark:text-copy light:text-copy-light'
-                          : 'dark:border-border light:border-border-light dark:text-copy-lighter light:text-copy-lighter'
-                      }`}
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Modalità</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {[{ id: 'daily', label: 'Giornaliero' }, { id: 'weekly', label: 'Settimanale' }, { id: 'once', label: 'Una tantum' }].map(({ id, label }) => (
+                    <motion.button
+                      key={id}
+                      onClick={() => setScheduleConfig({ ...scheduleConfig, mode: id as any })}
+                      style={{
+                        padding: '10px',
+                        fontSize: '12px',
+                        borderRadius: '12px',
+                        border: scheduleConfig.mode === id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                        background: scheduleConfig.mode === id ? `${colors.accent}20` : 'transparent',
+                        color: scheduleConfig.mode === id ? colors.textPrimary : colors.textMuted,
+                        cursor: 'pointer',
+                      }}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      {mode === 'daily' ? 'Giornaliero' : mode === 'weekly' ? 'Settimanale' : 'Una tantum'}
-                    </button>
+                      {label}
+                    </motion.button>
                   ))}
                 </div>
               </div>
-
-              {/* Giorni (solo per weekly) */}
               {scheduleConfig.mode === 'weekly' && (
                 <div>
-                  <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                    Giorni della settimana
-                  </label>
-                  <div className="grid grid-cols-7 gap-1">
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Giorni</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
                     {['D', 'L', 'M', 'M', 'G', 'V', 'S'].map((day, idx) => (
-                      <button
+                      <motion.button
                         key={idx}
                         onClick={() => toggleDay(idx)}
-                        className={`p-2 text-xs font-bold rounded-lg ${
-                          scheduleConfig.days?.includes(idx)
-                            ? 'bg-primary text-white'
-                            : 'glass dark:text-copy-lighter light:text-copy-lighter'
-                        }`}
+                        style={{
+                          padding: '8px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: '8px',
+                          background: scheduleConfig.days?.includes(idx) ? colors.accent : 'rgba(255,255,255,0.05)',
+                          color: scheduleConfig.days?.includes(idx) ? '#0a0a0c' : colors.textMuted,
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        whileTap={{ scale: 0.95 }}
                       >
                         {day}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* Data (solo per once) */}
               {scheduleConfig.mode === 'once' && (
-                <div>
-                  <label className="block text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                    Data
-                  </label>
-                  <Input
-                    type="date"
-                    value={scheduleConfig.date || ''}
-                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, date: e.target.value })}
-                  />
-                </div>
+                <Input label="Data" type="date" value={scheduleConfig.date || ''} onChange={(e) => setScheduleConfig({ ...scheduleConfig, date: e.target.value })} />
               )}
             </>
           )}
 
-          <div className="flex gap-3 mt-6">
-            <Button variant="glass" onClick={() => setScheduleModalOpen(false)} fullWidth>
-              Annulla
-            </Button>
-            <Button variant="primary" onClick={handleSaveSchedule} fullWidth>
-              Salva
-            </Button>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <Button variant="ghost" onClick={() => setScheduleModalOpen(false)} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleSaveSchedule} fullWidth>Salva</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Modifica Scena */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditingScene(null); setNewScene({ nome: '', icona: '⚡', azioni: [] }); }}
+        title={`Modifica ${editingScene?.nome || 'Scena'}`}
+        size="md"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Nome Scena" value={newScene.nome} onChange={(e) => setNewScene({ ...newScene, nome: e.target.value })} placeholder="es. Cinema" disabled={editingScene?.is_base} />
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px' }}>
+              {sceneIcons.map(({ id, icon: IconComponent, label }) => (
+                <motion.button
+                  key={id}
+                  onClick={() => setNewScene({ ...newScene, icona: id })}
+                  title={label}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: newScene.icona === id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                    background: newScene.icona === id ? `${colors.accent}20` : 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  whileHover={{ scale: 1.05, borderColor: colors.borderHover }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <IconComponent
+                    size={22}
+                    style={{
+                      color: newScene.icona === id ? colors.accent : colors.textMuted,
+                      filter: newScene.icona === id ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
+                    }}
+                  />
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>
+              Dispositivi ({newScene.azioni.length} selezionati)
+            </label>
+            {renderDeviceSelector()}
+          </div>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <Button variant="ghost" onClick={() => { setEditModalOpen(false); setEditingScene(null); setNewScene({ nome: '', icona: '⚡', azioni: [] }); }} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleUpdateScene} fullWidth disabled={loading}>{loading ? 'Salvataggio...' : 'Salva Modifiche'}</Button>
           </div>
         </div>
       </Modal>

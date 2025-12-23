@@ -8,6 +8,7 @@ import type { ApiResponse, AuthResponse, Impianto, Dispositivo } from '@/types';
 // Se VITE_API_URL è vuoto, usa URL relativi (same-origin tramite Nginx)
 // Altrimenti usa l'URL specificato
 const API_URL = import.meta.env.VITE_API_URL || '';
+console.log('🔗 API_URL:', API_URL || '(empty - using relative URLs)');
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -169,6 +170,18 @@ export const tasmotaApi = {
   assignToStanza: async (dispositivoId: number, stanzaId: number | null) => {
     const { data } = await api.put(`/api/dispositivi/${dispositivoId}/stanza`, { stanza_id: stanzaId });
     return data;
+  },
+
+  // TROVAMI - lampeggia dispositivo 3 volte
+  trovami: async (ip_address: string) => {
+    const { data } = await api.post('/api/dispositivi/trovami', { ip_address });
+    return data;
+  },
+
+  // Rinomina dispositivo
+  renameDispositivo: async (id: number, nome: string) => {
+    const { data } = await api.put(`/api/dispositivi/${id}/nome`, { nome });
+    return data;
   }
 };
 
@@ -199,6 +212,11 @@ export const sceneApi = {
 
   executeScena: async (id: number) => {
     const { data } = await api.post(`/api/scene/${id}/execute`);
+    return data;
+  },
+
+  toggleShortcut: async (id: number, isShortcut: boolean) => {
+    const { data } = await api.put(`/api/scene/${id}/shortcut`, { is_shortcut: isShortcut });
     return data;
   }
 };

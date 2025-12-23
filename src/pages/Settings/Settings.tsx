@@ -1,159 +1,596 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { Card } from '@/components/common/Card';
 import { Input } from '@/components/common/Input';
 import { useAuthStore } from '@/store/authStore';
-import { useTheme } from '@/contexts/ThemeContext';
-import { User, Bell, Moon, Sun, Shield, Mail, ChevronRight } from 'lucide-react';
+import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
+import { User, Bell, Shield, Mail, ChevronRight, LogOut, Info, HelpCircle, Smartphone, Palette, Check } from 'lucide-react';
 import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 // ============================================
-// SETTINGS PAGE - Mobile-First Redesign
+// SETTINGS PAGE - Dark Luxury Style
+// Con supporto tema dinamico
 // ============================================
+
+// Colori base (invarianti)
+const baseColors = {
+  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+  bgCard: '#1e1c18',
+  textPrimary: '#ffffff',
+  textSecondary: 'rgba(255, 255, 255, 0.75)',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+  toggleTrack: 'rgba(50, 45, 38, 1)',
+  toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
+  error: '#ef4444',
+  warning: '#f59e0b',
+};
 
 export const Settings = () => {
-  const { user } = useAuthStore();
-  const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuthStore();
+  const { colorTheme, setColorTheme, colors: themeColors } = useThemeColor();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const isAdmin = user?.ruolo === UserRole.ADMIN;
 
+  // Colori dinamici basati sul tema
+  const colors = {
+    ...baseColors,
+    accent: themeColors.accent,
+    accentLight: themeColors.accentLight,
+    accentDark: themeColors.accentDark,
+    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
+    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
+  };
+
+  // Stile base card (dinamico)
+  const cardStyle = {
+    background: colors.bgCardLit,
+    border: `1px solid ${colors.border}`,
+    borderRadius: '20px',
+    boxShadow: colors.cardShadowLit,
+    position: 'relative' as const,
+    overflow: 'hidden' as const,
+  };
+
+  // Top edge highlight (dinamico)
+  const topHighlight = {
+    position: 'absolute' as const,
+    top: 0,
+    left: '25%',
+    right: '25%',
+    height: '1px',
+    background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+    pointerEvents: 'none' as const,
+  };
+
+  // Funzione helper per convertire hex a rgb
+  function hexToRgb(hex: string): string {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+      return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+    }
+    return '106, 212, 160';
+  }
+
+  // Gestione cambio tema
+  const handleThemeChange = (theme: ColorTheme) => {
+    setColorTheme(theme);
+    toast.success(`Tema ${colorThemes[theme].name}`);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  // Toggle Switch Component
+  const ToggleSwitch = ({
+    enabled,
+    onToggle,
+    accentColor = colors.accent
+  }: {
+    enabled: boolean;
+    onToggle: () => void;
+    accentColor?: string;
+  }) => (
+    <motion.button
+      onClick={onToggle}
+      style={{
+        width: '52px',
+        height: '28px',
+        borderRadius: '9999px',
+        background: enabled
+          ? `linear-gradient(135deg, ${accentColor}, ${colors.accentDark})`
+          : colors.toggleTrack,
+        border: `1px solid ${enabled ? accentColor : colors.toggleTrackBorder}`,
+        position: 'relative',
+        cursor: 'pointer',
+        boxShadow: enabled ? `0 0 16px ${accentColor}40` : 'none',
+      }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <motion.div
+        animate={{ x: enabled ? 24 : 2 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        style={{
+          position: 'absolute',
+          top: '2px',
+          width: '22px',
+          height: '22px',
+          borderRadius: '50%',
+          background: enabled
+            ? `linear-gradient(135deg, #fff 0%, ${colors.accentLight} 100%)`
+            : 'linear-gradient(135deg, #888 0%, #666 100%)',
+          boxShadow: enabled
+            ? `0 2px 8px rgba(0,0,0,0.3), 0 0 8px ${accentColor}40`
+            : '0 2px 6px rgba(0,0,0,0.4)',
+        }}
+      />
+    </motion.button>
+  );
+
+  // Setting Row Component
+  const SettingRow = ({
+    icon: Icon,
+    iconBg,
+    title,
+    subtitle,
+    onClick,
+    rightElement,
+    showArrow = true
+  }: {
+    icon: React.ElementType;
+    iconBg: string;
+    title: string;
+    subtitle: string;
+    onClick?: () => void;
+    rightElement?: React.ReactNode;
+    showArrow?: boolean;
+  }) => (
+    <motion.div
+      onClick={onClick}
+      style={{
+        ...cardStyle,
+        padding: '14px',
+        cursor: onClick ? 'pointer' : 'default',
+      }}
+      whileHover={onClick ? { scale: 1.01 } : undefined}
+      whileTap={onClick ? { scale: 0.99 } : undefined}
+    >
+      <div style={topHighlight} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              padding: '8px',
+              borderRadius: '12px',
+              background: iconBg,
+            }}
+          >
+            <Icon size={18} style={{ color: iconBg.includes('accent') ? colors.accent : colors.textPrimary }} />
+          </div>
+          <div>
+            <h3 style={{
+              fontSize: '14px',
+              fontWeight: 500,
+              color: colors.textPrimary,
+              margin: 0,
+            }}>
+              {title}
+            </h3>
+            <p style={{
+              fontSize: '11px',
+              color: colors.textMuted,
+              margin: '2px 0 0 0',
+            }}>
+              {subtitle}
+            </p>
+          </div>
+        </div>
+        {rightElement || (showArrow && (
+          <ChevronRight size={18} style={{ color: colors.textMuted }} />
+        ))}
+      </div>
+    </motion.div>
+  );
+
   return (
     <Layout>
-      <div className="space-y-4">
-        {/* Header Compatto */}
-        <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
+            <h1 style={{
+              fontSize: '24px',
+              fontWeight: 700,
+              color: colors.textPrimary,
+              margin: 0,
+            }}>
               Impostazioni
             </h1>
-            <p className="text-xs dark:text-copy-lighter light:text-copy-lighter">
+            <p style={{
+              fontSize: '12px',
+              color: colors.textMuted,
+              margin: '4px 0 0 0',
+            }}>
               v{APP_VERSION}
             </p>
           </div>
         </div>
 
         {/* Profilo Utente Card */}
-        <Card variant="glass" className="!p-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <User size={20} className="text-primary sm:w-6 sm:h-6" />
+        <motion.div
+          style={{
+            ...cardStyle,
+            padding: '16px',
+          }}
+          whileHover={{ scale: 1.01 }}
+        >
+          <div style={topHighlight} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div
+              style={{
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accentDark}20)`,
+                border: `1px solid ${colors.accent}40`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <User size={24} style={{ color: colors.accent }} />
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm sm:text-base dark:text-copy light:text-copy-light truncate">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{
+                fontSize: '16px',
+                fontWeight: 600,
+                color: colors.textPrimary,
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
                 {user?.nome || 'Utente'}
               </h3>
-              <p className="text-[10px] sm:text-xs dark:text-copy-lighter light:text-copy-lighter flex items-center gap-1 truncate">
-                <Mail size={10} />
-                {user?.email || 'email@example.com'}
+              <p style={{
+                fontSize: '12px',
+                color: colors.textMuted,
+                margin: '4px 0 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}>
+                <Mail size={12} />
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {user?.email || 'email@example.com'}
+                </span>
               </p>
+              {isAdmin && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '6px',
+                    padding: '2px 8px',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: colors.accent,
+                    background: `${colors.accent}15`,
+                    border: `1px solid ${colors.accent}30`,
+                    borderRadius: '6px',
+                  }}
+                >
+                  ADMIN
+                </span>
+              )}
             </div>
-            <ChevronRight size={16} className="dark:text-copy-lighter light:text-copy-lighter flex-shrink-0" />
+            <ChevronRight size={18} style={{ color: colors.textMuted, flexShrink: 0 }} />
           </div>
-        </Card>
+        </motion.div>
 
-        {/* Sezioni Impostazioni */}
-        <div className="space-y-2">
-          {/* Tema Toggle */}
-          <Card variant="glass" className="!p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className={`p-1.5 rounded-lg ${theme === 'dark' ? 'bg-primary/20' : 'bg-warning/20'}`}>
-                  {theme === 'dark' ? (
-                    <Moon size={16} className="text-primary" />
-                  ) : (
-                    <Sun size={16} className="text-warning" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm dark:text-copy light:text-copy-light">Tema</h3>
-                  <p className="text-[10px] dark:text-copy-lighter light:text-copy-lighter">
-                    {theme === 'dark' ? 'Scuro' : 'Chiaro'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  theme === 'dark' ? 'bg-primary' : 'bg-warning'
-                }`}
+        {/* Aspetto Section */}
+        <div>
+          <h2 style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: colors.textMuted,
+            margin: '0 0 10px 4px',
+          }}>
+            Aspetto
+          </h2>
+
+          {/* Theme Color Selector Card */}
+          <motion.div
+            style={{
+              ...cardStyle,
+              padding: '16px',
+            }}
+          >
+            <div style={topHighlight} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div
+                style={{
+                  padding: '8px',
+                  borderRadius: '12px',
+                  background: `${colors.accent}20`,
+                }}
               >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
-                    theme === 'dark' ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </Card>
-
-          {/* Notifiche */}
-          <Card variant="glass" hover className="!p-3 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-secondary/20">
-                  <Bell size={16} className="text-secondary" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm dark:text-copy light:text-copy-light">Notifiche</h3>
-                  <p className="text-[10px] dark:text-copy-lighter light:text-copy-lighter">
-                    Gestisci notifiche push
-                  </p>
-                </div>
+                <Palette size={18} style={{ color: colors.accent }} />
               </div>
-              <ChevronRight size={16} className="dark:text-copy-lighter light:text-copy-lighter" />
-            </div>
-          </Card>
-
-          {/* Sicurezza */}
-          <Card variant="glass" hover className="!p-3 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-warning/20">
-                  <Shield size={16} className="text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm dark:text-copy light:text-copy-light">Sicurezza</h3>
-                  <p className="text-[10px] dark:text-copy-lighter light:text-copy-lighter">
-                    Password e autenticazione
-                  </p>
-                </div>
+              <div>
+                <h3 style={{
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: colors.textPrimary,
+                  margin: 0,
+                }}>
+                  Colore Tema
+                </h3>
+                <p style={{
+                  fontSize: '11px',
+                  color: colors.textMuted,
+                  margin: '2px 0 0 0',
+                }}>
+                  {colorThemes[colorTheme].name}
+                </p>
               </div>
-              <ChevronRight size={16} className="dark:text-copy-lighter light:text-copy-lighter" />
             </div>
-          </Card>
+
+            {/* Color Options Grid */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+              {(Object.keys(colorThemes) as ColorTheme[]).map((theme) => {
+                const themeConfig = colorThemes[theme];
+                const isSelected = colorTheme === theme;
+                return (
+                  <motion.button
+                    key={theme}
+                    onClick={() => handleThemeChange(theme)}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '12px',
+                      border: isSelected
+                        ? `2px solid ${themeConfig.accent}`
+                        : '2px solid transparent',
+                      background: `linear-gradient(135deg, ${themeConfig.accent}30, ${themeConfig.accentDark}20)`,
+                      cursor: 'pointer',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      boxShadow: isSelected
+                        ? `0 0 12px ${themeConfig.accent}40`
+                        : 'none',
+                      flexShrink: 0,
+                    }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    title={themeConfig.name}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: '20%',
+                        borderRadius: '50%',
+                        background: themeConfig.accent,
+                        boxShadow: `0 0 8px ${themeConfig.accent}60`,
+                      }}
+                    />
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.3)',
+                        }}
+                      >
+                        <Check size={14} style={{ color: '#fff' }} />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </motion.div>
         </div>
 
-        {/* Admin Panel - Solo per admin */}
+        {/* Preferenze Section */}
+        <div>
+          <h2 style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: colors.textMuted,
+            margin: '0 0 10px 4px',
+          }}>
+            Preferenze
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Notifiche Toggle */}
+            <SettingRow
+              icon={Bell}
+              iconBg={`${colors.accent}20`}
+              title="Notifiche"
+              subtitle={notificationsEnabled ? 'Attive' : 'Disattivate'}
+              showArrow={false}
+              rightElement={
+                <ToggleSwitch
+                  enabled={notificationsEnabled}
+                  onToggle={() => setNotificationsEnabled(!notificationsEnabled)}
+                />
+              }
+            />
+
+            {/* Dispositivi Connessi */}
+            <SettingRow
+              icon={Smartphone}
+              iconBg={`${colors.warning}20`}
+              title="Dispositivi Connessi"
+              subtitle="Gestisci sessioni attive"
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        {/* Sicurezza Section */}
+        <div>
+          <h2 style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: colors.textMuted,
+            margin: '0 0 10px 4px',
+          }}>
+            Sicurezza
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <SettingRow
+              icon={Shield}
+              iconBg={`${colors.warning}20`}
+              title="Password"
+              subtitle="Modifica password"
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        {/* Admin Panel */}
         {isAdmin && (
-          <div className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider dark:text-copy-lighter light:text-copy-lighter px-1">
+          <div>
+            <h2 style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: colors.textMuted,
+              margin: '0 0 10px 4px',
+            }}>
               Amministrazione
             </h2>
-            <Card variant="glass" className="!p-3">
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="p-1.5 rounded-lg bg-error/20">
-                  <Shield size={16} className="text-error" />
+            <motion.div
+              style={{
+                ...cardStyle,
+                padding: '16px',
+              }}
+            >
+              <div style={topHighlight} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '12px',
+                    background: `${colors.error}20`,
+                  }}
+                >
+                  <Shield size={18} style={{ color: colors.error }} />
                 </div>
-                <h3 className="font-medium text-sm dark:text-copy light:text-copy-light">
+                <h3 style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: colors.textPrimary,
+                  margin: 0,
+                }}>
                   Gestione Account
                 </h3>
               </div>
 
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cerca utente..."
                 />
-                <p className="text-[10px] dark:text-copy-lighter light:text-copy-lighter">
+                <p style={{
+                  fontSize: '11px',
+                  color: colors.textMuted,
+                  margin: 0,
+                }}>
                   Funzionalità in sviluppo
                 </p>
               </div>
-            </Card>
+            </motion.div>
           </div>
         )}
+
+        {/* Info Section */}
+        <div>
+          <h2 style={{
+            fontSize: '12px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: colors.textMuted,
+            margin: '0 0 10px 4px',
+          }}>
+            Informazioni
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <SettingRow
+              icon={HelpCircle}
+              iconBg={`${colors.accent}20`}
+              title="Guida"
+              subtitle="Come usare l'app"
+              onClick={() => {}}
+            />
+            <SettingRow
+              icon={Info}
+              iconBg={`${colors.accent}20`}
+              title="Informazioni"
+              subtitle={`OmniaPi v${APP_VERSION}`}
+              onClick={() => {}}
+            />
+          </div>
+        </div>
+
+        {/* Logout Button */}
+        <motion.button
+          onClick={handleLogout}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            padding: '14px',
+            background: `${colors.error}15`,
+            border: `1px solid ${colors.error}30`,
+            borderRadius: '16px',
+            color: colors.error,
+            fontSize: '14px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginTop: '8px',
+          }}
+          whileHover={{
+            scale: 1.02,
+            background: `${colors.error}25`,
+          }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <LogOut size={18} />
+          Esci dall'account
+        </motion.button>
+
+        {/* Footer Spacing for Bottom Nav */}
+        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

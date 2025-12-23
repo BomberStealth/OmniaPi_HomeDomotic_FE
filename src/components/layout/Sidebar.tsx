@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,18 +10,47 @@ import {
   DoorOpen
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { Card } from '@/components/common/Card';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
 import { APP_VERSION, APP_NAME } from '@/config/version';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
-// SIDEBAR NAVIGATION
+// SIDEBAR NAVIGATION - Dark Luxury Style
+// Con supporto tema dinamico
 // ============================================
+
+// Colori base (invarianti)
+const baseColors = {
+  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+  textPrimary: '#ffffff',
+  textSecondary: 'rgba(255, 255, 255, 0.75)',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
+};
+
+// Helper per convertire hex a rgb
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  return '106, 212, 160';
+};
 
 export const Sidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuthStore();
+  const { colors: themeColors } = useThemeColor();
+
+  // Colori dinamici basati sul tema
+  const colors = useMemo(() => ({
+    ...baseColors,
+    accent: themeColors.accent,
+    accentLight: themeColors.accentLight,
+    accentDark: themeColors.accentDark,
+    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
+  }), [themeColors]);
 
   const menuItems = [
     { path: '/dashboard', icon: Home, label: t('nav.dashboard') },
@@ -33,61 +63,151 @@ export const Sidebar = () => {
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
-    <aside className="w-64 md:w-64 h-screen glass-solid p-3 sm:p-4 flex flex-col dark:bg-foreground light:bg-white dark:border-r dark:border-border light:border-r light:border-border-light">
+    <aside
+      className="w-64 h-screen p-4 flex flex-col relative overflow-hidden"
+      style={{
+        background: colors.bgCardLit,
+        borderRight: `1px solid ${colors.border}`,
+        boxShadow: colors.cardShadow,
+      }}
+    >
+      {/* Top edge highlight - esatto dal preview */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: '25%',
+          right: '25%',
+          height: '1px',
+          background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* Logo */}
-      <div className="mb-6 sm:mb-8 px-2 sm:px-4">
-        <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+      <div className="mb-8 px-2">
+        <h1
+          className="text-2xl font-bold"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accentLight}, ${colors.accent}, ${colors.accentDark})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: `0 0 40px ${colors.accent}30`,
+          }}
+        >
           {APP_NAME}
         </h1>
-        <p className="text-xs sm:text-sm dark:text-copy-lighter light:text-copy-lighter">
-          {t('app.title')} <span className="text-primary font-semibold">{APP_VERSION}</span>
+        <p style={{ color: colors.textMuted, fontSize: '12px' }}>
+          {t('app.title')}{' '}
+          <span style={{ color: colors.accent, fontWeight: 600 }}>{APP_VERSION}</span>
         </p>
       </div>
 
-      {/* User Info */}
-      <Card className="mb-4 sm:mb-6" padding={false}>
-        <div className="p-3 sm:p-4">
-          <p className="text-xs sm:text-sm font-medium dark:text-copy light:text-copy-light truncate">{user?.nome} {user?.cognome}</p>
-          <p className="text-xs dark:text-copy-lighter light:text-copy-lighter truncate">{user?.email}</p>
-          <span className="inline-block mt-2 px-2 py-1 text-xs rounded-lg bg-primary bg-opacity-20 text-primary">
-            {user?.ruolo}
-          </span>
-        </div>
-      </Card>
+      {/* User Info Card */}
+      <div
+        className="mb-6 p-4"
+        style={{
+          background: colors.bgCardLit,
+          border: `1px solid ${colors.border}`,
+          borderRadius: '20px',
+          boxShadow: colors.cardShadow,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Card top edge highlight */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '25%',
+            right: '25%',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent, ${colors.accentLight}33, transparent)`,
+          }}
+        />
+        <p
+          className="font-medium truncate"
+          style={{ color: colors.textPrimary, fontSize: '14px' }}
+        >
+          {user?.nome} {user?.cognome}
+        </p>
+        <p className="truncate" style={{ color: colors.textMuted, fontSize: '12px' }}>
+          {user?.email}
+        </p>
+        <span
+          className="inline-block mt-2 px-2 py-1"
+          style={{
+            fontSize: '11px',
+            background: `${colors.accent}15`,
+            color: colors.accentLight,
+            border: `1px solid ${colors.accent}33`,
+            borderRadius: '12px',
+          }}
+        >
+          {user?.ruolo}
+        </span>
+      </div>
 
-      {/* Impianto Selector - Desktop */}
-      <div className="mb-4 sm:mb-6">
+      {/* Impianto Selector */}
+      <div className="mb-6">
         <ImpiantoSelector variant="desktop" />
       </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 space-y-1 sm:space-y-2">
-        {menuItems.map((item) => (
-          <Link key={item.path} to={item.path}>
-            <div
-              className={`
-                flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all
-                ${
-                  isActive(item.path)
-                    ? 'bg-primary text-white shadow-lg dark:shadow-primary/50 light:shadow-primary/20'
-                    : 'dark:text-copy-light light:text-copy-light dark:hover:bg-foreground light:hover:bg-slate-100'
-                }
-              `}
-            >
-              <item.icon size={20} className="flex-shrink-0" />
-              <span className="font-medium text-sm sm:text-base">{item.label}</span>
-            </div>
-          </Link>
-        ))}
+      <nav className="flex-1 space-y-2">
+        {menuItems.map((item) => {
+          const active = isActive(item.path);
+          return (
+            <Link key={item.path} to={item.path}>
+              <div
+                className="flex items-center gap-3 px-4 py-3 transition-all"
+                style={{
+                  borderRadius: '20px',
+                  background: active
+                    ? `linear-gradient(165deg, ${colors.accentDark}, ${colors.accent})`
+                    : 'transparent',
+                  color: active ? '#0a0a0c' : colors.textSecondary,
+                  boxShadow: active ? `0 4px 16px ${colors.accent}30` : 'none',
+                  fontWeight: active ? 600 : 500,
+                }}
+              >
+                <item.icon
+                  size={20}
+                  className="flex-shrink-0"
+                  style={{
+                    filter: active ? 'none' : 'none',
+                  }}
+                />
+                <span style={{ fontSize: '14px' }}>{item.label}</span>
+              </div>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Logout */}
+      {/* Logout Button */}
       <button
         onClick={logout}
-        className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl dark:text-copy-light light:text-copy-light hover:bg-error hover:text-white transition-all"
+        className="flex items-center gap-3 px-4 py-3 w-full transition-all hover:scale-[0.98]"
+        style={{
+          borderRadius: '20px',
+          color: colors.textSecondary,
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+          e.currentTarget.style.color = '#ef4444';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = colors.textSecondary;
+        }}
       >
         <LogOut size={20} className="flex-shrink-0" />
-        <span className="font-medium text-sm sm:text-base">{t('auth.logout')}</span>
+        <span style={{ fontWeight: 500, fontSize: '14px' }}>{t('auth.logout')}</span>
       </button>
     </aside>
   );

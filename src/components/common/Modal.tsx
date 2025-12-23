@@ -1,10 +1,11 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { Card } from './Card';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
-// MODAL COMPONENT
+// MODAL COMPONENT - Dark Luxury Style
+// Con supporto tema dinamico
 // ============================================
 
 interface ModalProps {
@@ -15,7 +16,34 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+// Colori base (invarianti)
+const baseColors = {
+  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+  textPrimary: '#ffffff',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+};
+
+// Helper per convertire hex a rgb
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+  }
+  return '106, 212, 160';
+};
+
 export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
+  const { colors: themeColors } = useThemeColor();
+
+  // Colori dinamici basati sul tema
+  const colors = useMemo(() => ({
+    ...baseColors,
+    accent: themeColors.accent,
+    accentLight: themeColors.accentLight,
+    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
+    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
+  }), [themeColors]);
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-2xl',
@@ -44,7 +72,12 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black bg-opacity-70 backdrop-blur-sm"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(8px)',
+            }}
           />
 
           {/* Modal */}
@@ -52,25 +85,84 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden`}
+            className={`relative w-full ${sizeClasses[size]}`}
+            style={{ maxHeight: '90vh' }}
           >
-            <Card variant="glass-solid" padding={false}>
+            <div
+              style={{
+                background: colors.bgCardLit,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '28px',
+                boxShadow: colors.cardShadowLit,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Top edge highlight */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '25%',
+                  right: '25%',
+                  height: '1px',
+                  background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+                }}
+              />
+
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b dark:border-border light:border-border-light">
-                <h2 className="text-2xl font-bold dark:text-copy light:text-copy-light">{title}</h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg dark:hover:bg-foreground light:hover:bg-background-light dark:text-copy light:text-copy-light transition-colors"
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '20px 24px',
+                  borderBottom: `1px solid ${colors.border}`,
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: colors.textPrimary,
+                    margin: 0,
+                  }}
                 >
-                  <X size={24} />
-                </button>
+                  {title}
+                </h2>
+                <motion.button
+                  onClick={onClose}
+                  style={{
+                    padding: '8px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  whileHover={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: colors.borderHover,
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <X size={20} style={{ color: colors.textMuted }} />
+                </motion.button>
               </div>
 
               {/* Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              <div
+                style={{
+                  padding: '24px',
+                  overflowY: 'auto',
+                  maxHeight: 'calc(90vh - 80px)',
+                }}
+              >
                 {children}
               </div>
-            </Card>
+            </div>
           </motion.div>
         </div>
       )}

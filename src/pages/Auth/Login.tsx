@@ -8,16 +8,24 @@ import { Button } from '@/components/common/Button';
 import { Shield, AlertCircle, UserPlus } from 'lucide-react';
 
 // ============================================
-// LOGIN PAGE (con validazione e sicurezza)
+// LOGIN PAGE - Dark Luxury Style
+// Valori esatti copiati da StylePreview.tsx
 // ============================================
 
-// Validazione email
+// Colori esatti dal preview
+const colors = {
+  accent: '#6ad4a0',
+  accentLight: '#a0e8c4',
+  accentDark: '#4aa870',
+  border: 'rgba(106, 212, 160, 0.15)',
+  textMuted: 'rgba(255, 255, 255, 0.5)',
+};
+
 const isValidEmail = (email: string): boolean => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
-// Sanitizza input
 const sanitizeInput = (input: string): string => {
   return input.trim().replace(/[<>]/g, '');
 };
@@ -33,22 +41,18 @@ export const Login = () => {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [attempts, setAttempts] = useState(0);
 
-  // Validazione lato client
   const validateForm = (): boolean => {
     const errors: string[] = [];
-
     if (!email) {
       errors.push('Email richiesta');
     } else if (!isValidEmail(email)) {
       errors.push('Email non valida');
     }
-
     if (!password) {
       errors.push('Password richiesta');
     } else if (password.length < 6) {
       errors.push('Password troppo corta (minimo 6 caratteri)');
     }
-
     setValidationErrors(errors);
     return errors.length === 0;
   };
@@ -58,31 +62,21 @@ export const Login = () => {
     setError('');
     setValidationErrors([]);
 
-    // Validazione client-side
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
-    // Limita tentativi dal client (backup al rate limiting del server)
     if (attempts >= 5) {
       setError('Troppi tentativi. Riprova tra qualche minuto.');
       return;
     }
 
     try {
-      // Sanitizza input prima dell'invio
       const sanitizedEmail = sanitizeInput(email).toLowerCase();
       const sanitizedPassword = sanitizeInput(password);
-
       await login(sanitizedEmail, sanitizedPassword);
-
-      // Reset contatore in caso di successo
       setAttempts(0);
       navigate('/dashboard');
     } catch (err: any) {
       setAttempts(prev => prev + 1);
-
-      // Gestisci messaggi di errore specifici
       if (err.response?.status === 429) {
         setError('Troppi tentativi di login. Riprova tra 15 minuti.');
       } else if (err.response?.status === 401) {
@@ -96,19 +90,56 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background dark:bg-background light:bg-foreground-light p-4">
-      <Card className="w-full max-w-md" variant="glass-solid">
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative"
+      style={{
+        background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(106, 212, 160, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)',
+        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+      }}
+    >
+      {/* Ambient glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 100% 40% at 50% 0%, rgba(106, 212, 160, 0.06) 0%, transparent 70%)',
+        }}
+      />
+
+      <Card className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-4">
-            <div className="p-3 sm:p-4 rounded-full bg-primary bg-opacity-20">
-              <Shield size={32} className="sm:w-10 sm:h-10 text-primary" />
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '24px',
+                background: `linear-gradient(145deg, ${colors.accent}33, ${colors.accent}1A)`,
+                boxShadow: `0 4px 20px ${colors.accent}33`,
+              }}
+            >
+              <Shield
+                size={32}
+                style={{
+                  color: colors.accentLight,
+                  filter: `drop-shadow(0 0 8px ${colors.accent})`,
+                }}
+              />
             </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+          <h1
+            className="text-2xl sm:text-3xl font-bold mb-2"
+            style={{
+              background: `linear-gradient(135deg, ${colors.accentLight}, ${colors.accent}, ${colors.accentDark})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: `0 0 40px ${colors.accent}30`,
+            }}
+          >
             {t('app.name')}
           </h1>
-          <p className="text-sm sm:text-base text-copy-lighter">{t('auth.loginTitle')}</p>
+          <p style={{ color: colors.textMuted, fontSize: '14px' }}>
+            {t('auth.loginTitle')}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,12 +167,19 @@ export const Login = () => {
 
           {/* Errori di validazione */}
           {validationErrors.length > 0 && (
-            <div className="p-3 rounded-lg bg-warning bg-opacity-20 border border-warning">
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+              }}
+            >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} className="text-warning flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+                <div>
                   {validationErrors.map((err, i) => (
-                    <p key={i} className="text-sm text-warning">{err}</p>
+                    <p key={i} style={{ fontSize: '13px', color: '#f59e0b' }}>{err}</p>
                   ))}
                 </div>
               </div>
@@ -150,19 +188,26 @@ export const Login = () => {
 
           {/* Errore generale */}
           {error && (
-            <div className="p-3 rounded-lg bg-error bg-opacity-20 border border-error">
+            <div
+              style={{
+                padding: '12px',
+                borderRadius: '16px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} className="text-error flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-error flex-1">{error}</p>
+                <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                <p style={{ fontSize: '13px', color: '#ef4444' }}>{error}</p>
               </div>
             </div>
           )}
 
           {/* Indicatore tentativi */}
           {attempts > 0 && attempts < 5 && (
-            <div className="text-xs text-copy-lighter text-center">
+            <p style={{ fontSize: '11px', color: colors.textMuted, textAlign: 'center' }}>
               Tentativi: {attempts}/5
-            </div>
+            </p>
           )}
 
           <Button
@@ -186,7 +231,11 @@ export const Login = () => {
         <div className="mt-4 text-center">
           <Link
             to="/register"
-            className="text-sm text-secondary hover:text-secondary-light transition-colors inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1 transition-all"
+            style={{
+              fontSize: '13px',
+              color: colors.accentLight,
+            }}
           >
             <UserPlus size={16} />
             <span>Non hai un account? Registrati</span>
@@ -194,10 +243,32 @@ export const Login = () => {
         </div>
 
         {/* Info sicurezza */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="text-xs text-copy-lighter text-center">
-            🔒 Connessione sicura con crittografia SSL/TLS
+        <div
+          className="mt-6 pt-4"
+          style={{ borderTop: `1px solid ${colors.border}` }}
+        >
+          <p style={{ fontSize: '11px', color: colors.textMuted, textAlign: 'center' }}>
+            Connessione sicura con crittografia SSL/TLS
           </p>
+        </div>
+
+        {/* Link Legali */}
+        <div className="mt-4 flex justify-center gap-4">
+          <Link
+            to="/privacy"
+            style={{ fontSize: '11px', color: colors.textMuted }}
+            className="hover:opacity-80 transition-opacity"
+          >
+            Privacy Policy
+          </Link>
+          <span style={{ color: colors.textMuted }}>|</span>
+          <Link
+            to="/terms"
+            style={{ fontSize: '11px', color: colors.textMuted }}
+            className="hover:opacity-80 transition-opacity"
+          >
+            Termini di Servizio
+          </Link>
         </div>
       </Card>
     </div>

@@ -1,8 +1,7 @@
 import { SceneCard } from './SceneCard';
 
 // ============================================
-// SCENE LIST - Layout verticale compatto
-// Mobile-first design
+// SCENE LIST - Dark Luxury Style
 // ============================================
 
 interface SceneListProps {
@@ -11,11 +10,13 @@ interface SceneListProps {
   onExecute: (scenaId: number) => void;
   onDelete: (scenaId: number) => void;
   onSchedule: (scena: any) => void;
+  onToggleShortcut: (scenaId: number, isShortcut: boolean) => void;
+  onEdit: (scena: any) => void;
 }
 
-export const SceneList = ({ scene, executingId, onExecute, onDelete, onSchedule }: SceneListProps) => {
+export const SceneList = ({ scene, executingId, onExecute, onDelete, onSchedule, onToggleShortcut, onEdit }: SceneListProps) => {
   return (
-    <div className="flex flex-col gap-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {scene.filter(s => s !== null && s !== undefined).map((scena) => (
         <SceneCard
           key={scena.id}
@@ -24,6 +25,8 @@ export const SceneList = ({ scene, executingId, onExecute, onDelete, onSchedule 
           onExecute={() => onExecute(scena.id)}
           onDelete={!scena.is_base ? () => onDelete(scena.id) : undefined}
           onSchedule={() => onSchedule(scena)}
+          onToggleShortcut={(isShortcut) => onToggleShortcut(scena.id, isShortcut)}
+          onEdit={() => onEdit(scena)}
         />
       ))}
     </div>
