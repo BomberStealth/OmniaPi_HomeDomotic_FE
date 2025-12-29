@@ -1,9 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { useImpiantiStore } from '@/store/impiantiStore';
 import type { Impianto } from '@/types';
 
 // ============================================
-// IMPIANTO CONTEXT - Gestione Globale Impianto
+// IMPIANTO CONTEXT - Wrapper per Zustand Store
+// Mantiene API retrocompatibile mentre usa lo store
 // ============================================
 
 interface ImpiantoContextType {
@@ -17,66 +18,41 @@ interface ImpiantoContextType {
 const ImpiantoContext = createContext<ImpiantoContextType | undefined>(undefined);
 
 export const ImpiantoProvider = ({ children }: { children: ReactNode }) => {
-  const { impianti, fetchImpianti } = useImpiantiStore();
-  const [impiantoCorrente, setImpiantoCorrenteState] = useState<Impianto | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Usa lo store Zustand come single source of truth
+  const {
+    impianti,
+    impiantoCorrente,
+    isLoading,
+    fetchImpianti,
+    setImpiantoCorrente: storeSetImpiantoCorrente
+  } = useImpiantiStore();
 
-  // Carica impianti e ripristina selezione al mount
+  // Carica impianti al mount
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await fetchImpianti();
-      setLoading(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Esegui solo al mount
+    fetchImpianti();
+  }, [fetchImpianti]);
 
-  // Ripristina impianto selezionato da localStorage
-  useEffect(() => {
-    if (impianti.length > 0 && !impiantoCorrente) {
-      const savedId = localStorage.getItem('impianto_selected_id');
+  // Memoizza setImpiantoCorrente per stabilità referenziale
+  const setImpiantoCorrente = useCallback((impianto: Impianto | null) => {
+    storeSetImpiantoCorrente(impianto);
+  }, [storeSetImpiantoCorrente]);
 
-      if (savedId) {
-        const saved = impianti.find(i => i.id === parseInt(savedId));
-        if (saved) {
-          setImpiantoCorrenteState(saved);
-          return;
-        }
-      }
-
-      // Default: primo impianto disponibile
-      setImpiantoCorrenteState(impianti[0]);
-    }
-  }, [impianti, impiantoCorrente]);
-
-  // Funzione per cambiare impianto
-  const setImpiantoCorrente = (impianto: Impianto | null) => {
-    setImpiantoCorrenteState(impianto);
-    if (impianto) {
-      localStorage.setItem('impianto_selected_id', impianto.id.toString());
-    } else {
-      localStorage.removeItem('impianto_selected_id');
-    }
-  };
-
-  // Refresh impianti
-  const refresh = async () => {
-    setLoading(true);
+  // Memoizza refresh
+  const refresh = useCallback(async () => {
     await fetchImpianti();
-    setLoading(false);
-  };
+  }, [fetchImpianti]);
+
+  // Memoizza il value per evitare re-render
+  const value = useMemo<ImpiantoContextType>(() => ({
+    impiantoCorrente,
+    setImpiantoCorrente,
+    impianti,
+    loading: isLoading,
+    refresh
+  }), [impiantoCorrente, setImpiantoCorrente, impianti, isLoading, refresh]);
 
   return (
-    <ImpiantoContext.Provider
-      value={{
-        impiantoCorrente,
-        setImpiantoCorrente,
-        impianti,
-        loading,
-        refresh
-      }}
-    >
+    <ImpiantoContext.Provider value={value}>
       {children}
     </ImpiantoContext.Provider>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/common/Card';
-import { ChevronDown, MapPin, Home } from 'lucide-react';
+import { RiArrowDownSLine, RiMapPinLine, RiHome4Line } from 'react-icons/ri';
 import { getWeatherByCoordinates, getWeatherEmoji } from '@/services/weatherApi';
 import type { Impianto } from '@/types';
 
@@ -55,7 +55,7 @@ export const ImpiantoCard = ({ impianto, allImpianti, onSelectImpianto }: Impian
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Icon */}
             <div className="p-3 rounded-xl bg-primary bg-opacity-20 flex-shrink-0">
-              <Home size={24} className="text-primary" />
+              <RiHome4Line size={24} className="text-primary" />
             </div>
 
             {/* Info */}
@@ -65,7 +65,7 @@ export const ImpiantoCard = ({ impianto, allImpianti, onSelectImpianto }: Impian
                   {impianto.nome}
                 </h3>
                 {hasMultipleImpianti && (
-                  <ChevronDown
+                  <RiArrowDownSLine
                     size={20}
                     className={`transition-transform dark:text-copy-lighter light:text-copy-lighter ${
                       showDropdown ? 'rotate-180' : ''
@@ -74,7 +74,7 @@ export const ImpiantoCard = ({ impianto, allImpianti, onSelectImpianto }: Impian
                 )}
               </div>
               <div className="flex items-center gap-1 text-sm dark:text-copy-lighter light:text-copy-lighter">
-                <MapPin size={14} />
+                <RiMapPinLine size={14} />
                 <span className="truncate">
                   {impianto.indirizzo}, {impianto.citta}
                 </span>
@@ -112,7 +112,7 @@ export const ImpiantoCard = ({ impianto, allImpianti, onSelectImpianto }: Impian
                 `}
               >
                 <div className="flex items-center gap-2">
-                  <Home size={18} className="text-primary" />
+                  <RiHome4Line size={18} className="text-primary" />
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold dark:text-copy light:text-copy-light truncate">
                       {imp.nome}

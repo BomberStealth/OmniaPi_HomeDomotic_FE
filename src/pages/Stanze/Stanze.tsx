@@ -6,7 +6,7 @@ import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { stanzeApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
-import { DoorOpen, Plus, Loader2, Settings, Trash2, Lightbulb, ArrowRight, Edit3, Package } from 'lucide-react';
+import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
 import { toast } from 'sonner';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
@@ -235,14 +235,14 @@ export const Stanze = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Plus size={20} style={{ color: '#0a0a0c' }} />
+            <RiAddLine size={20} style={{ color: '#0a0a0c' }} />
           </motion.button>
         </div>
 
         {/* Content */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
-            <Loader2 size={32} className="animate-spin" style={{ color: colors.accent }} />
+            <RiLoader4Line size={32} className="animate-spin" style={{ color: colors.accent }} />
           </div>
         ) : !impiantoId ? (
           <div
@@ -287,7 +287,7 @@ export const Stanze = () => {
                 />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Package size={18} style={{ color: colors.warning }} />
+                    <RiBox3Line size={18} style={{ color: colors.warning }} />
                     <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>Non assegnati</h3>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -297,7 +297,7 @@ export const Stanze = () => {
                       style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                       whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                     >
-                      <Settings size={16} style={{ color: colors.textMuted }} />
+                      <RiSettings4Line size={16} style={{ color: colors.textMuted }} />
                     </motion.button>
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export const Stanze = () => {
                         border: disp.power_state ? `1px solid ${colors.success}` : '1px solid transparent',
                       }}
                     >
-                      <Lightbulb size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                      <RiLightbulbLine size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
                       <span style={{ fontSize: '11px', color: colors.textPrimary, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {disp.nome}
                       </span>
@@ -340,11 +340,11 @@ export const Stanze = () => {
                   textAlign: 'center',
                 }}
               >
-                <DoorOpen size={32} style={{ color: colors.textMuted, marginBottom: '8px' }} />
+                <RiDoorOpenLine size={32} style={{ color: colors.textMuted, marginBottom: '8px' }} />
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, marginBottom: '4px' }}>Nessuna stanza</h3>
                 <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '12px' }}>Crea la tua prima stanza</p>
                 <Button variant="primary" onClick={() => setModalOpen(true)}>
-                  <Plus size={14} style={{ marginRight: '4px' }} />
+                  <RiAddLine size={14} style={{ marginRight: '4px' }} />
                   Nuova Stanza
                 </Button>
               </div>
@@ -387,7 +387,7 @@ export const Stanze = () => {
                           style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                           whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                         >
-                          <Settings size={16} style={{ color: colors.textMuted }} />
+                          <RiSettings4Line size={16} style={{ color: colors.textMuted }} />
                         </motion.button>
                       </div>
                     </div>
@@ -406,7 +406,7 @@ export const Stanze = () => {
                               border: disp.power_state ? `1px solid ${colors.success}` : '1px solid transparent',
                             }}
                           >
-                            <Lightbulb size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                            <RiLightbulbLine size={12} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
                             <span style={{ fontSize: '11px', color: colors.textPrimary, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {disp.nome}
                             </span>
@@ -470,10 +470,10 @@ export const Stanze = () => {
             whileHover={{ background: 'rgba(255,255,255,0.1)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Lightbulb size={18} style={{ color: colors.accent }} />
+              <RiLightbulbLine size={18} style={{ color: colors.accent }} />
               <span style={{ fontSize: '14px', color: colors.textPrimary }}>Gestisci dispositivi</span>
             </div>
-            <ArrowRight size={16} style={{ color: colors.textMuted }} />
+            <RiArrowRightLine size={16} style={{ color: colors.textMuted }} />
           </motion.button>
           <motion.button
             onClick={handleDeleteStanza}
@@ -481,7 +481,7 @@ export const Stanze = () => {
             whileHover={{ background: `${colors.error}20` }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Trash2 size={18} style={{ color: colors.error }} />
+              <RiDeleteBinLine size={18} style={{ color: colors.error }} />
               <span style={{ fontSize: '14px', color: colors.error }}>Elimina stanza</span>
             </div>
           </motion.button>
@@ -505,10 +505,10 @@ export const Stanze = () => {
                   whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Lightbulb size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                    <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
                     <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
                   </div>
-                  <ArrowRight size={14} style={{ color: colors.textMuted }} />
+                  <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
                 </motion.button>
               ))}
             </div>
@@ -522,19 +522,19 @@ export const Stanze = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <motion.button onClick={openMoveModal} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: 'rgba(255,255,255,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <ArrowRight size={18} style={{ color: colors.accent }} />
+              <RiArrowRightLine size={18} style={{ color: colors.accent }} />
               <span style={{ fontSize: '14px', color: colors.textPrimary }}>Sposta in altra stanza</span>
             </div>
           </motion.button>
           <motion.button onClick={openRenameModal} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: 'rgba(255,255,255,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Edit3 size={18} style={{ color: colors.warning }} />
+              <RiEditLine size={18} style={{ color: colors.warning }} />
               <span style={{ fontSize: '14px', color: colors.textPrimary }}>Rinomina dispositivo</span>
             </div>
           </motion.button>
           <motion.button onClick={handleDeleteDispositivo} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }} whileHover={{ background: `${colors.error}20` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Trash2 size={18} style={{ color: colors.error }} />
+              <RiDeleteBinLine size={18} style={{ color: colors.error }} />
               <span style={{ fontSize: '14px', color: colors.error }}>Elimina dispositivo</span>
             </div>
           </motion.button>
@@ -552,7 +552,7 @@ export const Stanze = () => {
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: !selectedDispositivo?.stanza_id ? `${colors.accent}20` : 'rgba(255,255,255,0.05)', border: !selectedDispositivo?.stanza_id ? `1px solid ${colors.accent}` : 'none', cursor: !selectedDispositivo?.stanza_id ? 'default' : 'pointer' }}
             whileHover={selectedDispositivo?.stanza_id ? { background: 'rgba(255,255,255,0.1)' } : undefined}
           >
-            <Package size={18} style={{ color: colors.warning }} />
+            <RiBox3Line size={18} style={{ color: colors.warning }} />
             <span style={{ fontSize: '14px', color: colors.textPrimary, flex: 1, textAlign: 'left' }}>Non assegnato</span>
             {!selectedDispositivo?.stanza_id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
           </motion.button>

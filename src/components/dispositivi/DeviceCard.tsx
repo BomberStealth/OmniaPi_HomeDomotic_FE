@@ -1,75 +1,55 @@
-import { useMemo } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { Lightbulb, Loader2 } from 'lucide-react';
-import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { RiLightbulbLine, RiLoader4Line, RiLock2Line } from 'react-icons/ri';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // ============================================
 // DEVICE CARD - Dark Luxury Style
-// Con supporto tema dinamico
+// Con React.memo per evitare re-render inutili
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCard: '#1e1c18',
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  toggleTrack: 'rgba(50, 45, 38, 1)',
-  toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
-};
-
-// Helper per convertire hex a rgb
-const hexToRgb = (hex: string): string => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (result) {
-    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
-  }
-  return '106, 212, 160';
-};
 
 interface DeviceCardProps {
   nome: string;
   isOn: boolean;
   isLoading?: boolean;
+  bloccato?: boolean;
   onClick: () => void;
 }
 
-export const DeviceCard = ({ nome, isOn, isLoading, onClick }: DeviceCardProps) => {
-  const { colors: themeColors } = useThemeColor();
+const DeviceCardComponent = ({ nome, isOn, isLoading, bloccato, onClick }: DeviceCardProps) => {
+  const { colors } = useThemeColors();
 
-  // Colori dinamici basati sul tema
-  const colors = useMemo(() => ({
-    ...baseColors,
-    accent: themeColors.accent,
-    accentLight: themeColors.accentLight,
-    accentDark: themeColors.accentDark,
-    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-  }), [themeColors]);
+  // Se bloccato, mostra stato disabilitato
+  const isDisabled = bloccato || isLoading;
 
   return (
     <motion.button
-      onClick={onClick}
-      disabled={isLoading}
+      onClick={bloccato ? undefined : onClick}
+      disabled={isDisabled}
       className="p-4 text-left relative overflow-hidden w-full"
       style={{
-        background: isOn
-          ? `linear-gradient(165deg, ${colors.accent}12, ${colors.bgCard})`
-          : colors.bgCardLit,
-        border: `1px solid ${isOn ? colors.accent : colors.border}`,
-        borderRadius: '24px', // radius.xl
-        boxShadow: isOn
-          ? `0 6px 28px ${colors.accent}20, ${colors.cardShadow}`
-          : colors.cardShadowLit,
+        background: bloccato
+          ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)'
+          : isOn
+            ? `linear-gradient(165deg, ${colors.accent}12, ${colors.bgCard})`
+            : colors.bgCardLit,
+        border: `1px solid ${bloccato ? 'rgba(100, 100, 100, 0.3)' : isOn ? colors.accent : colors.border}`,
+        borderRadius: '24px',
+        boxShadow: bloccato
+          ? 'none'
+          : isOn
+            ? `0 6px 28px ${colors.accent}20, ${colors.cardShadow}`
+            : colors.cardShadowLit,
+        opacity: bloccato ? 0.6 : 1,
+        cursor: bloccato ? 'not-allowed' : 'pointer',
       }}
-      whileHover={{
+      whileHover={bloccato ? undefined : {
         scale: 1.02,
         borderColor: colors.accent,
         boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4)',
         y: -2,
       }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={bloccato ? undefined : { scale: 0.98 }}
     >
       {/* Top edge highlight */}
       <div
@@ -108,17 +88,26 @@ export const DeviceCard = ({ nome, isOn, isLoading, onClick }: DeviceCardProps) 
           <div
             style={{
               padding: '8px',
-              background: isOn
-                ? `linear-gradient(145deg, ${colors.accent}30, ${colors.accent}15)`
-                : `${colors.textMuted}10`,
+              background: bloccato
+                ? 'rgba(100, 100, 100, 0.15)'
+                : isOn
+                  ? `linear-gradient(145deg, ${colors.accent}30, ${colors.accent}15)`
+                  : `${colors.textMuted}10`,
               borderRadius: '16px',
-              boxShadow: isOn ? `0 2px 8px ${colors.accent}30` : 'none',
+              boxShadow: bloccato ? 'none' : isOn ? `0 2px 8px ${colors.accent}30` : 'none',
             }}
           >
             {isLoading ? (
-              <Loader2 size={20} className="animate-spin" style={{ color: colors.accent }} />
+              <RiLoader4Line size={20} className="animate-spin" style={{ color: colors.accent }} />
+            ) : bloccato ? (
+              <RiLock2Line
+                size={20}
+                style={{
+                  color: 'rgba(150, 150, 150, 0.7)',
+                }}
+              />
             ) : (
-              <Lightbulb
+              <RiLightbulbLine
                 size={20}
                 style={{
                   color: isOn ? colors.accentLight : colors.textMuted,
@@ -198,7 +187,7 @@ export const DeviceCard = ({ nome, isOn, isLoading, onClick }: DeviceCardProps) 
           style={{
             fontSize: '14px',
             fontWeight: 600,
-            color: colors.textPrimary,
+            color: bloccato ? 'rgba(150, 150, 150, 0.8)' : colors.textPrimary,
           }}
         >
           {nome || 'Dispositivo'}
@@ -209,13 +198,16 @@ export const DeviceCard = ({ nome, isOn, isLoading, onClick }: DeviceCardProps) 
           style={{
             fontSize: '11px',
             fontWeight: 500,
-            color: colors.textMuted,
+            color: bloccato ? 'rgba(239, 68, 68, 0.7)' : colors.textMuted,
             marginTop: '2px',
           }}
         >
-          {isOn ? 'Acceso' : 'Spento'}
+          {bloccato ? 'Bloccato' : isOn ? 'Acceso' : 'Spento'}
         </p>
       </div>
     </motion.button>
   );
 };
+
+// React.memo per evitare re-render quando props non cambiano
+export const DeviceCard = memo(DeviceCardComponent);

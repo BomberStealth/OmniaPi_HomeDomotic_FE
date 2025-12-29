@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Home,
-  Lightbulb,
-  Sparkles,
-  Settings,
-  LogOut,
-  DoorOpen
-} from 'lucide-react';
+  RiHome4Line,
+  RiLightbulbLine,
+  RiSparklingLine,
+  RiSettings4Line,
+  RiLogoutBoxLine,
+  RiDoorOpenLine
+} from 'react-icons/ri';
 import { useAuthStore } from '@/store/authStore';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
 import { APP_VERSION, APP_NAME } from '@/config/version';
@@ -41,7 +41,7 @@ export const Sidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, colorTheme } = useThemeColor();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -53,11 +53,11 @@ export const Sidebar = () => {
   }), [themeColors]);
 
   const menuItems = [
-    { path: '/dashboard', icon: Home, label: t('nav.dashboard') },
-    { path: '/stanze', icon: DoorOpen, label: 'Stanze' },
-    { path: '/dispositivi', icon: Lightbulb, label: t('nav.dispositivi') },
-    { path: '/scene', icon: Sparkles, label: t('nav.scene') },
-    { path: '/settings', icon: Settings, label: t('nav.settings') }
+    { path: '/dashboard', icon: RiHome4Line, label: t('nav.dashboard') },
+    { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
+    { path: '/dispositivi', icon: RiLightbulbLine, label: t('nav.dispositivi') },
+    { path: '/scene', icon: RiSparklingLine, label: t('nav.scene') },
+    { path: '/settings', icon: RiSettings4Line, label: t('nav.settings') }
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
@@ -87,11 +87,13 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="mb-8 px-2">
         <h1
+          key={`logo-${colorTheme}`}
           className="text-2xl font-bold"
           style={{
             background: `linear-gradient(135deg, ${colors.accentLight}, ${colors.accent}, ${colors.accentDark})`,
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
             textShadow: `0 0 40px ${colors.accent}30`,
           }}
         >
@@ -206,7 +208,7 @@ export const Sidebar = () => {
           e.currentTarget.style.color = colors.textSecondary;
         }}
       >
-        <LogOut size={20} className="flex-shrink-0" />
+        <RiLogoutBoxLine size={20} className="flex-shrink-0" />
         <span style={{ fontWeight: 500, fontSize: '14px' }}>{t('auth.logout')}</span>
       </button>
     </aside>

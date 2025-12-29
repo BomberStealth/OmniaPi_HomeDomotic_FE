@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 
 // ============================================
 // THEME COLOR CONTEXT - Gestione colori accent
@@ -110,16 +110,24 @@ export const ThemeColorProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('colorTheme', colorTheme);
   }, [colorTheme]);
 
-  const setColorTheme = (theme: ColorTheme) => {
+  // Memoizza setColorTheme per evitare re-render inutili
+  const setColorTheme = useCallback((theme: ColorTheme) => {
     setColorThemeState(theme);
-  };
+  }, []);
 
-  const value: ThemeColorContextType = {
+  // Memoizza availableThemes (è statico)
+  const availableThemes = useMemo(() =>
+    Object.keys(colorThemes) as ColorTheme[],
+  []);
+
+  // IMPORTANTE: Memoizza il value object per evitare re-render cascade
+  // Senza useMemo, ogni render crea un nuovo oggetto e forza re-render di tutti i consumer
+  const value = useMemo<ThemeColorContextType>(() => ({
     colorTheme,
     setColorTheme,
     colors: colorThemes[colorTheme],
-    availableThemes: Object.keys(colorThemes) as ColorTheme[],
-  };
+    availableThemes,
+  }), [colorTheme, setColorTheme, availableThemes]);
 
   return (
     <ThemeColorContext.Provider value={value}>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, RefreshCw, Trash2, Save, Users, MapPin, Zap } from 'lucide-react';
+import { RiArrowLeftLine, RiFileCopyLine, RiRefreshLine, RiDeleteBinLine, RiSaveLine, RiGroupLine, RiMapPinLine, RiFlashlightLine } from 'react-icons/ri';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -200,7 +200,7 @@ export const ImpiantoSettings = () => {
             onClick={() => navigate(`/impianti/${id}`)}
             className="p-3 glass rounded-xl hover:bg-opacity-20 transition-colors"
           >
-            <ArrowLeft size={24} />
+            <RiArrowLeftLine size={24} />
           </button>
           <div>
             <h1 className="text-3xl font-bold dark:text-copy light:text-copy-light">
@@ -216,7 +216,7 @@ export const ImpiantoSettings = () => {
             {/* Informazioni Generali */}
             <Card variant="glass-solid">
               <div className="flex items-center gap-3 mb-6">
-                <MapPin className="text-primary" size={24} />
+                <RiMapPinLine className="text-primary" size={24} />
                 <h2 className="text-xl font-bold dark:text-copy light:text-copy-light">
                   Informazioni Generali
                 </h2>
@@ -275,7 +275,7 @@ export const ImpiantoSettings = () => {
             {/* Fotovoltaico */}
             <Card variant="glass-solid">
               <div className="flex items-center gap-3 mb-6">
-                <Zap className="text-warning" size={24} />
+                <RiFlashlightLine className="text-warning" size={24} />
                 <h2 className="text-xl font-bold dark:text-copy light:text-copy-light">
                   Fotovoltaico
                 </h2>
@@ -328,7 +328,7 @@ export const ImpiantoSettings = () => {
             {/* Codice Condivisione */}
             <Card variant="glass-solid">
               <div className="flex items-center gap-3 mb-4">
-                <Users className="text-secondary" size={24} />
+                <RiGroupLine className="text-secondary" size={24} />
                 <h2 className="text-lg font-bold dark:text-copy light:text-copy-light">
                   Codice Condivisione
                 </h2>
@@ -343,11 +343,11 @@ export const ImpiantoSettings = () => {
 
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="glass" size="sm" onClick={handleCopyCode} fullWidth>
-                    <Copy size={16} className="mr-1" />
+                    <RiFileCopyLine size={16} className="mr-1" />
                     Copia
                   </Button>
                   <Button variant="glass" size="sm" onClick={() => setShowRegenModal(true)} fullWidth>
-                    <RefreshCw size={16} className="mr-1" />
+                    <RiRefreshLine size={16} className="mr-1" />
                     Rigenera
                   </Button>
                 </div>
@@ -387,7 +387,7 @@ export const ImpiantoSettings = () => {
                         onClick={() => handleRevokeAccess(cond.id)}
                         className="p-2 rounded-lg hover:bg-error hover:bg-opacity-20 transition-colors"
                       >
-                        <Trash2 size={16} className="text-error" />
+                        <RiDeleteBinLine size={16} className="text-error" />
                       </button>
                     </div>
                   ))}
@@ -400,11 +400,11 @@ export const ImpiantoSettings = () => {
         {/* Azioni */}
         <div className="flex gap-3">
           <Button variant="primary" onClick={handleSave} disabled={saving}>
-            <Save size={20} className="mr-2" />
+            <RiSaveLine size={20} className="mr-2" />
             {saving ? 'Salvataggio...' : 'Salva Modifiche'}
           </Button>
           <Button variant="danger" onClick={() => setShowDeleteModal(true)}>
-            <Trash2 size={20} className="mr-2" />
+            <RiDeleteBinLine size={20} className="mr-2" />
             Elimina Impianto
           </Button>
         </div>

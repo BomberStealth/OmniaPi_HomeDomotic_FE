@@ -1,4 +1,4 @@
-import { Blinds, ChevronUp, ChevronDown, Square } from 'lucide-react';
+import { RiLayoutLine, RiArrowUpSLine, RiArrowDownSLine, RiStopLine } from 'react-icons/ri';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Dispositivo, ConfigTapparella } from '@/types';
@@ -38,7 +38,7 @@ export const TapparellaCard = ({ dispositivo, onUpdate }: TapparellaCardProps) =
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-xl bg-secondary bg-opacity-20">
-            <Blinds size={24} className="text-secondary" />
+            <RiLayoutLine size={24} className="text-secondary" />
           </div>
           <div>
             <h3 className="font-semibold text-copy">{dispositivo.nome}</h3>
@@ -71,21 +71,21 @@ export const TapparellaCard = ({ dispositivo, onUpdate }: TapparellaCardProps) =
           size="sm"
           onClick={() => handleAction('apri', 100)}
         >
-          <ChevronUp size={20} />
+          <RiArrowUpSLine size={20} />
         </Button>
         <Button
           variant="glass"
           size="sm"
           onClick={() => handleAction('stop')}
         >
-          <Square size={20} />
+          <RiStopLine size={20} />
         </Button>
         <Button
           variant="glass"
           size="sm"
           onClick={() => handleAction('chiudi', 0)}
         >
-          <ChevronDown size={20} />
+          <RiArrowDownSLine size={20} />
         </Button>
       </div>
     </Card>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Building2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiDeleteBinLine } from 'react-icons/ri';
 import { useState } from 'react';
 import { impiantiApi } from '@/services/api';
 import { toast } from 'sonner';
@@ -85,7 +85,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
           padding: '8px 12px',
         }}
       >
-        <Loader2 size={16} className="animate-spin" style={{ color: colors.accent }} />
+        <RiLoader4Line size={16} className="animate-spin" style={{ color: colors.accent }} />
         <span style={{ fontSize: '14px', color: colors.textMuted }}>
           Caricamento...
         </span>
@@ -116,7 +116,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
           borderColor: colors.borderHover,
         }}
       >
-        <Plus size={18} style={{ color: colors.accent }} />
+        <RiAddLine size={18} style={{ color: colors.accent }} />
         <span style={{ fontSize: '14px', fontWeight: 600, color: colors.accent }}>
           Crea nuovo impianto
         </span>
@@ -146,7 +146,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
             : 'rgba(255, 255, 255, 0.05)',
         }}
       >
-        <Building2 size={18} style={{ color: colors.accent }} />
+        <RiBuilding2Line size={18} style={{ color: colors.accent }} />
         <div style={{ flex: 1, textAlign: 'left' }}>
           <p style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
             {impiantoCorrente.nome}
@@ -159,7 +159,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown size={16} style={{ color: colors.textMuted }} />
+          <RiArrowDownSLine size={16} style={{ color: colors.textMuted }} />
         </motion.div>
       </motion.button>
 
@@ -230,7 +230,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                       cursor: 'pointer',
                     }}
                   >
-                    <Building2
+                    <RiBuilding2Line
                       size={16}
                       style={{
                         color: impianto.id === impiantoCorrente.id
@@ -272,7 +272,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                     whileHover={{ background: `${colors.error}20` }}
                     title="Elimina impianto"
                   >
-                    <Trash2 size={14} style={{ color: `${colors.error}aa` }} />
+                    <RiDeleteBinLine size={14} style={{ color: `${colors.error}aa` }} />
                   </motion.button>
                 </div>
               ))}
@@ -294,7 +294,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                   }}
                   whileHover={{ background: 'rgba(255, 255, 255, 0.05)' }}
                 >
-                  <Plus size={16} style={{ color: colors.accent }} />
+                  <RiAddLine size={16} style={{ color: colors.accent }} />
                   <span style={{ fontSize: '14px', fontWeight: 500, color: colors.accent }}>
                     Crea nuovo impianto
                   </span>

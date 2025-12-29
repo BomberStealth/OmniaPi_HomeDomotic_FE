@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Power } from 'lucide-react';
+import { RiShutDownLine } from 'react-icons/ri';
 
 // ============================================
 // DEVICE TOGGLE - Fill Animation Slider v1.1.0
@@ -147,7 +147,7 @@ export const DeviceToggle = ({ isOn, disabled, onChange }: DeviceToggleProps) =>
             }}
             transition={{ duration: 0.3 }}
           >
-            <Power size={20} className="text-white" />
+            <RiShutDownLine size={20} className="text-white" />
             <span className="text-white font-bold">OFF</span>
           </motion.div>
 
@@ -161,7 +161,7 @@ export const DeviceToggle = ({ isOn, disabled, onChange }: DeviceToggleProps) =>
             transition={{ duration: 0.3 }}
           >
             <span className="text-white font-bold">ON</span>
-            <Power size={20} className="text-white" />
+            <RiShutDownLine size={20} className="text-white" />
           </motion.div>
         </div>
 

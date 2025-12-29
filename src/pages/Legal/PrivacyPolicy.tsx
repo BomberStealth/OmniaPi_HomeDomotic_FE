@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { RiArrowLeftLine, RiShieldLine } from 'react-icons/ri';
 import { Card } from '@/components/common/Card';
 
 // ============================================
@@ -16,14 +16,14 @@ export const PrivacyPolicy = () => {
           to="/login"
           className="inline-flex items-center gap-2 text-primary hover:text-primary-light transition-colors mb-6"
         >
-          <ArrowLeft size={20} />
+          <RiArrowLeftLine size={20} />
           Torna indietro
         </Link>
 
         <Card variant="glass" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 rounded-xl bg-primary/20">
-              <Shield className="text-primary" size={24} />
+              <RiShieldLine className="text-primary" size={24} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-copy">
               Privacy Policy

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card } from '@/components/common/Card';
-import { Input } from '@/components/common/Input';
-import { Button } from '@/components/common/Button';
-import { Shield, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { AuthCard } from '@/components/common/AuthCard';
+import { AuthInput } from '@/components/common/AuthInput';
+import { AuthButton } from '@/components/common/AuthButton';
+import { RiShieldLine, RiAlertLine, RiCheckboxCircleLine, RiArrowLeftLine } from 'react-icons/ri';
 import { authApi } from '@/services/api';
 
 // ============================================
@@ -188,7 +188,7 @@ export const Register = () => {
           }}
         />
 
-        <Card className="w-full max-w-md relative z-10">
+        <AuthCard className="w-full max-w-md relative z-10">
           <div className="text-center py-8">
             <div className="flex justify-center mb-4">
               <div
@@ -199,7 +199,7 @@ export const Register = () => {
                   boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)',
                 }}
               >
-                <CheckCircle2
+                <RiCheckboxCircleLine
                   size={48}
                   style={{
                     color: '#10b981',
@@ -223,7 +223,7 @@ export const Register = () => {
             </p>
             <div className="animate-spin mx-auto w-6 h-6">⚙️</div>
           </div>
-        </Card>
+        </AuthCard>
       </div>
     );
   }
@@ -243,7 +243,7 @@ export const Register = () => {
         }}
       />
 
-      <Card className="w-full max-w-md relative z-10">
+      <AuthCard className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
@@ -255,7 +255,7 @@ export const Register = () => {
                 boxShadow: `0 4px 20px ${colors.accent}33`,
               }}
             >
-              <Shield
+              <RiShieldLine
                 size={32}
                 style={{
                   color: colors.accentLight,
@@ -283,7 +283,7 @@ export const Register = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Nome e Cognome */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Input
+            <AuthInput
               type="text"
               name="nome"
               label="Nome"
@@ -293,7 +293,7 @@ export const Register = () => {
               placeholder="Mario"
               disabled={isLoading}
             />
-            <Input
+            <AuthInput
               type="text"
               name="cognome"
               label="Cognome"
@@ -305,7 +305,7 @@ export const Register = () => {
             />
           </div>
 
-          <Input
+          <AuthInput
             type="email"
             name="email"
             label="Email"
@@ -319,7 +319,7 @@ export const Register = () => {
 
           {/* Password */}
           <div>
-            <Input
+            <AuthInput
               type="password"
               name="password"
               label="Password"
@@ -358,7 +358,7 @@ export const Register = () => {
             )}
           </div>
 
-          <Input
+          <AuthInput
             type="password"
             name="confirmPassword"
             label="Conferma Password"
@@ -381,7 +381,7 @@ export const Register = () => {
               }}
             >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+                <RiAlertLine size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   {validationErrors.map((err, i) => (
                     <p key={i} style={{ fontSize: '13px', color: '#f59e0b' }}>{err}</p>
@@ -402,13 +402,13 @@ export const Register = () => {
               }}
             >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                <RiAlertLine size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
                 <p style={{ fontSize: '13px', color: '#ef4444' }}>{error}</p>
               </div>
             </div>
           )}
 
-          <Button
+          <AuthButton
             type="submit"
             fullWidth
             disabled={isLoading}
@@ -422,7 +422,7 @@ export const Register = () => {
             ) : (
               'Crea Account'
             )}
-          </Button>
+          </AuthButton>
 
           <div className="text-center pt-2">
             <Link
@@ -433,7 +433,7 @@ export const Register = () => {
                 color: colors.accentLight,
               }}
             >
-              <ArrowLeft size={16} />
+              <RiArrowLeftLine size={16} />
               <span>Hai già un account? Accedi</span>
             </Link>
           </div>
@@ -469,7 +469,7 @@ export const Register = () => {
         <p style={{ marginTop: '8px', fontSize: '10px', color: colors.textMuted, textAlign: 'center' }}>
           Registrandoti accetti i Termini di Servizio e la Privacy Policy
         </p>
-      </Card>
+      </AuthCard>
     </div>
   );
 };

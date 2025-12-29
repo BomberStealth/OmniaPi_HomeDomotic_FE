@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { RiArrowLeftLine, RiFileTextLine } from 'react-icons/ri';
 import { Card } from '@/components/common/Card';
 
 // ============================================
@@ -16,14 +16,14 @@ export const TermsOfService = () => {
           to="/login"
           className="inline-flex items-center gap-2 text-primary hover:text-primary-light transition-colors mb-6"
         >
-          <ArrowLeft size={20} />
+          <RiArrowLeftLine size={20} />
           Torna indietro
         </Link>
 
         <Card variant="glass" className="p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 rounded-xl bg-primary/20">
-              <FileText className="text-primary" size={24} />
+              <RiFileTextLine className="text-primary" size={24} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-copy">
               Termini di Servizio

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Button } from '@/components/common/Button';
-import { LucideIcon } from 'lucide-react';
+import type { IconType } from 'react-icons';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
@@ -27,7 +27,7 @@ const hexToRgb = (hex: string): string => {
 };
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  icon: IconType;
   title: string;
   description: string;
   actionLabel?: string;

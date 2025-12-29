@@ -8,7 +8,7 @@ import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
-import { Lightbulb, Plus, Trash2, Loader2, Search, Eye, Power } from 'lucide-react';
+import { RiLightbulbLine, RiAddLine, RiDeleteBinLine, RiLoader4Line, RiSearchLine, RiEyeLine, RiShutDownLine } from 'react-icons/ri';
 import { toast } from 'sonner';
 import { UserRole } from '@/types';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -91,9 +91,9 @@ const DeviceToggle = ({
       {/* Stato testuale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {isLoading ? (
-          <Loader2 size={18} className="animate-spin" style={{ color: colors.accent }} />
+          <RiLoader4Line size={18} className="animate-spin" style={{ color: colors.accent }} />
         ) : (
-          <Power
+          <RiShutDownLine
             size={18}
             style={{
               color: isOn ? colors.accent : colors.textMuted,
@@ -412,9 +412,9 @@ export const Dispositivi = () => {
               title="Scansiona Rete"
             >
               {scanning ? (
-                <Loader2 size={20} className="animate-spin" style={{ color: colors.accent }} />
+                <RiLoader4Line size={20} className="animate-spin" style={{ color: colors.accent }} />
               ) : (
-                <Search size={20} style={{ color: colors.textPrimary }} />
+                <RiSearchLine size={20} style={{ color: colors.textPrimary }} />
               )}
             </motion.button>
 
@@ -438,7 +438,7 @@ export const Dispositivi = () => {
               whileTap={{ scale: 0.95 }}
               title="Aggiungi Dispositivo"
             >
-              <Plus size={20} style={{ color: colors.bg }} />
+              <RiAddLine size={20} style={{ color: colors.bg }} />
             </motion.button>
           </div>
         </div>
@@ -476,7 +476,7 @@ export const Dispositivi = () => {
                 border: `1px solid ${colors.accent}30`,
               }}
             >
-              <Lightbulb size={48} style={{ color: colors.textMuted }} />
+              <RiLightbulbLine size={48} style={{ color: colors.textMuted }} />
             </motion.div>
             <h3 style={{
               fontSize: '22px',
@@ -515,7 +515,7 @@ export const Dispositivi = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Plus size={18} />
+              <RiAddLine size={18} />
               Aggiungi Dispositivo
             </motion.button>
           </motion.div>
@@ -575,7 +575,7 @@ export const Dispositivi = () => {
                         flexShrink: 0,
                       }}
                     >
-                      <Lightbulb
+                      <RiLightbulbLine
                         size={20}
                         style={{
                           color: dispositivo.power_state ? colors.accentLight : colors.textMuted,
@@ -605,32 +605,55 @@ export const Dispositivi = () => {
                       }}>
                         {dispositivo.ip_address}
                       </p>
-                      {/* Status Badge */}
-                      <div style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        marginTop: '4px',
-                        padding: '2px 8px',
-                        borderRadius: '6px',
-                        background: dispositivo.stato === 'online' ? `${colors.success}20` : `${colors.error}20`,
-                        border: `1px solid ${dispositivo.stato === 'online' ? `${colors.success}30` : `${colors.error}30`}`,
-                      }}>
+                      {/* Status Badges */}
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
+                        {/* Online/Offline Badge */}
                         <div style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          background: dispositivo.stato === 'online' ? colors.success : colors.error,
-                          boxShadow: `0 0 6px ${dispositivo.stato === 'online' ? colors.success : colors.error}`,
-                        }} />
-                        <span style={{
-                          fontSize: '9px',
-                          fontWeight: 600,
-                          color: dispositivo.stato === 'online' ? colors.success : colors.error,
-                          textTransform: 'uppercase',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          background: dispositivo.stato === 'online' ? `${colors.success}20` : `${colors.error}20`,
+                          border: `1px solid ${dispositivo.stato === 'online' ? `${colors.success}30` : `${colors.error}30`}`,
                         }}>
-                          {dispositivo.stato === 'online' ? 'Online' : 'Offline'}
-                        </span>
+                          <div style={{
+                            width: '6px',
+                            height: '6px',
+                            borderRadius: '50%',
+                            background: dispositivo.stato === 'online' ? colors.success : colors.error,
+                            boxShadow: `0 0 6px ${dispositivo.stato === 'online' ? colors.success : colors.error}`,
+                          }} />
+                          <span style={{
+                            fontSize: '9px',
+                            fontWeight: 600,
+                            color: dispositivo.stato === 'online' ? colors.success : colors.error,
+                            textTransform: 'uppercase',
+                          }}>
+                            {dispositivo.stato === 'online' ? 'Online' : 'Offline'}
+                          </span>
+                        </div>
+                        {/* Bloccato Badge */}
+                        {dispositivo.bloccato && (
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            background: `${colors.warning}20`,
+                            border: `1px solid ${colors.warning}30`,
+                          }}>
+                            <span style={{
+                              fontSize: '9px',
+                              fontWeight: 600,
+                              color: colors.warning,
+                              textTransform: 'uppercase',
+                            }}>
+                              Bloccato
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -650,7 +673,7 @@ export const Dispositivi = () => {
                     whileTap={{ scale: 0.9 }}
                     title="Elimina"
                   >
-                    <Trash2 size={14} style={{ color: colors.textMuted }} />
+                    <RiDeleteBinLine size={14} style={{ color: colors.textMuted }} />
                   </motion.button>
                 </div>
 
@@ -856,7 +879,7 @@ export const Dispositivi = () => {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
-                    <Lightbulb size={18} style={{ color: colors.accent, flexShrink: 0 }} />
+                    <RiLightbulbLine size={18} style={{ color: colors.accent, flexShrink: 0 }} />
                     <span style={{
                       fontSize: '13px',
                       fontFamily: 'monospace',
@@ -899,9 +922,9 @@ export const Dispositivi = () => {
                         title="Lampeggia dispositivo"
                       >
                         {findingDevice === device.ip_address ? (
-                          <Loader2 size={14} className="animate-spin" style={{ color: colors.warning }} />
+                          <RiLoader4Line size={14} className="animate-spin" style={{ color: colors.warning }} />
                         ) : (
-                          <Eye size={14} style={{ color: colors.warning }} />
+                          <RiEyeLine size={14} style={{ color: colors.warning }} />
                         )}
                       </motion.button>
                       <motion.button
@@ -1000,9 +1023,9 @@ export const Dispositivi = () => {
               whileTap={{ scale: 0.98 }}
             >
               {findingDevice === selectedScanDevice.ip_address ? (
-                <Loader2 size={18} className="animate-spin" style={{ color: colors.warning }} />
+                <RiLoader4Line size={18} className="animate-spin" style={{ color: colors.warning }} />
               ) : (
-                <Eye size={18} style={{ color: colors.warning }} />
+                <RiEyeLine size={18} style={{ color: colors.warning }} />
               )}
               <span style={{ fontSize: '14px', fontWeight: 600, color: colors.warning }}>
                 {findingDevice === selectedScanDevice.ip_address ? 'Lampeggio in corso...' : 'TROVAMI'}

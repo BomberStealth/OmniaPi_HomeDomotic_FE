@@ -1,6 +1,6 @@
 import { ReactNode, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LucideIcon } from 'lucide-react';
+import type { IconType } from 'react-icons';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
@@ -28,7 +28,7 @@ const hexToRgb = (hex: string): string => {
 
 export interface ContextMenuItem {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconType;
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;

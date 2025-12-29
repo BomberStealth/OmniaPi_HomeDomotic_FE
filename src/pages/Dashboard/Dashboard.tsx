@@ -10,10 +10,11 @@ import { DeviceCard } from '@/components/dispositivi/DeviceCard';
 import { SceneIcon } from '@/pages/Scene/Scene';
 import { motion } from 'framer-motion';
 import {
-  Lightbulb, Thermometer, Loader2, PinOff,
-  ChevronDown, Home, Sofa, Bed, UtensilsCrossed,
-  Bath, Tv, TreePine, Car, Warehouse, Box
-} from 'lucide-react';
+  RiLightbulbLine, RiTempHotLine, RiLoader4Line, RiUnpinLine,
+  RiArrowDownSLine, RiHome4Line, RiSofaLine, RiHotelBedLine, RiRestaurantLine,
+  RiDropLine, RiTvLine, RiPlantLine, RiCarLine, RiStore2Line, RiBox3Line
+} from 'react-icons/ri';
+import type { IconType } from 'react-icons';
 import { toast } from 'sonner';
 
 // ============================================
@@ -40,17 +41,17 @@ const hexToRgb = (hex: string): string => {
 };
 
 // Mappa icone per tipo stanza
-const getRoomIcon = (nome: string) => {
+const getRoomIcon = (nome: string): IconType => {
   const lowerNome = nome.toLowerCase();
-  if (lowerNome.includes('soggiorno') || lowerNome.includes('living') || lowerNome.includes('salotto')) return Sofa;
-  if (lowerNome.includes('camera') || lowerNome.includes('letto') || lowerNome.includes('bedroom')) return Bed;
-  if (lowerNome.includes('cucina') || lowerNome.includes('kitchen')) return UtensilsCrossed;
-  if (lowerNome.includes('bagno') || lowerNome.includes('bathroom')) return Bath;
-  if (lowerNome.includes('tv') || lowerNome.includes('media') || lowerNome.includes('studio')) return Tv;
-  if (lowerNome.includes('giardino') || lowerNome.includes('garden') || lowerNome.includes('esterno')) return TreePine;
-  if (lowerNome.includes('garage') || lowerNome.includes('box auto')) return Car;
-  if (lowerNome.includes('cantina') || lowerNome.includes('magazzino')) return Warehouse;
-  return Home;
+  if (lowerNome.includes('soggiorno') || lowerNome.includes('living') || lowerNome.includes('salotto')) return RiSofaLine;
+  if (lowerNome.includes('camera') || lowerNome.includes('letto') || lowerNome.includes('bedroom')) return RiHotelBedLine;
+  if (lowerNome.includes('cucina') || lowerNome.includes('kitchen')) return RiRestaurantLine;
+  if (lowerNome.includes('bagno') || lowerNome.includes('bathroom')) return RiDropLine;
+  if (lowerNome.includes('tv') || lowerNome.includes('media') || lowerNome.includes('studio')) return RiTvLine;
+  if (lowerNome.includes('giardino') || lowerNome.includes('garden') || lowerNome.includes('esterno')) return RiPlantLine;
+  if (lowerNome.includes('garage') || lowerNome.includes('box auto')) return RiCarLine;
+  if (lowerNome.includes('cantina') || lowerNome.includes('magazzino')) return RiStore2Line;
+  return RiHome4Line;
 };
 
 export const Dashboard = () => {
@@ -192,7 +193,7 @@ export const Dashboard = () => {
   };
 
   const getContextMenuItems = (scenaId: number): ContextMenuItem[] => [
-    { label: 'Rimuovi dalle scorciatoie', icon: PinOff, onClick: () => handleRemoveShortcut(scenaId) }
+    { label: 'Rimuovi dalle scorciatoie', icon: RiUnpinLine, onClick: () => handleRemoveShortcut(scenaId) }
   ];
 
   const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
@@ -323,9 +324,9 @@ export const Dashboard = () => {
                 }}
               >
                 {togglingAll === 'luci' ? (
-                  <Loader2 size={18} className="animate-spin" style={{ color: colors.accent }} />
+                  <RiLoader4Line size={18} className="animate-spin" style={{ color: colors.accent }} />
                 ) : (
-                  <Lightbulb
+                  <RiLightbulbLine
                     size={18}
                     style={{
                       color: luciOn > 0 ? colors.accentLight : colors.accent,
@@ -362,8 +363,8 @@ export const Dashboard = () => {
               whileHover={termostati > 0 ? { scale: 1.05 } : undefined}
               whileTap={termostati > 0 ? { scale: 0.95 } : undefined}
             >
-              <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)' }}>
-                <Thermometer size={18} style={{ color: '#10b981' }} />
+              <div style={{ padding: '8px', borderRadius: '12px', background: `${colors.accent}26` }}>
+                <RiTempHotLine size={18} style={{ color: colors.accent }} />
               </div>
               <div style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: '18px', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1 }}>
@@ -427,7 +428,7 @@ export const Dashboard = () => {
                       background: `${colors.accent}15`,
                     }}>
                       {executing === scena.id ? (
-                        <Loader2 size={20} className="animate-spin" style={{ color: colors.accent }} />
+                        <RiLoader4Line size={20} className="animate-spin" style={{ color: colors.accent }} />
                       ) : (
                         <SceneIcon
                           iconId={scena.icona}
@@ -530,13 +531,13 @@ export const Dashboard = () => {
                           <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
                             {roomDevices.length} dispositiv{roomDevices.length === 1 ? 'o' : 'i'}
                             {devicesOn > 0 && (
-                              <span style={{ color: '#10b981', marginLeft: '4px' }}>({devicesOn} ON)</span>
+                              <span style={{ color: colors.accent, marginLeft: '4px' }}>({devicesOn} ON)</span>
                             )}
                           </p>
                         </div>
                       </div>
                       <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                        <ChevronDown size={20} style={{ color: colors.textMuted }} />
+                        <RiArrowDownSLine size={20} style={{ color: colors.textMuted }} />
                       </motion.div>
                     </motion.button>
 
@@ -549,6 +550,7 @@ export const Dashboard = () => {
                               nome={dispositivo.nome}
                               isOn={!!dispositivo.power_state}
                               isLoading={togglingDevice === dispositivo.id}
+                              bloccato={!!dispositivo.bloccato}
                               onClick={() => toggleDevice(dispositivo)}
                             />
                           ))}
@@ -606,7 +608,7 @@ export const Dashboard = () => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(156, 163, 175, 0.15)' }}>
-                        <Box size={20} style={{ color: '#9ca3af' }} />
+                        <RiBox3Line size={20} style={{ color: '#9ca3af' }} />
                       </div>
                       <div style={{ textAlign: 'left' }}>
                         <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
@@ -618,7 +620,7 @@ export const Dashboard = () => {
                       </div>
                     </div>
                     <motion.div animate={{ rotate: expandedRooms.has(-1) ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown size={20} style={{ color: colors.textMuted }} />
+                      <RiArrowDownSLine size={20} style={{ color: colors.textMuted }} />
                     </motion.div>
                   </motion.button>
 
@@ -631,6 +633,7 @@ export const Dashboard = () => {
                             nome={dispositivo.nome}
                             isOn={!!dispositivo.power_state}
                             isLoading={togglingDevice === dispositivo.id}
+                            bloccato={!!dispositivo.bloccato}
                             onClick={() => toggleDevice(dispositivo)}
                           />
                         ))}

@@ -1,10 +1,72 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { IconType } from 'react-icons';
+
+// ======= REACT-ICONS - Diverse librerie con stili unici =======
+
+// 1. Lucide (via react-icons) - Outline elegante
 import {
-  Lightbulb, Thermometer, Wind, Tv, Lock,
-  Sofa, Bed, ChevronRight, Settings,
-  Sun, Moon, Power, Zap, Droplets
-} from 'lucide-react';
+  LuZap, LuSun, LuMoon, LuHouse, LuFlame, LuSnowflake, LuCoffee, LuMusic,
+  LuShield, LuHeart, LuTv, LuBed, LuSunrise, LuSunset, LuLightbulb, LuPartyPopper,
+  LuLamp, LuGamepad2
+} from 'react-icons/lu';
+
+// 2. Phosphor Bold - Linee spesse e moderne
+import {
+  PiLightningBold, PiSunBold, PiMoonBold, PiHouseBold, PiFireBold, PiSnowflakeBold,
+  PiCoffeeBold, PiMusicNoteBold, PiShieldBold, PiHeartBold, PiTelevisionBold,
+  PiBedBold, PiSunHorizonBold, PiLampBold, PiLightbulbBold, PiConfettiBold,
+  PiGameControllerBold, PiMoonStarsBold
+} from 'react-icons/pi';
+
+// 3. Phosphor Fill - Icone piene/solide
+import {
+  PiLightningFill, PiSunFill, PiMoonFill, PiHouseFill, PiFireFill, PiSnowflakeFill,
+  PiCoffeeFill, PiMusicNoteFill, PiShieldFill, PiHeartFill, PiTelevisionFill,
+  PiBedFill, PiSunHorizonFill, PiLampFill, PiLightbulbFill, PiConfettiFill,
+  PiGameControllerFill, PiMoonStarsFill
+} from 'react-icons/pi';
+
+// 4. Phosphor Duotone - Due tonalità, effetto moderno
+import {
+  PiLightningDuotone, PiSunDuotone, PiMoonDuotone, PiHouseDuotone, PiFireDuotone,
+  PiSnowflakeDuotone, PiCoffeeDuotone, PiMusicNoteDuotone, PiShieldDuotone,
+  PiHeartDuotone, PiTelevisionDuotone, PiBedDuotone, PiSunHorizonDuotone,
+  PiLampDuotone, PiLightbulbDuotone, PiConfettiDuotone, PiGameControllerDuotone,
+  PiMoonStarsDuotone
+} from 'react-icons/pi';
+
+// 5. Remix Icons - Stile cinese moderno (+ icone usate in preview)
+import {
+  RiFlashlightLine, RiSunLine, RiMoonLine, RiHome4Line, RiFireLine,
+  RiSnowflakeLine, RiCupLine, RiMusic2Line, RiShieldLine, RiHeartLine,
+  RiTvLine, RiHotelBedLine, RiSunFoggyLine, RiFlashlightFill, RiLightbulbLine,
+  RiGamepadLine, RiMoonClearLine, RiGiftLine,
+  RiTempHotLine, RiWindyLine, RiLockLine, RiSofaLine, RiArrowRightSLine,
+  RiSettings4Line, RiShutDownLine, RiDropLine
+} from 'react-icons/ri';
+
+// 6. Bootstrap Icons - Classiche e professionali
+import {
+  BsLightningCharge, BsSun, BsMoon, BsHouse, BsFire, BsSnow, BsCup,
+  BsMusicNote, BsShield, BsHeart, BsTv, BsLamp, BsSunrise, BsLightbulb,
+  BsController, BsMoonStars, BsBalloon, BsHouseDoor
+} from 'react-icons/bs';
+
+// 7. Ionicons - Stile iOS/Apple
+import {
+  IoFlashOutline, IoSunnyOutline, IoMoonOutline, IoHomeOutline, IoFlameOutline,
+  IoSnowOutline, IoCafeOutline, IoMusicalNotesOutline, IoShieldOutline,
+  IoHeartOutline, IoTvOutline, IoBedOutline, IoSunnySharp, IoBulbOutline,
+  IoGameControllerOutline, IoMoonSharp, IoSparklesOutline, IoHomeSharp
+} from 'react-icons/io5';
+
+// 8. Tabler Icons - Linee spesse e bold
+import {
+  TbBolt, TbSun, TbMoon, TbHome, TbFlame, TbSnowflake, TbCoffee, TbMusic,
+  TbShield, TbHeart, TbDeviceTv, TbBed, TbSunrise, TbBulb, TbDeviceGamepad,
+  TbMoonStars, TbConfetti, TbLamp
+} from 'react-icons/tb';
 
 // ============================================
 // STYLE PREVIEW PAGE - Dark Luxury Gold
@@ -108,6 +170,234 @@ const getColors = (theme: typeof colorThemes[0]) => ({
   toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
 });
 
+// ============================================
+// ICON SETS - Diversi stili da librerie diverse
+// ============================================
+interface IconSetItem {
+  id: string;
+  icon: IconType;
+  label: string;
+}
+
+interface IconSet {
+  name: string;
+  description: string;
+  style: string;
+  library: string;
+  icons: IconSetItem[];
+}
+
+const iconSets: IconSet[] = [
+  {
+    name: 'Lucide',
+    description: 'Linee sottili ed eleganti - Stile attuale dell\'app',
+    style: 'Outline Elegante',
+    library: 'lucide-react',
+    icons: [
+      { id: 'zap', icon: LuZap, label: 'Energia' },
+      { id: 'sun', icon: LuSun, label: 'Giorno' },
+      { id: 'moon', icon: LuMoon, label: 'Notte' },
+      { id: 'home', icon: LuHouse, label: 'Casa' },
+      { id: 'flame', icon: LuFlame, label: 'Fuoco' },
+      { id: 'snow', icon: LuSnowflake, label: 'Freddo' },
+      { id: 'coffee', icon: LuCoffee, label: 'Caffè' },
+      { id: 'music', icon: LuMusic, label: 'Musica' },
+      { id: 'shield', icon: LuShield, label: 'Sicurezza' },
+      { id: 'heart', icon: LuHeart, label: 'Amore' },
+      { id: 'tv', icon: LuTv, label: 'TV' },
+      { id: 'bed', icon: LuBed, label: 'Letto' },
+      { id: 'sunrise', icon: LuSunrise, label: 'Alba' },
+      { id: 'sunset', icon: LuSunset, label: 'Tramonto' },
+      { id: 'lightbulb', icon: LuLightbulb, label: 'Luce' },
+      { id: 'party', icon: LuPartyPopper, label: 'Party' },
+      { id: 'lamp', icon: LuLamp, label: 'Lampada' },
+      { id: 'gamepad', icon: LuGamepad2, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Phosphor Bold',
+    description: 'Linee spesse e moderne - Più visibilità',
+    style: 'Bold Moderno',
+    library: 'phosphor-icons',
+    icons: [
+      { id: 'zap', icon: PiLightningBold, label: 'Energia' },
+      { id: 'sun', icon: PiSunBold, label: 'Giorno' },
+      { id: 'moon', icon: PiMoonBold, label: 'Notte' },
+      { id: 'home', icon: PiHouseBold, label: 'Casa' },
+      { id: 'flame', icon: PiFireBold, label: 'Fuoco' },
+      { id: 'snow', icon: PiSnowflakeBold, label: 'Freddo' },
+      { id: 'coffee', icon: PiCoffeeBold, label: 'Caffè' },
+      { id: 'music', icon: PiMusicNoteBold, label: 'Musica' },
+      { id: 'shield', icon: PiShieldBold, label: 'Sicurezza' },
+      { id: 'heart', icon: PiHeartBold, label: 'Amore' },
+      { id: 'tv', icon: PiTelevisionBold, label: 'TV' },
+      { id: 'bed', icon: PiBedBold, label: 'Letto' },
+      { id: 'sunrise', icon: PiSunHorizonBold, label: 'Alba' },
+      { id: 'moonstar', icon: PiMoonStarsBold, label: 'Notte+' },
+      { id: 'lightbulb', icon: PiLightbulbBold, label: 'Luce' },
+      { id: 'party', icon: PiConfettiBold, label: 'Party' },
+      { id: 'lamp', icon: PiLampBold, label: 'Lampada' },
+      { id: 'gamepad', icon: PiGameControllerBold, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Phosphor Fill',
+    description: 'Icone piene e solide - Massimo impatto',
+    style: 'Solid Fill',
+    library: 'phosphor-icons',
+    icons: [
+      { id: 'zap', icon: PiLightningFill, label: 'Energia' },
+      { id: 'sun', icon: PiSunFill, label: 'Giorno' },
+      { id: 'moon', icon: PiMoonFill, label: 'Notte' },
+      { id: 'home', icon: PiHouseFill, label: 'Casa' },
+      { id: 'flame', icon: PiFireFill, label: 'Fuoco' },
+      { id: 'snow', icon: PiSnowflakeFill, label: 'Freddo' },
+      { id: 'coffee', icon: PiCoffeeFill, label: 'Caffè' },
+      { id: 'music', icon: PiMusicNoteFill, label: 'Musica' },
+      { id: 'shield', icon: PiShieldFill, label: 'Sicurezza' },
+      { id: 'heart', icon: PiHeartFill, label: 'Amore' },
+      { id: 'tv', icon: PiTelevisionFill, label: 'TV' },
+      { id: 'bed', icon: PiBedFill, label: 'Letto' },
+      { id: 'sunrise', icon: PiSunHorizonFill, label: 'Alba' },
+      { id: 'moonstar', icon: PiMoonStarsFill, label: 'Notte+' },
+      { id: 'lightbulb', icon: PiLightbulbFill, label: 'Luce' },
+      { id: 'party', icon: PiConfettiFill, label: 'Party' },
+      { id: 'lamp', icon: PiLampFill, label: 'Lampada' },
+      { id: 'gamepad', icon: PiGameControllerFill, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Phosphor Duotone',
+    description: 'Due tonalità - Effetto premium moderno',
+    style: 'Duotone Premium',
+    library: 'phosphor-icons',
+    icons: [
+      { id: 'zap', icon: PiLightningDuotone, label: 'Energia' },
+      { id: 'sun', icon: PiSunDuotone, label: 'Giorno' },
+      { id: 'moon', icon: PiMoonDuotone, label: 'Notte' },
+      { id: 'home', icon: PiHouseDuotone, label: 'Casa' },
+      { id: 'flame', icon: PiFireDuotone, label: 'Fuoco' },
+      { id: 'snow', icon: PiSnowflakeDuotone, label: 'Freddo' },
+      { id: 'coffee', icon: PiCoffeeDuotone, label: 'Caffè' },
+      { id: 'music', icon: PiMusicNoteDuotone, label: 'Musica' },
+      { id: 'shield', icon: PiShieldDuotone, label: 'Sicurezza' },
+      { id: 'heart', icon: PiHeartDuotone, label: 'Amore' },
+      { id: 'tv', icon: PiTelevisionDuotone, label: 'TV' },
+      { id: 'bed', icon: PiBedDuotone, label: 'Letto' },
+      { id: 'sunrise', icon: PiSunHorizonDuotone, label: 'Alba' },
+      { id: 'moonstar', icon: PiMoonStarsDuotone, label: 'Notte+' },
+      { id: 'lightbulb', icon: PiLightbulbDuotone, label: 'Luce' },
+      { id: 'party', icon: PiConfettiDuotone, label: 'Party' },
+      { id: 'lamp', icon: PiLampDuotone, label: 'Lampada' },
+      { id: 'gamepad', icon: PiGameControllerDuotone, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Remix',
+    description: 'Stile cinese moderno - Pulito e minimal',
+    style: 'Chinese Modern',
+    library: 'remix-icons',
+    icons: [
+      { id: 'zap', icon: RiFlashlightLine, label: 'Energia' },
+      { id: 'sun', icon: RiSunLine, label: 'Giorno' },
+      { id: 'moon', icon: RiMoonLine, label: 'Notte' },
+      { id: 'home', icon: RiHome4Line, label: 'Casa' },
+      { id: 'flame', icon: RiFireLine, label: 'Fuoco' },
+      { id: 'snow', icon: RiSnowflakeLine, label: 'Freddo' },
+      { id: 'coffee', icon: RiCupLine, label: 'Caffè' },
+      { id: 'music', icon: RiMusic2Line, label: 'Musica' },
+      { id: 'shield', icon: RiShieldLine, label: 'Sicurezza' },
+      { id: 'heart', icon: RiHeartLine, label: 'Amore' },
+      { id: 'tv', icon: RiTvLine, label: 'TV' },
+      { id: 'bed', icon: RiHotelBedLine, label: 'Letto' },
+      { id: 'sunrise', icon: RiSunFoggyLine, label: 'Alba' },
+      { id: 'moonstar', icon: RiMoonClearLine, label: 'Notte+' },
+      { id: 'lightbulb', icon: RiLightbulbLine, label: 'Luce' },
+      { id: 'party', icon: RiGiftLine, label: 'Party' },
+      { id: 'flash', icon: RiFlashlightFill, label: 'Flash' },
+      { id: 'gamepad', icon: RiGamepadLine, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Bootstrap',
+    description: 'Classiche e professionali - Stile web tradizionale',
+    style: 'Classic Pro',
+    library: 'bootstrap-icons',
+    icons: [
+      { id: 'zap', icon: BsLightningCharge, label: 'Energia' },
+      { id: 'sun', icon: BsSun, label: 'Giorno' },
+      { id: 'moon', icon: BsMoon, label: 'Notte' },
+      { id: 'home', icon: BsHouse, label: 'Casa' },
+      { id: 'flame', icon: BsFire, label: 'Fuoco' },
+      { id: 'snow', icon: BsSnow, label: 'Freddo' },
+      { id: 'coffee', icon: BsCup, label: 'Caffè' },
+      { id: 'music', icon: BsMusicNote, label: 'Musica' },
+      { id: 'shield', icon: BsShield, label: 'Sicurezza' },
+      { id: 'heart', icon: BsHeart, label: 'Amore' },
+      { id: 'tv', icon: BsTv, label: 'TV' },
+      { id: 'home2', icon: BsHouseDoor, label: 'Porta' },
+      { id: 'sunrise', icon: BsSunrise, label: 'Alba' },
+      { id: 'moonstar', icon: BsMoonStars, label: 'Notte+' },
+      { id: 'lightbulb', icon: BsLightbulb, label: 'Luce' },
+      { id: 'party', icon: BsBalloon, label: 'Party' },
+      { id: 'lamp', icon: BsLamp, label: 'Lampada' },
+      { id: 'gamepad', icon: BsController, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Ionicons',
+    description: 'Stile iOS/Apple - Elegante e arrotondato',
+    style: 'iOS Style',
+    library: 'ionicons',
+    icons: [
+      { id: 'zap', icon: IoFlashOutline, label: 'Energia' },
+      { id: 'sun', icon: IoSunnyOutline, label: 'Giorno' },
+      { id: 'moon', icon: IoMoonOutline, label: 'Notte' },
+      { id: 'home', icon: IoHomeOutline, label: 'Casa' },
+      { id: 'flame', icon: IoFlameOutline, label: 'Fuoco' },
+      { id: 'snow', icon: IoSnowOutline, label: 'Freddo' },
+      { id: 'coffee', icon: IoCafeOutline, label: 'Caffè' },
+      { id: 'music', icon: IoMusicalNotesOutline, label: 'Musica' },
+      { id: 'shield', icon: IoShieldOutline, label: 'Sicurezza' },
+      { id: 'heart', icon: IoHeartOutline, label: 'Amore' },
+      { id: 'tv', icon: IoTvOutline, label: 'TV' },
+      { id: 'bed', icon: IoBedOutline, label: 'Letto' },
+      { id: 'sunsharp', icon: IoSunnySharp, label: 'Sole+' },
+      { id: 'moonsharp', icon: IoMoonSharp, label: 'Luna+' },
+      { id: 'lightbulb', icon: IoBulbOutline, label: 'Luce' },
+      { id: 'sparkle', icon: IoSparklesOutline, label: 'Magic' },
+      { id: 'homesharp', icon: IoHomeSharp, label: 'Casa+' },
+      { id: 'gamepad', icon: IoGameControllerOutline, label: 'Gaming' },
+    ]
+  },
+  {
+    name: 'Tabler',
+    description: 'Linee spesse e bold - Alta leggibilità',
+    style: 'Bold Thick',
+    library: 'tabler-icons',
+    icons: [
+      { id: 'zap', icon: TbBolt, label: 'Energia' },
+      { id: 'sun', icon: TbSun, label: 'Giorno' },
+      { id: 'moon', icon: TbMoon, label: 'Notte' },
+      { id: 'home', icon: TbHome, label: 'Casa' },
+      { id: 'flame', icon: TbFlame, label: 'Fuoco' },
+      { id: 'snow', icon: TbSnowflake, label: 'Freddo' },
+      { id: 'coffee', icon: TbCoffee, label: 'Caffè' },
+      { id: 'music', icon: TbMusic, label: 'Musica' },
+      { id: 'shield', icon: TbShield, label: 'Sicurezza' },
+      { id: 'heart', icon: TbHeart, label: 'Amore' },
+      { id: 'tv', icon: TbDeviceTv, label: 'TV' },
+      { id: 'bed', icon: TbBed, label: 'Letto' },
+      { id: 'sunrise', icon: TbSunrise, label: 'Alba' },
+      { id: 'moonstar', icon: TbMoonStars, label: 'Notte+' },
+      { id: 'lightbulb', icon: TbBulb, label: 'Luce' },
+      { id: 'party', icon: TbConfetti, label: 'Party' },
+      { id: 'lamp', icon: TbLamp, label: 'Lampada' },
+      { id: 'gamepad', icon: TbDeviceGamepad, label: 'Gaming' },
+    ]
+  },
+];
+
 // Border radius values - più morbidi
 const radius = {
   sm: '12px',
@@ -142,9 +432,12 @@ const DarkLuxuryGold = () => {
   const [selectedFont, setSelectedFont] = useState(3);
   // Gold come tema di default (index 0)
   const [selectedTheme, setSelectedTheme] = useState(0);
+  // Icon set selezionato (index 0 = Standard)
+  const [selectedIconSet, setSelectedIconSet] = useState(0);
 
   const currentFont = fontOptions[selectedFont];
   const colors = getColors(colorThemes[selectedTheme]);
+  const currentIconSet = iconSets[selectedIconSet];
 
   return (
     <div
@@ -314,7 +607,7 @@ const DarkLuxuryGold = () => {
           }}
           whileTap={{ scale: 0.95 }}
         >
-          <Settings size={20} style={{ color: colors.goldLight, filter: `drop-shadow(0 0 3px ${colors.gold}50)` }} />
+          <RiSettings4Line size={20} style={{ color: colors.goldLight, filter: `drop-shadow(0 0 3px ${colors.gold}50)` }} />
         </motion.button>
       </div>
 
@@ -344,7 +637,7 @@ const DarkLuxuryGold = () => {
 
           {/* Label con icona */}
           <div className="flex items-center gap-1.5 mb-3">
-            <Thermometer size={14} style={{ color: colors.gold }} />
+            <RiTempHotLine size={14} style={{ color: colors.gold }} />
             <p className={typography.caption} style={{ color: colors.textMuted }}>Temperatura</p>
           </div>
 
@@ -397,7 +690,7 @@ const DarkLuxuryGold = () => {
                     boxShadow: `0 0 12px ${colors.gold}30`
                   }}
                 >
-                  <Thermometer size={14} style={{ color: colors.goldLight }} />
+                  <RiTempHotLine size={14} style={{ color: colors.goldLight }} />
                 </div>
                 <span
                   className={typography.value}
@@ -436,7 +729,7 @@ const DarkLuxuryGold = () => {
             style={{ background: `linear-gradient(90deg, transparent, ${colors.goldLight}4D, transparent)` }}
           />
           <div className="flex items-center gap-1.5 mb-3">
-            <Zap size={14} style={{ color: colors.gold }} />
+            <RiFlashlightLine size={14} style={{ color: colors.gold }} />
             <p className={typography.caption} style={{ color: colors.textMuted }}>Consumo Oggi</p>
           </div>
           <div className="flex items-end gap-1.5 h-20 justify-center">
@@ -472,10 +765,10 @@ const DarkLuxuryGold = () => {
         </p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { icon: Sun, label: 'Giorno', active: true },
-            { icon: Moon, label: 'Notte', active: false },
-            { icon: Power, label: 'Spegni', active: false },
-            { icon: Lock, label: 'Sicuro', active: false },
+            { icon: RiSunLine, label: 'Giorno', active: true },
+            { icon: RiMoonLine, label: 'Notte', active: false },
+            { icon: RiShutDownLine, label: 'Spegni', active: false },
+            { icon: RiLockLine, label: 'Sicuro', active: false },
           ].map((action, i) => (
             <motion.button
               key={i}
@@ -523,8 +816,8 @@ const DarkLuxuryGold = () => {
         </p>
         <div className="space-y-2.5">
           {[
-            { name: 'Soggiorno', icon: Sofa, devices: 5, active: 3, temp: 23 },
-            { name: 'Camera', icon: Bed, devices: 3, active: 1, temp: 21 },
+            { name: 'Soggiorno', icon: RiSofaLine, devices: 5, active: 3, temp: 23 },
+            { name: 'Camera', icon: RiHotelBedLine, devices: 3, active: 1, temp: 21 },
           ].map((room, i) => (
             <motion.div
               key={i}
@@ -570,7 +863,7 @@ const DarkLuxuryGold = () => {
               </div>
               <div className="flex items-center gap-3">
                 <span className={typography.body} style={{ color: colors.goldLight }}>{room.temp}°</span>
-                <ChevronRight size={18} style={{ color: colors.textMuted }} />
+                <RiArrowRightSLine size={18} style={{ color: colors.textMuted }} />
               </div>
             </motion.div>
           ))}
@@ -584,12 +877,12 @@ const DarkLuxuryGold = () => {
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
-            { name: 'Luce Soggiorno', icon: Lightbulb, isOn: true },
-            { name: 'Termostato', icon: Thermometer, isOn: true, value: '22°' },
-            { name: 'Aria Condiz.', icon: Wind, isOn: false },
-            { name: 'Smart TV', icon: Tv, isOn: false },
-            { name: 'Luce Camera', icon: Lightbulb, isOn: false },
-            { name: 'Umidificatore', icon: Droplets, isOn: true },
+            { name: 'Luce Soggiorno', icon: RiLightbulbLine, isOn: true },
+            { name: 'Termostato', icon: RiTempHotLine, isOn: true, value: '22°' },
+            { name: 'Aria Condiz.', icon: RiWindyLine, isOn: false },
+            { name: 'Smart TV', icon: RiTvLine, isOn: false },
+            { name: 'Luce Camera', icon: RiLightbulbLine, isOn: false },
+            { name: 'Umidificatore', icon: RiDropLine, isOn: true },
           ].map((device, i) => (
             <motion.button
               key={i}
@@ -705,6 +998,205 @@ const DarkLuxuryGold = () => {
         </div>
       </div>
 
+      {/* ============================================ */}
+      {/* ICON SETS PREVIEW SECTION */}
+      {/* ============================================ */}
+      <div className="mb-6 mt-8">
+        <div className="flex items-center justify-between mb-3">
+          <p className={`${typography.label}`} style={{ color: colors.textMuted }}>
+            Set Icone Scene
+          </p>
+          <span
+            className={typography.captionSmall}
+            style={{
+              color: colors.goldLight,
+              background: `${colors.gold}15`,
+              padding: '4px 12px',
+              borderRadius: radius.full,
+              border: `1px solid ${colors.gold}30`
+            }}
+          >
+            {currentIconSet.style}
+          </span>
+        </div>
+
+        {/* Icon Set Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide mb-4">
+          {iconSets.map((set, i) => (
+            <motion.button
+              key={set.name}
+              onClick={() => setSelectedIconSet(i)}
+              className="flex-shrink-0 px-4 py-2.5 text-left relative overflow-hidden"
+              style={{
+                background: i === selectedIconSet
+                  ? `linear-gradient(165deg, ${colors.gold}20, ${colors.bgCard})`
+                  : colors.bgCardLit,
+                border: `1px solid ${i === selectedIconSet ? colors.gold : colors.border}`,
+                borderRadius: radius.lg,
+                boxShadow: i === selectedIconSet
+                  ? `0 4px 20px ${colors.gold}25, ${colors.cardShadow}`
+                  : colors.cardShadow,
+                minWidth: '100px'
+              }}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {/* Top highlight for selected */}
+              {i === selectedIconSet && (
+                <div
+                  className="absolute top-0 left-1/4 right-1/4 h-px"
+                  style={{ background: `linear-gradient(90deg, transparent, ${colors.goldLight}60, transparent)` }}
+                />
+              )}
+              <span
+                className={`${typography.body} block`}
+                style={{ color: i === selectedIconSet ? colors.goldLight : colors.textPrimary }}
+              >
+                {set.name}
+              </span>
+              <span className={typography.captionSmall} style={{ color: colors.textMuted }}>
+                {set.style}
+              </span>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Set Description */}
+        <div className="mb-4">
+          <p
+            className={`${typography.bodySmall}`}
+            style={{ color: colors.textSecondary }}
+          >
+            {currentIconSet.description}
+          </p>
+          <p
+            className={`${typography.captionSmall} mt-1`}
+            style={{ color: colors.textMuted }}
+          >
+            Libreria: <span style={{ color: colors.goldLight }}>{currentIconSet.library}</span>
+          </p>
+        </div>
+
+        {/* Icons Grid Preview */}
+        <motion.div
+          key={selectedIconSet}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="p-4 relative overflow-hidden"
+          style={{
+            background: colors.bgCardLit,
+            border: `1px solid ${colors.border}`,
+            borderRadius: radius['2xl'],
+            boxShadow: colors.cardShadowLit
+          }}
+        >
+          {/* Top highlight */}
+          <div
+            className="absolute top-0 left-1/4 right-1/4 h-px"
+            style={{ background: `linear-gradient(90deg, transparent, ${colors.goldLight}4D, transparent)` }}
+          />
+
+          <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
+            {currentIconSet.icons.map(({ id, icon: IconComponent, label }, index) => (
+              <motion.div
+                key={id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.02, duration: 0.2 }}
+                className="flex flex-col items-center gap-1 p-2 cursor-pointer group"
+                style={{
+                  borderRadius: radius.md,
+                }}
+                whileHover={{
+                  background: `${colors.gold}15`,
+                  scale: 1.1,
+                }}
+              >
+                <div
+                  className="p-2 transition-all duration-200"
+                  style={{
+                    background: `${colors.gold}10`,
+                    borderRadius: radius.md,
+                    boxShadow: `0 2px 8px ${colors.gold}10`
+                  }}
+                >
+                  <IconComponent
+                    size={20}
+                    style={{
+                      color: colors.goldLight,
+                      filter: `drop-shadow(0 0 4px ${colors.gold}40)`,
+                    }}
+                  />
+                </div>
+                <span
+                  className={typography.captionSmall}
+                  style={{
+                    color: colors.textMuted,
+                    textAlign: 'center',
+                    fontSize: '9px',
+                    lineHeight: 1.2
+                  }}
+                >
+                  {label}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Sample Scene Cards with current icon set */}
+          <div className="mt-4 pt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
+            <p className={`${typography.caption} mb-3`} style={{ color: colors.textMuted }}>
+              Preview Scene
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {currentIconSet.icons.slice(0, 3).map(({ id, icon: IconComponent, label }) => (
+                <motion.div
+                  key={`scene-${id}`}
+                  className="p-3 text-center relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(165deg, ${colors.gold}12, ${colors.bgCard})`,
+                    border: `1px solid ${colors.gold}40`,
+                    borderRadius: radius.xl,
+                    boxShadow: `0 4px 16px ${colors.gold}15`
+                  }}
+                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Top glow */}
+                  <div
+                    className="absolute top-0 left-1/4 right-1/4 h-px"
+                    style={{ background: `linear-gradient(90deg, transparent, ${colors.goldLight}50, transparent)` }}
+                  />
+                  <div
+                    className="mx-auto mb-2 p-2.5 w-fit"
+                    style={{
+                      background: `linear-gradient(145deg, ${colors.gold}25, ${colors.gold}10)`,
+                      borderRadius: radius.lg,
+                      boxShadow: `0 2px 12px ${colors.gold}30`
+                    }}
+                  >
+                    <IconComponent
+                      size={24}
+                      style={{
+                        color: colors.goldLight,
+                        filter: `drop-shadow(0 0 6px ${colors.gold})`
+                      }}
+                    />
+                  </div>
+                  <p className={typography.bodySmall} style={{ color: colors.textPrimary }}>
+                    {label}
+                  </p>
+                  <p className={typography.captionSmall} style={{ color: colors.textMuted }}>
+                    Tap to run
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
       {/* Bottom Navigation Preview */}
       <div className="fixed bottom-0 left-0 right-0 p-4 z-10">
         <div
@@ -723,10 +1215,10 @@ const DarkLuxuryGold = () => {
             style={{ background: `linear-gradient(90deg, transparent, ${colors.goldLight}4D, transparent)` }}
           />
           {[
-            { icon: Sofa, active: true },
-            { icon: Zap, active: false },
-            { icon: Thermometer, active: false },
-            { icon: Settings, active: false },
+            { icon: RiSofaLine, active: true },
+            { icon: RiFlashlightLine, active: false },
+            { icon: RiTempHotLine, active: false },
+            { icon: RiSettings4Line, active: false },
           ].map((item, i) => (
             <button
               key={i}

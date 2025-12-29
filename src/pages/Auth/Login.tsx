@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/authStore';
-import { Card } from '@/components/common/Card';
-import { Input } from '@/components/common/Input';
-import { Button } from '@/components/common/Button';
-import { Shield, AlertCircle, UserPlus } from 'lucide-react';
+import { AuthCard } from '@/components/common/AuthCard';
+import { AuthInput } from '@/components/common/AuthInput';
+import { AuthButton } from '@/components/common/AuthButton';
+import { RiShieldLine, RiAlertLine, RiUserAddLine } from 'react-icons/ri';
 
 // ============================================
 // LOGIN PAGE - Dark Luxury Style
@@ -105,7 +105,7 @@ export const Login = () => {
         }}
       />
 
-      <Card className="w-full max-w-md relative z-10">
+      <AuthCard className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="flex justify-center mb-4">
@@ -117,7 +117,7 @@ export const Login = () => {
                 boxShadow: `0 4px 20px ${colors.accent}33`,
               }}
             >
-              <Shield
+              <RiShieldLine
                 size={32}
                 style={{
                   color: colors.accentLight,
@@ -143,7 +143,7 @@ export const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
+          <AuthInput
             type="email"
             label={t('auth.email')}
             value={email}
@@ -154,7 +154,7 @@ export const Login = () => {
             disabled={isLoading}
           />
 
-          <Input
+          <AuthInput
             type="password"
             label={t('auth.password')}
             value={password}
@@ -176,7 +176,7 @@ export const Login = () => {
               }}
             >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
+                <RiAlertLine size={18} style={{ color: '#f59e0b', flexShrink: 0, marginTop: '2px' }} />
                 <div>
                   {validationErrors.map((err, i) => (
                     <p key={i} style={{ fontSize: '13px', color: '#f59e0b' }}>{err}</p>
@@ -197,7 +197,7 @@ export const Login = () => {
               }}
             >
               <div className="flex items-start gap-2">
-                <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
+                <RiAlertLine size={18} style={{ color: '#ef4444', flexShrink: 0, marginTop: '2px' }} />
                 <p style={{ fontSize: '13px', color: '#ef4444' }}>{error}</p>
               </div>
             </div>
@@ -210,7 +210,7 @@ export const Login = () => {
             </p>
           )}
 
-          <Button
+          <AuthButton
             type="submit"
             fullWidth
             disabled={isLoading || attempts >= 5}
@@ -224,7 +224,7 @@ export const Login = () => {
             ) : (
               t('auth.login')
             )}
-          </Button>
+          </AuthButton>
         </form>
 
         {/* Link Registrazione */}
@@ -237,7 +237,7 @@ export const Login = () => {
               color: colors.accentLight,
             }}
           >
-            <UserPlus size={16} />
+            <RiUserAddLine size={16} />
             <span>Non hai un account? Registrati</span>
           </Link>
         </div>
@@ -270,7 +270,7 @@ export const Login = () => {
             Termini di Servizio
           </Link>
         </div>
-      </Card>
+      </AuthCard>
     </div>
   );
 };

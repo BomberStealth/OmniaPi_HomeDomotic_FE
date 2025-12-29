@@ -9,13 +9,13 @@ import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { sceneApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
+import type { IconType } from 'react-icons';
 import {
-  Plus, Play, Loader2, Lightbulb, Check, Power,
-  Zap, Sun, Moon, DoorOpen, Hand, Clapperboard,
-  Sunrise, Sunset, Home, Flame, Snowflake,
-  Coffee, Bed, Tv, Music, Shield, Heart,
-  type LucideIcon
-} from 'lucide-react';
+  RiAddLine, RiPlayLine, RiLoader4Line, RiLightbulbLine, RiCheckLine, RiShutDownLine,
+  RiFlashlightLine, RiSunLine, RiMoonLine, RiDoorOpenLine, RiHandHeartLine, RiFilmLine,
+  RiSunFoggyLine, RiMoonClearLine, RiHome4Line, RiFireLine, RiSnowflakeLine,
+  RiCupLine, RiHotelBedLine, RiTvLine, RiMusic2Line, RiShieldLine, RiHeartLine
+} from 'react-icons/ri';
 import { toast } from 'sonner';
 import type { ScheduleConfig } from '@/types';
 
@@ -42,44 +42,64 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
-// Icone scene con Lucide
-const sceneIcons: { id: string; icon: LucideIcon; label: string }[] = [
-  { id: 'zap', icon: Zap, label: 'Energia' },
-  { id: 'sun', icon: Sun, label: 'Giorno' },
-  { id: 'moon', icon: Moon, label: 'Notte' },
-  { id: 'door', icon: DoorOpen, label: 'Porta' },
-  { id: 'hand', icon: Hand, label: 'Ciao' },
-  { id: 'movie', icon: Clapperboard, label: 'Cinema' },
-  { id: 'lightbulb', icon: Lightbulb, label: 'Luce' },
-  { id: 'sunrise', icon: Sunrise, label: 'Alba' },
-  { id: 'sunset', icon: Sunset, label: 'Tramonto' },
-  { id: 'home', icon: Home, label: 'Casa' },
-  { id: 'flame', icon: Flame, label: 'Fuoco' },
-  { id: 'snow', icon: Snowflake, label: 'Freddo' },
-  { id: 'coffee', icon: Coffee, label: 'Caffè' },
-  { id: 'bed', icon: Bed, label: 'Letto' },
-  { id: 'tv', icon: Tv, label: 'TV' },
-  { id: 'music', icon: Music, label: 'Musica' },
-  { id: 'shield', icon: Shield, label: 'Sicurezza' },
-  { id: 'heart', icon: Heart, label: 'Amore' },
+// Icone scene con Remix Icons
+const sceneIcons: { id: string; icon: IconType; label: string }[] = [
+  { id: 'zap', icon: RiFlashlightLine, label: 'Energia' },
+  { id: 'sun', icon: RiSunLine, label: 'Giorno' },
+  { id: 'moon', icon: RiMoonLine, label: 'Notte' },
+  { id: 'door', icon: RiDoorOpenLine, label: 'Porta' },
+  { id: 'hand', icon: RiHandHeartLine, label: 'Ciao' },
+  { id: 'movie', icon: RiFilmLine, label: 'Cinema' },
+  { id: 'lightbulb', icon: RiLightbulbLine, label: 'Luce' },
+  { id: 'sunrise', icon: RiSunFoggyLine, label: 'Alba' },
+  { id: 'sunset', icon: RiMoonClearLine, label: 'Tramonto' },
+  { id: 'home', icon: RiHome4Line, label: 'Casa' },
+  { id: 'flame', icon: RiFireLine, label: 'Fuoco' },
+  { id: 'snow', icon: RiSnowflakeLine, label: 'Freddo' },
+  { id: 'coffee', icon: RiCupLine, label: 'Caffè' },
+  { id: 'bed', icon: RiHotelBedLine, label: 'Letto' },
+  { id: 'tv', icon: RiTvLine, label: 'TV' },
+  { id: 'music', icon: RiMusic2Line, label: 'Musica' },
+  { id: 'shield', icon: RiShieldLine, label: 'Sicurezza' },
+  { id: 'heart', icon: RiHeartLine, label: 'Amore' },
 ];
 
+// Mappa emoji legacy → ID icona Remix
+const emojiToIconMap: Record<string, string> = {
+  '⚡': 'zap',
+  '☀️': 'sun',
+  '🌙': 'moon',
+  '🚪': 'door',
+  '👋': 'hand',
+  '🎬': 'movie',
+  '💡': 'lightbulb',
+  '🌅': 'sunrise',
+  '🌇': 'sunset',
+  '🏠': 'home',
+  '🔥': 'flame',
+  '❄️': 'snow',
+  '☕': 'coffee',
+  '🛏️': 'bed',
+  '📺': 'tv',
+  '🎵': 'music',
+  '🛡️': 'shield',
+  '❤️': 'heart',
+};
+
 // Funzione per ottenere icona da ID o emoji legacy
-export const getSceneIcon = (iconId: string): LucideIcon => {
-  const found = sceneIcons.find(i => i.id === iconId);
+export const getSceneIcon = (iconId: string): IconType => {
+  // Prima controlla se è un emoji legacy e converti
+  const mappedId = emojiToIconMap[iconId] || iconId;
+  const found = sceneIcons.find(i => i.id === mappedId);
   if (found) return found.icon;
-  // Fallback per emoji legacy
-  return Zap;
+  // Fallback per icone non trovate
+  return RiFlashlightLine;
 };
 
 // Componente per renderizzare icona scena
 export const SceneIcon = ({ iconId, size = 24, style }: { iconId: string; size?: number; style?: React.CSSProperties }) => {
   const Icon = getSceneIcon(iconId);
-  // Se è un emoji legacy, mostralo come testo
-  if (!sceneIcons.find(i => i.id === iconId) && iconId.length <= 2) {
-    return <span style={{ fontSize: size, ...style }}>{iconId}</span>;
-  }
-  return <Icon size={size} style={style} />;
+  return <Icon size={size} style={style} className="remix-icon" />;
 };
 
 export const Scene = () => {
@@ -320,10 +340,10 @@ export const Scene = () => {
                     border: isSelected ? 'none' : `2px solid ${colors.border}`,
                   }}
                 >
-                  {isSelected && <Check size={14} style={{ color: '#0a0a0c' }} />}
+                  {isSelected && <RiCheckLine size={14} style={{ color: '#0a0a0c' }} />}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Lightbulb size={16} style={{ color: isSelected ? colors.accent : colors.textMuted }} />
+                  <RiLightbulbLine size={16} style={{ color: isSelected ? colors.accent : colors.textMuted }} />
                   <span style={{ fontSize: '14px', fontWeight: 500, color: isSelected ? colors.textPrimary : colors.textMuted }}>{disp.nome}</span>
                 </div>
               </motion.button>
@@ -346,7 +366,7 @@ export const Scene = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Power size={14} style={{ color: azione.stato === 'ON' ? colors.accent : colors.textMuted }} />
+                  <RiShutDownLine size={14} style={{ color: azione.stato === 'ON' ? colors.accent : colors.textMuted }} />
                   <span style={{
                     fontSize: '12px',
                     fontWeight: 600,
@@ -385,17 +405,17 @@ export const Scene = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Plus size={20} style={{ color: '#0a0a0c' }} />
+            <RiAddLine size={20} style={{ color: '#0a0a0c' }} />
           </motion.button>
         </div>
 
         {/* Content */}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
-            <Loader2 size={32} className="animate-spin" style={{ color: colors.accent }} />
+            <RiLoader4Line size={32} className="animate-spin" style={{ color: colors.accent }} />
           </div>
         ) : scene.length === 0 ? (
-          <EmptyState icon={Play} title="Nessuna scena" description="Crea la tua prima scena usando il pulsante in alto" />
+          <EmptyState icon={RiPlayLine} title="Nessuna scena" description="Crea la tua prima scena usando il pulsante in alto" />
         ) : (
           <SceneList
             scene={scene}

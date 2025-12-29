@@ -1,6 +1,6 @@
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
-import { Trash2 } from 'lucide-react';
+import { RiDeleteBinLine } from 'react-icons/ri';
 
 // ============================================
 // STANZA CARD - Singola stanza
@@ -31,7 +31,7 @@ export const StanzaCard = ({ stanza, onDelete }: StanzaCardProps) => {
           size="sm"
           onClick={onDelete}
         >
-          <Trash2 size={16} />
+          <RiDeleteBinLine size={16} />
         </Button>
       </div>
     </Card>

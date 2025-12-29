@@ -12,14 +12,14 @@ import { LuceCard } from '@/components/dispositivi/LuceCard';
 import { TapparellaCard } from '@/components/dispositivi/TapparellaCard';
 import { TermostatoCard } from '@/components/dispositivi/TermostatoCard';
 import {
-  ArrowLeft,
-  ChevronDown,
-  Home,
-  Plus,
-  Settings,
-  Lightbulb,
-  Trash2
-} from 'lucide-react';
+  RiArrowLeftLine,
+  RiArrowDownSLine,
+  RiHome4Line,
+  RiAddLine,
+  RiSettings4Line,
+  RiLightbulbLine,
+  RiDeleteBinLine
+} from 'react-icons/ri';
 
 // ============================================
 // IMPIANTO DETTAGLIO - Redesign Mobile-First
@@ -96,7 +96,7 @@ export const ImpiantoDettaglio = () => {
               onClick={() => navigate('/impianti')}
               className="p-2 glass rounded-lg hover:bg-white/10 transition-colors flex-shrink-0"
             >
-              <ArrowLeft size={18} />
+              <RiArrowLeftLine size={18} />
             </button>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold dark:text-copy light:text-copy-light truncate">
@@ -115,14 +115,14 @@ export const ImpiantoDettaglio = () => {
                 className="p-2 glass rounded-lg hover:bg-white/10 transition-colors"
                 title="Impostazioni"
               >
-                <Settings size={18} className="dark:text-copy light:text-copy-light" />
+                <RiSettings4Line size={18} className="dark:text-copy light:text-copy-light" />
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
                 className="p-2 rounded-lg hover:bg-error/20 transition-colors"
                 title="Elimina"
               >
-                <Trash2 size={18} className="text-error" />
+                <RiDeleteBinLine size={18} className="text-error" />
               </button>
             </div>
           )}
@@ -138,7 +138,7 @@ export const ImpiantoDettaglio = () => {
               <span className="font-medium dark:text-copy light:text-copy-light">
                 {piano?.nome || 'Seleziona piano'}
               </span>
-              <ChevronDown size={18} className={`transition-transform ${showPianoDropdown ? 'rotate-180' : ''}`} />
+              <RiArrowDownSLine size={18} className={`transition-transform ${showPianoDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showPianoDropdown && (
@@ -165,7 +165,7 @@ export const ImpiantoDettaglio = () => {
                 ))}
                 {canEdit && (
                   <button className="w-full text-left px-4 py-3 border-t dark:border-border light:border-border-light dark:text-copy-lighter light:text-copy-lighter hover:bg-white/10 flex items-center gap-2">
-                    <Plus size={14} />
+                    <RiAddLine size={14} />
                     Nuovo Piano
                   </button>
                 )}
@@ -187,13 +187,13 @@ export const ImpiantoDettaglio = () => {
                     : 'glass dark:text-copy light:text-copy-light'
                 }`}
               >
-                <Home size={14} />
+                <RiHome4Line size={14} />
                 {s.nome}
               </button>
             ))}
             {canEdit && (
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-full whitespace-nowrap text-sm glass dark:text-copy-lighter light:text-copy-lighter flex-shrink-0">
-                <Plus size={14} />
+                <RiAddLine size={14} />
                 Nuova
               </button>
             )}
@@ -207,7 +207,7 @@ export const ImpiantoDettaglio = () => {
           </div>
         ) : (
           <Card variant="glass" className="text-center py-8">
-            <Lightbulb size={32} className="mx-auto mb-2 dark:text-copy-lighter light:text-copy-lighter" />
+            <RiLightbulbLine size={32} className="mx-auto mb-2 dark:text-copy-lighter light:text-copy-lighter" />
             <h3 className="text-sm font-semibold dark:text-copy light:text-copy-light mb-1">
               Nessun dispositivo
             </h3>
@@ -216,7 +216,7 @@ export const ImpiantoDettaglio = () => {
             </p>
             {canEdit && stanza && (
               <button className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium">
-                <Plus size={14} className="inline mr-1" />
+                <RiAddLine size={14} className="inline mr-1" />
                 Aggiungi
               </button>
             )}

@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  Home,
-  DoorOpen,
-  Lightbulb,
-  Sparkles,
-  Settings
-} from 'lucide-react';
+  RiHome4Line,
+  RiDoorOpenLine,
+  RiLightbulbLine,
+  RiSparklingLine,
+  RiSettings4Line
+} from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
@@ -42,11 +42,11 @@ export const BottomNav = () => {
   }), [themeColors]);
 
   const menuItems = [
-    { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/stanze', icon: DoorOpen, label: 'Stanze' },
-    { path: '/dispositivi', icon: Lightbulb, label: 'Dispositivi' },
-    { path: '/scene', icon: Sparkles, label: 'Scene' },
-    { path: '/settings', icon: Settings, label: 'Altro' }
+    { path: '/dashboard', icon: RiHome4Line, label: 'Home' },
+    { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
+    { path: '/dispositivi', icon: RiLightbulbLine, label: 'Dispositivi' },
+    { path: '/scene', icon: RiSparklingLine, label: 'Scene' },
+    { path: '/settings', icon: RiSettings4Line, label: 'Altro' }
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
@@ -94,7 +94,6 @@ export const BottomNav = () => {
                   color: active ? colors.accentLight : colors.textMuted,
                   filter: active ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
                 }}
-                strokeWidth={active ? 2.5 : 2}
               />
               <span
                 style={{

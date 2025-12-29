@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Thermometer, Minus, Plus, Power } from 'lucide-react';
+import { RiTempHotLine, RiSubtractLine, RiAddLine, RiShutDownLine } from 'react-icons/ri';
 import { Card } from '@/components/common/Card';
 import { Dispositivo, ConfigTermostato } from '@/types';
 import { dispositiviApi } from '@/services/api';
@@ -52,7 +52,7 @@ export const TermostatoCard = ({ dispositivo, onUpdate }: TermostatoCardProps) =
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-xl bg-${getStatusColor()} bg-opacity-20`}>
-            <Thermometer size={24} className={`text-${getStatusColor()}`} />
+            <RiTempHotLine size={24} className={`text-${getStatusColor()}`} />
           </div>
           <div>
             <h3 className="font-semibold text-copy">{dispositivo.nome}</h3>
@@ -65,7 +65,7 @@ export const TermostatoCard = ({ dispositivo, onUpdate }: TermostatoCardProps) =
             config.acceso ? 'bg-primary text-white' : 'glass'
           }`}
         >
-          <Power size={16} />
+          <RiShutDownLine size={16} />
         </button>
       </div>
 
@@ -85,7 +85,7 @@ export const TermostatoCard = ({ dispositivo, onUpdate }: TermostatoCardProps) =
               onClick={() => changeTemp(target - 0.5)}
               className="p-2 hover:bg-foreground rounded-lg transition-colors"
             >
-              <Minus size={20} />
+              <RiSubtractLine size={20} />
             </button>
 
             <div className="text-center">
@@ -97,7 +97,7 @@ export const TermostatoCard = ({ dispositivo, onUpdate }: TermostatoCardProps) =
               onClick={() => changeTemp(target + 0.5)}
               className="p-2 hover:bg-foreground rounded-lg transition-colors"
             >
-              <Plus size={20} />
+              <RiAddLine size={20} />
             </button>
           </div>
 

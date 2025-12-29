@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Lock, Unlock } from 'lucide-react';
+import { RiLockLine, RiLockUnlockLine } from 'react-icons/ri';
 
 // ============================================
 // TOGGLE 12 - Sci-Fi Door Lock
@@ -61,9 +61,9 @@ export const Toggle12SciFi = ({ isOn, disabled, onChange }: Toggle12Props) => {
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           >
             {isOn ? (
-              <Unlock size={32} strokeWidth={2.5} />
+              <RiLockUnlockLine size={32} strokeWidth={2.5} />
             ) : (
-              <Lock size={32} strokeWidth={2.5} />
+              <RiLockLine size={32} strokeWidth={2.5} />
             )}
 
             {/* Glow effect */}

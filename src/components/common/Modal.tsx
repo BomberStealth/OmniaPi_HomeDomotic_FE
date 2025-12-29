@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { RiCloseLine } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
@@ -148,7 +148,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                   }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <X size={20} style={{ color: colors.textMuted }} />
+                  <RiCloseLine size={20} style={{ color: colors.textMuted }} />
                 </motion.button>
               </div>
 

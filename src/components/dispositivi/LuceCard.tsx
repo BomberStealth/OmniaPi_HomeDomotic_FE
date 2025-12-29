@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lightbulb, Minus, Plus } from 'lucide-react';
+import { RiLightbulbLine, RiSubtractLine, RiAddLine } from 'react-icons/ri';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Dispositivo, ConfigLuce } from '@/types';
@@ -61,7 +61,7 @@ export const LuceCard = ({ dispositivo, onUpdate }: LuceCardProps) => {
               config.accesa ? 'bg-warning bg-opacity-20' : 'bg-foreground'
             }`}
           >
-            <Lightbulb
+            <RiLightbulbLine
               size={24}
               className={config.accesa ? 'text-warning' : 'text-copy-lighter'}
             />
@@ -89,7 +89,7 @@ export const LuceCard = ({ dispositivo, onUpdate }: LuceCardProps) => {
               onClick={() => changeLivello(Math.max(0, livello - 10))}
               className="p-2 glass rounded-lg hover:bg-opacity-20"
             >
-              <Minus size={16} />
+              <RiSubtractLine size={16} />
             </button>
 
             <div className="flex-1 glass rounded-lg px-4 py-2">
@@ -109,7 +109,7 @@ export const LuceCard = ({ dispositivo, onUpdate }: LuceCardProps) => {
               onClick={() => changeLivello(Math.min(100, livello + 10))}
               className="p-2 glass rounded-lg hover:bg-opacity-20"
             >
-              <Plus size={16} />
+              <RiAddLine size={16} />
             </button>
           </div>
         )}

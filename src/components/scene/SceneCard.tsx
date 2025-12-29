@@ -1,34 +1,14 @@
-import { useMemo } from 'react';
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { ContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
-import { Trash2, Loader2, Clock, Edit, Pin, PinOff, Play } from 'lucide-react';
+import { RiDeleteBinLine, RiLoader4Line, RiTimeLine, RiEditLine, RiPushpinLine, RiUnpinLine, RiPlayLine } from 'react-icons/ri';
 import { SceneIcon } from '@/pages/Scene/Scene';
-import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 // ============================================
 // SCENE CARD - Dark Luxury Style
-// Con supporto tema dinamico
+// Con React.memo per evitare re-render inutili
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  error: '#ef4444',
-  success: '#22c55e',
-};
-
-// Helper per convertire hex a rgb
-const hexToRgb = (hex: string): string => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (result) {
-    return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
-  }
-  return '106, 212, 160';
-};
 
 interface SceneCardProps {
   scena: any;
@@ -40,19 +20,10 @@ interface SceneCardProps {
   onEdit?: () => void;
 }
 
-export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, onToggleShortcut, onEdit }: SceneCardProps) => {
-  const { colors: themeColors } = useThemeColor();
+const SceneCardComponent = ({ scena, executing, onExecute, onDelete, onSchedule, onToggleShortcut, onEdit }: SceneCardProps) => {
+  const { colors } = useThemeColors();
   const deviceCount = scena.azioni?.length || 0;
   const isShortcut = scena.is_shortcut !== false && scena.is_shortcut !== 0;
-
-  // Colori dinamici basati sul tema
-  const colors = useMemo(() => ({
-    ...baseColors,
-    accent: themeColors.accent,
-    accentLight: themeColors.accentLight,
-    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
 
   // Top highlight style
   const topHighlight = {
@@ -70,7 +41,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
   if (onToggleShortcut) {
     contextMenuItems.push({
       label: isShortcut ? 'Rimuovi dalle scorciatoie' : 'Aggiungi alle scorciatoie',
-      icon: isShortcut ? PinOff : Pin,
+      icon: isShortcut ? RiUnpinLine : RiPushpinLine,
       onClick: () => onToggleShortcut(!isShortcut)
     });
   }
@@ -78,21 +49,21 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
   if (onEdit) {
     contextMenuItems.push({
       label: 'Modifica',
-      icon: Edit,
+      icon: RiEditLine,
       onClick: onEdit
     });
   }
 
   contextMenuItems.push({
     label: 'Programmazione',
-    icon: Clock,
+    icon: RiTimeLine,
     onClick: onSchedule
   });
 
   if (!scena.is_base && onDelete) {
     contextMenuItems.push({
       label: 'Elimina',
-      icon: Trash2,
+      icon: RiDeleteBinLine,
       onClick: onDelete,
       danger: true
     });
@@ -144,7 +115,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
               }}
             >
               {executing ? (
-                <Loader2
+                <RiLoader4Line
                   size={22}
                   style={{ color: colors.accent }}
                   className="animate-spin"
@@ -189,7 +160,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
                   </span>
                 )}
                 {isShortcut && (
-                  <Pin size={12} style={{ color: colors.accentLight, flexShrink: 0 }} />
+                  <RiPushpinLine size={12} style={{ color: colors.accentLight, flexShrink: 0 }} />
                 )}
               </div>
               <div style={{
@@ -212,7 +183,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
                     fontSize: '11px',
                     color: colors.success,
                   }}>
-                    <Clock size={11} />
+                    <RiTimeLine size={11} />
                     Programmata
                   </span>
                 )}
@@ -248,7 +219,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
               whileTap={{ scale: 0.9 }}
               title="Esegui"
             >
-              <Play size={14} fill={colors.accent} style={{ color: colors.accent }} />
+              <RiPlayLine size={14} style={{ color: colors.accent }} />
             </motion.button>
 
             {/* Edit button */}
@@ -272,7 +243,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
                 whileTap={{ scale: 0.9 }}
                 title="Modifica"
               >
-                <Edit size={14} style={{ color: colors.textMuted }} />
+                <RiEditLine size={14} style={{ color: colors.textMuted }} />
               </motion.button>
             )}
 
@@ -296,7 +267,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
               whileTap={{ scale: 0.9 }}
               title="Programmazione"
             >
-              <Clock
+              <RiTimeLine
                 size={14}
                 style={{ color: scena.scheduling?.enabled ? colors.success : colors.textMuted }}
               />
@@ -323,7 +294,7 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
                 whileTap={{ scale: 0.9 }}
                 title="Elimina"
               >
-                <Trash2 size={14} style={{ color: `${colors.error}99` }} />
+                <RiDeleteBinLine size={14} style={{ color: `${colors.error}99` }} />
               </motion.button>
             )}
           </div>
@@ -332,3 +303,6 @@ export const SceneCard = ({ scena, executing, onExecute, onDelete, onSchedule, o
     </ContextMenu>
   );
 };
+
+// React.memo per evitare re-render quando props non cambiano
+export const SceneCard = memo(SceneCardComponent);

@@ -6,7 +6,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { impiantiApi } from '@/services/api';
-import { ArrowLeft, Building2, MapPin, Home, Hash, Sun, Zap } from 'lucide-react';
+import { RiArrowLeftLine, RiBuilding2Line, RiMapPinLine, RiHome4Line, RiHashtag, RiSunLine, RiFlashlightLine } from 'react-icons/ri';
 import { toast } from 'sonner';
 
 // ============================================
@@ -77,7 +77,7 @@ export const NuovoImpianto = () => {
             onClick={() => navigate(-1)}
             className="p-2 rounded-xl glass hover:bg-white/10 transition-colors"
           >
-            <ArrowLeft size={20} className="dark:text-copy light:text-copy-light" />
+            <RiArrowLeftLine size={20} className="dark:text-copy light:text-copy-light" />
           </button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold dark:text-copy light:text-copy-light">
@@ -95,7 +95,7 @@ export const NuovoImpianto = () => {
             {/* Nome */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                <Home size={16} className="text-primary" />
+                <RiHome4Line size={16} className="text-primary" />
                 Nome Impianto *
               </label>
               <Input
@@ -109,7 +109,7 @@ export const NuovoImpianto = () => {
             {/* Indirizzo */}
             <div>
               <label className="flex items-center gap-2 text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                <MapPin size={16} className="text-primary" />
+                <RiMapPinLine size={16} className="text-primary" />
                 Indirizzo *
               </label>
               <Input
@@ -124,7 +124,7 @@ export const NuovoImpianto = () => {
               {/* Città */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                  <Building2 size={16} className="text-primary" />
+                  <RiBuilding2Line size={16} className="text-primary" />
                   Città *
                 </label>
                 <Input
@@ -137,7 +137,7 @@ export const NuovoImpianto = () => {
               {/* CAP */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                  <Hash size={16} className="text-primary" />
+                  <RiHashtag size={16} className="text-primary" />
                   CAP *
                 </label>
                 <Input
@@ -153,7 +153,7 @@ export const NuovoImpianto = () => {
             <div className="p-3 rounded-xl glass">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sun size={16} className="text-warning" />
+                  <RiSunLine size={16} className="text-warning" />
                   <span className="text-sm font-medium dark:text-copy light:text-copy-light">
                     Impianto Fotovoltaico
                   </span>
@@ -177,7 +177,7 @@ export const NuovoImpianto = () => {
               {formData.ha_fotovoltaico && (
                 <div className="mt-3 pt-3 border-t dark:border-border light:border-border-light">
                   <label className="flex items-center gap-2 text-sm font-medium dark:text-copy light:text-copy-light mb-2">
-                    <Zap size={16} className="text-warning" />
+                    <RiFlashlightLine size={16} className="text-warning" />
                     Potenza (kW)
                   </label>
                   <Input

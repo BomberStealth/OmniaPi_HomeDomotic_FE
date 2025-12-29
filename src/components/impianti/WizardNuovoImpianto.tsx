@@ -4,7 +4,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Card } from '@/components/common/Card';
 import { impiantiApi } from '@/services/api';
-import { Plus, Link2, MapPin, Zap, Check } from 'lucide-react';
+import { RiAddLine, RiLinksLine, RiMapPinLine, RiFlashlightLine, RiCheckLine } from 'react-icons/ri';
 
 // ============================================
 // WIZARD NUOVO IMPIANTO - Multi Step
@@ -192,7 +192,7 @@ export const WizardNuovoImpianto = ({ isOpen, onClose, onSuccess }: WizardNuovoI
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="p-4 rounded-xl bg-primary bg-opacity-20">
-                  <Plus size={32} className="text-primary" />
+                  <RiAddLine size={32} className="text-primary" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold dark:text-copy light:text-copy-light mb-2">
@@ -214,7 +214,7 @@ export const WizardNuovoImpianto = ({ isOpen, onClose, onSuccess }: WizardNuovoI
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="p-4 rounded-xl bg-secondary bg-opacity-20">
-                  <Link2 size={32} className="text-secondary" />
+                  <RiLinksLine size={32} className="text-secondary" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold dark:text-copy light:text-copy-light mb-2">
@@ -303,7 +303,7 @@ export const WizardNuovoImpianto = ({ isOpen, onClose, onSuccess }: WizardNuovoI
         {step === 1 && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <MapPin className="text-primary" size={24} />
+              <RiMapPinLine className="text-primary" size={24} />
               <h3 className="text-lg font-bold dark:text-copy light:text-copy-light">
                 Dove si trova l'impianto?
               </h3>
@@ -346,7 +346,7 @@ export const WizardNuovoImpianto = ({ isOpen, onClose, onSuccess }: WizardNuovoI
         {step === 2 && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <Zap className="text-warning" size={24} />
+              <RiFlashlightLine className="text-warning" size={24} />
               <h3 className="text-lg font-bold dark:text-copy light:text-copy-light">
                 È presente il fotovoltaico?
               </h3>
@@ -393,7 +393,7 @@ export const WizardNuovoImpianto = ({ isOpen, onClose, onSuccess }: WizardNuovoI
         {step === 3 && (
           <>
             <div className="flex items-center gap-3 mb-4">
-              <Check className="text-success" size={24} />
+              <RiCheckLine className="text-success" size={24} />
               <h3 className="text-lg font-bold dark:text-copy light:text-copy-light">
                 Conferma i Dati
               </h3>

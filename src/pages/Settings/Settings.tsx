@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Input } from '@/components/common/Input';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
-import { User, Bell, Shield, Mail, ChevronRight, LogOut, Info, HelpCircle, Smartphone, Palette, Check } from 'lucide-react';
+import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine } from 'react-icons/ri';
 import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
 import { useNavigate } from 'react-router-dom';
@@ -194,7 +194,7 @@ export const Settings = () => {
           </div>
         </div>
         {rightElement || (showArrow && (
-          <ChevronRight size={18} style={{ color: colors.textMuted }} />
+          <RiArrowRightSLine size={18} style={{ color: colors.textMuted }} />
         ))}
       </div>
     </motion.div>
@@ -247,7 +247,7 @@ export const Settings = () => {
                 flexShrink: 0,
               }}
             >
-              <User size={24} style={{ color: colors.accent }} />
+              <RiUserLine size={24} style={{ color: colors.accent }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{
@@ -269,7 +269,7 @@ export const Settings = () => {
                 alignItems: 'center',
                 gap: '6px',
               }}>
-                <Mail size={12} />
+                <RiMailLine size={12} />
                 <span style={{
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -296,7 +296,7 @@ export const Settings = () => {
                 </span>
               )}
             </div>
-            <ChevronRight size={18} style={{ color: colors.textMuted, flexShrink: 0 }} />
+            <RiArrowRightSLine size={18} style={{ color: colors.textMuted, flexShrink: 0 }} />
           </div>
         </motion.div>
 
@@ -329,7 +329,7 @@ export const Settings = () => {
                   background: `${colors.accent}20`,
                 }}
               >
-                <Palette size={18} style={{ color: colors.accent }} />
+                <RiPaletteLine size={18} style={{ color: colors.accent }} />
               </div>
               <div>
                 <h3 style={{
@@ -401,7 +401,7 @@ export const Settings = () => {
                           background: 'rgba(0,0,0,0.3)',
                         }}
                       >
-                        <Check size={14} style={{ color: '#fff' }} />
+                        <RiCheckLine size={14} style={{ color: '#fff' }} />
                       </motion.div>
                     )}
                   </motion.button>
@@ -426,7 +426,7 @@ export const Settings = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Notifiche Toggle */}
             <SettingRow
-              icon={Bell}
+              icon={RiNotification3Line}
               iconBg={`${colors.accent}20`}
               title="Notifiche"
               subtitle={notificationsEnabled ? 'Attive' : 'Disattivate'}
@@ -441,7 +441,7 @@ export const Settings = () => {
 
             {/* Dispositivi Connessi */}
             <SettingRow
-              icon={Smartphone}
+              icon={RiSmartphoneLine}
               iconBg={`${colors.warning}20`}
               title="Dispositivi Connessi"
               subtitle="Gestisci sessioni attive"
@@ -464,7 +464,7 @@ export const Settings = () => {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <SettingRow
-              icon={Shield}
+              icon={RiShieldLine}
               iconBg={`${colors.warning}20`}
               title="Password"
               subtitle="Modifica password"
@@ -501,7 +501,7 @@ export const Settings = () => {
                     background: `${colors.error}20`,
                   }}
                 >
-                  <Shield size={18} style={{ color: colors.error }} />
+                  <RiShieldLine size={18} style={{ color: colors.error }} />
                 </div>
                 <h3 style={{
                   fontSize: '14px',
@@ -545,14 +545,14 @@ export const Settings = () => {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <SettingRow
-              icon={HelpCircle}
+              icon={RiQuestionLine}
               iconBg={`${colors.accent}20`}
               title="Guida"
               subtitle="Come usare l'app"
               onClick={() => {}}
             />
             <SettingRow
-              icon={Info}
+              icon={RiInformationLine}
               iconBg={`${colors.accent}20`}
               title="Informazioni"
               subtitle={`OmniaPi v${APP_VERSION}`}
@@ -585,7 +585,7 @@ export const Settings = () => {
           }}
           whileTap={{ scale: 0.98 }}
         >
-          <LogOut size={18} />
+          <RiLogoutBoxLine size={18} />
           Esci dall'account
         </motion.button>
 
