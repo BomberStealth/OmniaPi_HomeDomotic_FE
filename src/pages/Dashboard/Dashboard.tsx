@@ -6,15 +6,14 @@ import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useAuthStore } from '@/store/authStore';
 import { sceneApi, tasmotaApi, stanzeApi } from '@/services/api';
+import { omniapiApi } from '@/services/omniapiApi';
 import { DeviceCard } from '@/components/dispositivi/DeviceCard';
 import { SceneIcon } from '@/pages/Scene/Scene';
 import { motion } from 'framer-motion';
 import {
   RiLightbulbLine, RiTempHotLine, RiLoader4Line, RiUnpinLine,
-  RiArrowDownSLine, RiHome4Line, RiSofaLine, RiHotelBedLine, RiRestaurantLine,
-  RiDropLine, RiTvLine, RiPlantLine, RiCarLine, RiStore2Line, RiBox3Line
+  RiArrowDownSLine, RiBox3Line
 } from 'react-icons/ri';
-import type { IconType } from 'react-icons';
 import { toast } from 'sonner';
 
 // ============================================
@@ -40,19 +39,6 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
-// Mappa icone per tipo stanza
-const getRoomIcon = (nome: string): IconType => {
-  const lowerNome = nome.toLowerCase();
-  if (lowerNome.includes('soggiorno') || lowerNome.includes('living') || lowerNome.includes('salotto')) return RiSofaLine;
-  if (lowerNome.includes('camera') || lowerNome.includes('letto') || lowerNome.includes('bedroom')) return RiHotelBedLine;
-  if (lowerNome.includes('cucina') || lowerNome.includes('kitchen')) return RiRestaurantLine;
-  if (lowerNome.includes('bagno') || lowerNome.includes('bathroom')) return RiDropLine;
-  if (lowerNome.includes('tv') || lowerNome.includes('media') || lowerNome.includes('studio')) return RiTvLine;
-  if (lowerNome.includes('giardino') || lowerNome.includes('garden') || lowerNome.includes('esterno')) return RiPlantLine;
-  if (lowerNome.includes('garage') || lowerNome.includes('box auto')) return RiCarLine;
-  if (lowerNome.includes('cantina') || lowerNome.includes('magazzino')) return RiStore2Line;
-  return RiHome4Line;
-};
 
 export const Dashboard = () => {
   const { t } = useTranslation();
@@ -100,7 +86,7 @@ export const Dashboard = () => {
   const loadDispositivi = async () => {
     if (!impiantoCorrente) return;
     try {
-      const data = await tasmotaApi.getDispositivi(impiantoCorrente.id);
+      const data = await tasmotaApi.getAllDispositivi(impiantoCorrente.id);
       setDispositivi(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Errore caricamento dispositivi:', error);
@@ -138,7 +124,15 @@ export const Dashboard = () => {
     setTogglingDevice(dispositivo.id);
     try {
       const newState = !dispositivo.power_state;
-      await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
+
+      // OmniaPi nodes use MQTT via gateway
+      if (dispositivo.device_type === 'omniapi_node') {
+        await omniapiApi.controlNode(dispositivo.id, 1, newState ? 'on' : 'off');
+      } else {
+        // Tasmota devices use HTTP
+        await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
+      }
+
       setDispositivi(prev => prev.map(d =>
         d.id === dispositivo.id ? { ...d, power_state: newState } : d
       ));
@@ -214,7 +208,13 @@ export const Dashboard = () => {
     try {
       for (const luce of luci) {
         try {
-          await tasmotaApi.controlDispositivo(luce.id, turnOn ? 'ON' : 'OFF');
+          // OmniaPi nodes use MQTT via gateway
+          if (luce.device_type === 'omniapi_node') {
+            await omniapiApi.controlNode(luce.id, 1, turnOn ? 'on' : 'off');
+          } else {
+            // Tasmota devices use HTTP
+            await tasmotaApi.controlDispositivo(luce.id, turnOn ? 'ON' : 'OFF');
+          }
           controllate++;
           luciControllate.push(luce.id);
         } catch (error: any) {
@@ -471,7 +471,6 @@ export const Dashboard = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
               {stanze.map((stanza) => {
-                const RoomIcon = getRoomIcon(stanza.nome);
                 const roomDevices = getDevicesByRoom(stanza.id);
                 const isExpanded = expandedRooms.has(stanza.id);
                 const devicesOn = roomDevices.filter(d => d.power_state).length;
@@ -522,7 +521,7 @@ export const Dashboard = () => {
                             boxShadow: `0 0 8px ${colors.accent}30`,
                           }}
                         >
-                          <RoomIcon size={20} style={{ color: colors.accentLight }} />
+                          <span style={{ fontSize: '20px' }}>{stanza.icona || '🚪'}</span>
                         </div>
                         <div style={{ textAlign: 'left' }}>
                           <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>

@@ -1,8 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { NodeCard } from '@/components/omniapi/NodeCard';
+import { AddNodeWizard } from '@/components/omniapi/AddNodeWizard';
 import { useOmniapiStore } from '@/store/omniapiStore';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { omniapiApi, RegisteredNode } from '@/services/omniapiApi';
 import { motion } from 'framer-motion';
 import {
   RiRouterLine,
@@ -10,6 +13,7 @@ import {
   RiRefreshLine,
   RiLoader4Line,
   RiSignalWifiErrorLine,
+  RiAddLine,
 } from 'react-icons/ri';
 import { toast } from 'sonner';
 
@@ -41,8 +45,12 @@ const hexToRgb = (hex: string): string => {
 
 export const OmniaPi = () => {
   const { colors: themeColors } = useThemeColor();
+  const { impiantoCorrente } = useImpiantoContext();
   const { gateway, nodes, isLoading, fetchGateway, fetchNodes, sendCommand } =
     useOmniapiStore();
+
+  const [registeredNodes, setRegisteredNodes] = useState<RegisteredNode[]>([]);
+  const [showWizard, setShowWizard] = useState(false);
 
   const colors = useMemo(
     () => ({
@@ -55,23 +63,37 @@ export const OmniaPi = () => {
     [themeColors]
   );
 
+  // Fetch nodi registrati da DB
+  const fetchRegisteredNodes = async () => {
+    if (!impiantoCorrente?.id) return;
+    try {
+      const res = await omniapiApi.getRegisteredNodes(impiantoCorrente.id);
+      setRegisteredNodes(res.nodes || []);
+    } catch (error) {
+      console.error('Errore fetch registeredNodes:', error);
+    }
+  };
+
   // Fetch iniziale e polling
   useEffect(() => {
     fetchGateway();
     fetchNodes();
+    fetchRegisteredNodes();
 
     // Polling ogni 5 secondi
     const interval = setInterval(() => {
       fetchGateway();
       fetchNodes();
+      fetchRegisteredNodes();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchGateway, fetchNodes]);
+  }, [fetchGateway, fetchNodes, impiantoCorrente?.id]);
 
   const handleRefresh = () => {
     fetchGateway();
     fetchNodes();
+    fetchRegisteredNodes();
     toast.success('Dati aggiornati');
   };
 
@@ -87,6 +109,22 @@ export const OmniaPi = () => {
       toast.error('Errore invio comando');
     }
     return success;
+  };
+
+  const handleDeleteNode = async (nodeId: number, nodeName: string) => {
+    if (!confirm(`Rimuovere "${nodeName}" dall'impianto?`)) return;
+    try {
+      await omniapiApi.unregisterNode(nodeId);
+      toast.success('Nodo rimosso');
+      fetchRegisteredNodes();
+    } catch (error) {
+      toast.error('Errore rimozione nodo');
+    }
+  };
+
+  const handleNodeAdded = () => {
+    fetchRegisteredNodes();
+    fetchNodes();
   };
 
   return (
@@ -117,32 +155,56 @@ export const OmniaPi = () => {
             </p>
           </div>
 
-          <motion.button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 20px',
-              borderRadius: '16px',
-              background: `${colors.accent}15`,
-              border: `1px solid ${colors.accent}30`,
-              color: colors.accent,
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 600,
-            }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {isLoading ? (
-              <RiLoader4Line size={18} className="animate-spin" />
-            ) : (
-              <RiRefreshLine size={18} />
-            )}
-            Aggiorna
-          </motion.button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <motion.button
+              onClick={() => setShowWizard(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+                border: 'none',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <RiAddLine size={18} />
+              Aggiungi Nodo
+            </motion.button>
+
+            <motion.button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '16px',
+                background: `${colors.accent}15`,
+                border: `1px solid ${colors.accent}30`,
+                color: colors.accent,
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isLoading ? (
+                <RiLoader4Line size={18} className="animate-spin" />
+              ) : (
+                <RiRefreshLine size={18} />
+              )}
+              Aggiorna
+            </motion.button>
+          </div>
         </div>
 
         {/* Gateway Status Card */}
@@ -336,7 +398,60 @@ export const OmniaPi = () => {
           </div>
         </motion.div>
 
-        {/* Nodes Section */}
+        {/* Registered Nodes Section */}
+        {registeredNodes.length > 0 && (
+          <>
+            <div style={{ marginBottom: '16px' }}>
+              <h2
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  color: colors.textPrimary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                }}
+              >
+                <RiWifiLine size={22} style={{ color: colors.accent }} />
+                I Miei Dispositivi
+                <span
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: colors.textMuted,
+                  }}
+                >
+                  ({registeredNodes.length})
+                </span>
+              </h2>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: '20px',
+                marginBottom: '32px',
+              }}
+            >
+              {registeredNodes.map((node) => (
+                <NodeCard
+                  key={node.id}
+                  node={node}
+                  onCommand={handleCommand}
+                  registeredInfo={{
+                    id: node.id,
+                    nome: node.nome,
+                    stanzaNome: node.stanza_nome,
+                    onDelete: () => handleDeleteNode(node.id, node.nome),
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Available Nodes Section (not registered) */}
         <div style={{ marginBottom: '16px' }}>
           <h2
             style={{
@@ -349,7 +464,7 @@ export const OmniaPi = () => {
             }}
           >
             <RiWifiLine size={22} style={{ color: colors.accent }} />
-            Nodi ESP-NOW
+            {registeredNodes.length > 0 ? 'Nodi Disponibili' : 'Nodi ESP-NOW'}
             <span
               style={{
                 fontSize: '14px',
@@ -360,6 +475,11 @@ export const OmniaPi = () => {
               ({nodes.length})
             </span>
           </h2>
+          {registeredNodes.length > 0 && (
+            <p style={{ fontSize: '13px', color: colors.textMuted, marginTop: '4px' }}>
+              Nodi online non ancora registrati nell'impianto
+            </p>
+          )}
         </div>
 
         {/* Nodes Grid */}
@@ -400,10 +520,14 @@ export const OmniaPi = () => {
               style={{ marginBottom: '16px', opacity: 0.5 }}
             />
             <p style={{ fontSize: '16px', marginBottom: '8px' }}>
-              Nessun nodo trovato
+              {registeredNodes.length > 0
+                ? 'Tutti i nodi sono stati registrati'
+                : 'Nessun nodo trovato'}
             </p>
             <p style={{ fontSize: '14px' }}>
-              Attendi la discovery automatica del gateway
+              {registeredNodes.length > 0
+                ? 'Accendi un nuovo nodo per aggiungerlo'
+                : 'Attendi la discovery automatica del gateway'}
             </p>
           </div>
         ) : (
@@ -420,6 +544,13 @@ export const OmniaPi = () => {
           </div>
         )}
       </div>
+
+      {/* Add Node Wizard Modal */}
+      <AddNodeWizard
+        isOpen={showWizard}
+        onClose={() => setShowWizard(false)}
+        onNodeAdded={handleNodeAdded}
+      />
     </Layout>
   );
 };

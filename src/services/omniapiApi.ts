@@ -24,8 +24,24 @@ export interface OmniapiNode {
   lastSeen?: string;
 }
 
+// Nodo registrato nel database (estende OmniapiNode)
+export interface RegisteredNode extends OmniapiNode {
+  id: number;
+  nome: string;
+  stanza_id: number | null;
+  stanza_nome: string | null;
+  impianto_id: number;
+  device_type: 'omniapi_node';
+  firmware_version?: string;
+}
+
 export interface OmniapiNodesResponse {
   nodes: OmniapiNode[];
+  count: number;
+}
+
+export interface RegisteredNodesResponse {
+  nodes: RegisteredNode[];
   count: number;
 }
 
@@ -65,6 +81,69 @@ export const omniapiApi = {
   // Trigger discovery dei nodi
   discover: async (): Promise<{ success: boolean; message: string }> => {
     const { data } = await api.post('/api/omniapi/discover');
+    return data;
+  },
+
+  // ============================================
+  // REGISTRAZIONE NODI (Database)
+  // ============================================
+
+  // Nodi registrati per impianto
+  getRegisteredNodes: async (impiantoId: number): Promise<RegisteredNodesResponse> => {
+    const { data } = await api.get<RegisteredNodesResponse>(
+      `/api/impianti/${impiantoId}/omniapi/nodes`
+    );
+    return data;
+  },
+
+  // Nodi disponibili (online ma non registrati)
+  getAvailableNodes: async (impiantoId: number): Promise<OmniapiNodesResponse> => {
+    const { data } = await api.get<OmniapiNodesResponse>(
+      `/api/impianti/${impiantoId}/omniapi/available`
+    );
+    return data;
+  },
+
+  // Registra un nodo
+  registerNode: async (
+    impiantoId: number,
+    mac: string,
+    nome: string,
+    stanza_id?: number
+  ): Promise<{ success: boolean; dispositivo: RegisteredNode }> => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/omniapi/register`, {
+      mac,
+      nome,
+      stanza_id,
+    });
+    return data;
+  },
+
+  // Rimuovi nodo registrato
+  unregisterNode: async (nodeId: number): Promise<{ success: boolean }> => {
+    const { data } = await api.delete(`/api/omniapi/nodes/${nodeId}`);
+    return data;
+  },
+
+  // Aggiorna nodo (nome, stanza)
+  updateNode: async (
+    nodeId: number,
+    updates: { nome?: string; stanza_id?: number }
+  ): Promise<{ success: boolean }> => {
+    const { data } = await api.put(`/api/omniapi/nodes/${nodeId}`, updates);
+    return data;
+  },
+
+  // Controlla nodo registrato
+  controlNode: async (
+    nodeId: number,
+    channel: 1 | 2,
+    action: 'on' | 'off' | 'toggle'
+  ): Promise<{ success: boolean }> => {
+    const { data } = await api.post(`/api/omniapi/nodes/${nodeId}/control`, {
+      channel,
+      action,
+    });
     return data;
   },
 };

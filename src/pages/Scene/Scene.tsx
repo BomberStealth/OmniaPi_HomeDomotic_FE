@@ -158,7 +158,7 @@ export const Scene = () => {
   const loadDispositivi = async () => {
     if (!impiantoId) return;
     try {
-      const data = await tasmotaApi.getDispositivi(impiantoId);
+      const data = await tasmotaApi.getAllDispositivi(impiantoId);
       setDispositivi(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Errore caricamento dispositivi:', error);

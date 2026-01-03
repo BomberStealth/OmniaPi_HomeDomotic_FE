@@ -57,11 +57,13 @@ export const Stanze = () => {
   const [deviceActionModalOpen, setDeviceActionModalOpen] = useState(false);
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameStanzaModalOpen, setRenameStanzaModalOpen] = useState(false);
   const [selectedStanza, setSelectedStanza] = useState<any | null>(null);
   const [selectedDispositivo, setSelectedDispositivo] = useState<any | null>(null);
   const [isNonAssegnatiMode, setIsNonAssegnatiMode] = useState(false);
   const [newStanza, setNewStanza] = useState({ nome: '', icona: '🚪' });
   const [newDeviceName, setNewDeviceName] = useState('');
+  const [editStanza, setEditStanza] = useState({ nome: '', icona: '' });
 
   const impiantoId = impiantoCorrente?.id || 0;
 
@@ -75,7 +77,7 @@ export const Stanze = () => {
       setLoading(true);
       const [stanzeData, dispositiviData] = await Promise.all([
         stanzeApi.getStanze(impiantoId),
-        tasmotaApi.getDispositivi(impiantoId)
+        tasmotaApi.getAllDispositivi(impiantoId)
       ]);
       setStanze(Array.isArray(stanzeData) ? stanzeData : []);
       setDispositivi(Array.isArray(dispositiviData) ? dispositiviData : []);
@@ -120,6 +122,29 @@ export const Stanze = () => {
     }
   };
 
+  const handleRenameStanza = async () => {
+    if (!selectedStanza || !editStanza.nome.trim()) {
+      toast.error('Inserisci un nome valido');
+      return;
+    }
+    try {
+      await stanzeApi.updateStanza(selectedStanza.id, { nome: editStanza.nome.trim(), icona: editStanza.icona });
+      toast.success('Stanza rinominata!');
+      setRenameStanzaModalOpen(false);
+      setSettingsModalOpen(false);
+      setSelectedStanza(null);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante la rinomina');
+    }
+  };
+
+  const openRenameStanzaModal = () => {
+    setEditStanza({ nome: selectedStanza?.nome || '', icona: selectedStanza?.icona || '🚪' });
+    setSettingsModalOpen(false);
+    setRenameStanzaModalOpen(true);
+  };
+
   const handleMoveDispositivo = async (stanzaId: number | null) => {
     if (!selectedDispositivo) return;
     try {
@@ -131,6 +156,18 @@ export const Stanze = () => {
       await loadData();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante lo spostamento');
+    }
+  };
+
+  // Assegna velocemente un dispositivo alla stanza corrente
+  const handleQuickAssignDispositivo = async (dispositivo: any) => {
+    if (!selectedStanza) return;
+    try {
+      await tasmotaApi.assignToStanza(dispositivo.id, selectedStanza.id);
+      toast.success(`${dispositivo.nome} aggiunto!`);
+      await loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante l\'assegnazione');
     }
   };
 
@@ -476,6 +513,17 @@ export const Stanze = () => {
             <RiArrowRightLine size={16} style={{ color: colors.textMuted }} />
           </motion.button>
           <motion.button
+            onClick={openRenameStanzaModal}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+            whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <RiEditLine size={18} style={{ color: colors.warning }} />
+              <span style={{ fontSize: '14px', color: colors.textPrimary }}>Rinomina stanza</span>
+            </div>
+            <RiArrowRightLine size={16} style={{ color: colors.textMuted }} />
+          </motion.button>
+          <motion.button
             onClick={handleDeleteStanza}
             style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
             whileHover={{ background: `${colors.error}20` }}
@@ -492,26 +540,83 @@ export const Stanze = () => {
       {/* Modal Lista Dispositivi */}
       <Modal isOpen={deviceListModalOpen} onClose={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} title={isNonAssegnatiMode ? '📦 Non assegnati' : `${selectedStanza?.icona || ''} ${selectedStanza?.nome || ''}`} size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '8px' }}>{isNonAssegnatiMode ? 'Clicca su un dispositivo per assegnarlo a una stanza' : 'Clicca su un dispositivo per gestirlo'}</p>
-          {getCurrentDeviceList().length === 0 ? (
-            <p style={{ textAlign: 'center', fontSize: '14px', color: colors.textMuted, padding: '24px 0' }}>Nessun dispositivo</p>
+          {isNonAssegnatiMode ? (
+            /* Modal per Non Assegnati - comportamento originale */
+            <>
+              <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '8px' }}>Clicca su un dispositivo per assegnarlo a una stanza</p>
+              {dispositiviNonAssegnati.length === 0 ? (
+                <p style={{ textAlign: 'center', fontSize: '14px', color: colors.textMuted, padding: '24px 0' }}>Nessun dispositivo</p>
+              ) : (
+                <div style={{ maxHeight: '256px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {dispositiviNonAssegnati.map((disp) => (
+                    <motion.button
+                      key={disp.id}
+                      onClick={() => openDeviceAction(disp)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+                      whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                        <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
+                      </div>
+                      <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
-            <div style={{ maxHeight: '256px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {getCurrentDeviceList().map((disp) => (
-                <motion.button
-                  key={disp.id}
-                  onClick={() => openDeviceAction(disp)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
-                  whileHover={{ background: 'rgba(255,255,255,0.1)' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
-                    <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
-                  </div>
-                  <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
-                </motion.button>
-              ))}
-            </div>
+            /* Modal per Stanza - mostra dispositivi della stanza + non assegnati con + */
+            <>
+              <p style={{ fontSize: '12px', color: colors.textMuted, marginBottom: '8px' }}>Clicca su un dispositivo per gestirlo</p>
+              <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {/* Dispositivi nella stanza */}
+                {getCurrentDeviceList().length === 0 ? (
+                  <p style={{ textAlign: 'center', fontSize: '13px', color: colors.textMuted, padding: '16px 0' }}>Nessun dispositivo in questa stanza</p>
+                ) : (
+                  getCurrentDeviceList().map((disp) => (
+                    <motion.button
+                      key={disp.id}
+                      onClick={() => openDeviceAction(disp)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
+                      whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
+                        <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
+                      </div>
+                      <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
+                    </motion.button>
+                  ))
+                )}
+                {/* Sezione Non Assegnati */}
+                {dispositiviNonAssegnati.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '4px' }}>
+                      <RiBox3Line size={14} style={{ color: colors.warning }} />
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted }}>Non assegnati</span>
+                      <div style={{ flex: 1, height: '1px', background: colors.border }} />
+                    </div>
+                    {dispositiviNonAssegnati.map((disp) => (
+                      <motion.button
+                        key={disp.id}
+                        onClick={() => handleQuickAssignDispositivo(disp)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: `1px dashed ${colors.border}`, cursor: 'pointer' }}
+                        whileHover={{ background: 'rgba(255,255,255,0.08)', borderColor: colors.accent }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <RiLightbulbLine size={16} style={{ color: colors.textMuted }} />
+                          <span style={{ fontSize: '14px', color: colors.textMuted }}>{disp.nome}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '6px', background: `${colors.accent}20` }}>
+                          <RiAddLine size={14} style={{ color: colors.accent }} />
+                        </div>
+                      </motion.button>
+                    ))}
+                  </>
+                )}
+              </div>
+            </>
           )}
           <Button variant="ghost" onClick={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} fullWidth style={{ marginTop: '12px' }}>Chiudi</Button>
         </div>
@@ -582,6 +687,40 @@ export const Stanze = () => {
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button variant="ghost" onClick={() => setRenameModalOpen(false)} fullWidth>Annulla</Button>
             <Button variant="primary" onClick={handleRenameDispositivo} fullWidth disabled={!newDeviceName.trim()}>Salva</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Rinomina Stanza */}
+      <Modal isOpen={renameStanzaModalOpen} onClose={() => setRenameStanzaModalOpen(false)} title="Rinomina stanza" size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input label="Nome Stanza" value={editStanza.nome} onChange={(e) => setEditStanza({ ...editStanza, nome: e.target.value })} placeholder="es. Soggiorno" autoFocus />
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+              {['🚪', '🛋️', '🍳', '🛏️', '🚿', '🏢', '🏠', '📺', '💻', '🌳', '🚗', '🎮'].map((icon) => (
+                <motion.button
+                  key={icon}
+                  onClick={() => setEditStanza({ ...editStanza, icona: icon })}
+                  style={{
+                    padding: '10px',
+                    fontSize: '20px',
+                    borderRadius: '12px',
+                    border: editStanza.icona === icon ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                    background: editStanza.icona === icon ? `${colors.accent}20` : 'transparent',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {icon}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button variant="ghost" onClick={() => setRenameStanzaModalOpen(false)} fullWidth>Annulla</Button>
+            <Button variant="primary" onClick={handleRenameStanza} fullWidth disabled={!editStanza.nome.trim()}>Salva</Button>
           </div>
         </div>
       </Modal>

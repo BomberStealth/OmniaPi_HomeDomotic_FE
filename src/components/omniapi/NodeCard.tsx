@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { RiWifiLine, RiLoader4Line, RiToggleLine } from 'react-icons/ri';
+import { RiWifiLine, RiLoader4Line, RiToggleLine, RiDeleteBinLine } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { OmniapiNode } from '@/services/omniapiApi';
 
@@ -128,12 +128,20 @@ const RelayButton = ({ relay, isOn, isLoading, disabled, colors, onToggle }: Rel
   </motion.button>
 );
 
+interface RegisteredInfo {
+  id: number;
+  nome: string;
+  stanzaNome: string | null;
+  onDelete: () => void;
+}
+
 interface NodeCardProps {
   node: OmniapiNode;
   onCommand: (mac: string, channel: 1 | 2, action: 'toggle') => Promise<boolean>;
+  registeredInfo?: RegisteredInfo;
 }
 
-export const NodeCard = ({ node, onCommand }: NodeCardProps) => {
+export const NodeCard = ({ node, onCommand, registeredInfo }: NodeCardProps) => {
   const { colors: themeColors } = useThemeColor();
   const [loadingRelay, setLoadingRelay] = useState<1 | 2 | null>(null);
 
@@ -198,56 +206,99 @@ export const NodeCard = ({ node, onCommand }: NodeCardProps) => {
         }}
       >
         <div>
-          {/* MAC Address */}
-          <div
-            style={{
-              fontFamily: 'monospace',
-              fontSize: '14px',
-              fontWeight: 600,
-              color: node.online ? colors.accent : colors.textMuted,
-              marginBottom: '4px',
-            }}
-          >
-            {node.mac}
-          </div>
-          {/* Version */}
-          <div style={{ fontSize: '12px', color: colors.textMuted }}>
-            Firmware: {node.version || 'N/A'}
-          </div>
+          {/* Name or MAC Address */}
+          {registeredInfo ? (
+            <>
+              <div
+                style={{
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: colors.textPrimary,
+                  marginBottom: '4px',
+                }}
+              >
+                {registeredInfo.nome}
+              </div>
+              <div style={{ fontSize: '12px', color: colors.textMuted }}>
+                {registeredInfo.stanzaNome || 'Nessuna stanza'} · {node.mac}
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: node.online ? colors.accent : colors.textMuted,
+                  marginBottom: '4px',
+                }}
+              >
+                {node.mac}
+              </div>
+              <div style={{ fontSize: '12px', color: colors.textMuted }}>
+                Firmware: {node.version || 'N/A'}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Online Badge */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            borderRadius: '20px',
-            background: node.online
-              ? `${colors.success}15`
-              : `${colors.error}15`,
-            border: `1px solid ${node.online ? `${colors.success}30` : `${colors.error}30`}`,
-          }}
-        >
+        {/* Online Badge and Delete Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div
             style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: node.online ? colors.success : colors.error,
-              boxShadow: node.online ? `0 0 8px ${colors.success}` : 'none',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: node.online ? colors.success : colors.error,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              background: node.online
+                ? `${colors.success}15`
+                : `${colors.error}15`,
+              border: `1px solid ${node.online ? `${colors.success}30` : `${colors.error}30`}`,
             }}
           >
-            {node.online ? 'Online' : 'Offline'}
-          </span>
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: node.online ? colors.success : colors.error,
+                boxShadow: node.online ? `0 0 8px ${colors.success}` : 'none',
+              }}
+            />
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: node.online ? colors.success : colors.error,
+              }}
+            >
+              {node.online ? 'Online' : 'Offline'}
+            </span>
+          </div>
+
+          {/* Delete button for registered nodes */}
+          {registeredInfo && (
+            <button
+              onClick={registeredInfo.onDelete}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '10px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: colors.error,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <RiDeleteBinLine size={16} />
+            </button>
+          )}
         </div>
       </div>
 

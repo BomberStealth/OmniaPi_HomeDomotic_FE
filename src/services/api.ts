@@ -141,6 +141,12 @@ export const tasmotaApi = {
     return data;
   },
 
+  // Tutti i dispositivi (Tasmota + OmniaPi) - per Scene e Stanze
+  getAllDispositivi: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/dispositivi/all`);
+    return data;
+  },
+
   scanRete: async (impiantoId: number) => {
     const { data } = await api.post(`/api/impianti/${impiantoId}/dispositivi/scan`);
     return data;
