@@ -28,6 +28,7 @@ const Settings = lazy(() => import('@/pages/Settings/Settings').then(m => ({ def
 const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then(m => ({ default: m.StylePreview })));
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
+const OmniaPi = lazy(() => import('@/pages/OmniaPi/OmniaPi').then(m => ({ default: m.OmniaPi })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -104,6 +105,7 @@ function App() {
                 <Route path="/stanze" element={<ProtectedRoute><Stanze /></ProtectedRoute>} />
                 <Route path="/dispositivi" element={<ProtectedRoute><Dispositivi /></ProtectedRoute>} />
                 <Route path="/scene" element={<ProtectedRoute><Scene /></ProtectedRoute>} />
+                <Route path="/omniapi" element={<ProtectedRoute><OmniaPi /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />

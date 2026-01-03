@@ -7,7 +7,8 @@ import {
   RiSparklingLine,
   RiSettings4Line,
   RiLogoutBoxLine,
-  RiDoorOpenLine
+  RiDoorOpenLine,
+  RiRouterLine
 } from 'react-icons/ri';
 import { useAuthStore } from '@/store/authStore';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
@@ -57,6 +58,7 @@ export const Sidebar = () => {
     { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
     { path: '/dispositivi', icon: RiLightbulbLine, label: t('nav.dispositivi') },
     { path: '/scene', icon: RiSparklingLine, label: t('nav.scene') },
+    { path: '/omniapi', icon: RiRouterLine, label: 'OmniaPi' },
     { path: '/settings', icon: RiSettings4Line, label: t('nav.settings') }
   ];
 

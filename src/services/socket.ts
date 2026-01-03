@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { OmniapiGateway, OmniapiNode } from './omniapiApi';
 
 // ============================================
 // WEBSOCKET SERVICE
@@ -52,6 +53,34 @@ class SocketService {
 
   offDispositivoUpdate() {
     this.socket?.off('dispositivo-update');
+  }
+
+  // ============================================
+  // OMNIAPI WEBSOCKET EVENTS
+  // ============================================
+
+  onOmniapiGatewayUpdate(callback: (gateway: OmniapiGateway) => void) {
+    this.socket?.on('omniapi-gateway-update', callback);
+  }
+
+  offOmniapiGatewayUpdate() {
+    this.socket?.off('omniapi-gateway-update');
+  }
+
+  onOmniapiNodeUpdate(callback: (node: OmniapiNode) => void) {
+    this.socket?.on('omniapi-node-update', callback);
+  }
+
+  offOmniapiNodeUpdate() {
+    this.socket?.off('omniapi-node-update');
+  }
+
+  onOmniapiNodesUpdate(callback: (nodes: OmniapiNode[]) => void) {
+    this.socket?.on('omniapi-nodes-update', callback);
+  }
+
+  offOmniapiNodesUpdate() {
+    this.socket?.off('omniapi-nodes-update');
   }
 }
 
