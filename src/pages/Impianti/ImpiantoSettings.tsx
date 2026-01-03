@@ -7,6 +7,7 @@ import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { Modal } from '@/components/common/Modal';
 import { impiantiApi } from '@/services/api';
+import { useImpiantiStore } from '@/store/impiantiStore';
 import { Impianto } from '@/types';
 import { toast } from 'sonner';
 
@@ -24,6 +25,9 @@ interface CondivisioneUtente {
 export const ImpiantoSettings = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  // Store per gestire stato globale impianti
+  const { impianti, removeImpianto, fetchImpianti } = useImpiantiStore();
 
   const [impianto, setImpianto] = useState<Impianto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -142,9 +146,26 @@ export const ImpiantoSettings = () => {
 
   const handleDelete = async () => {
     try {
-      await impiantiApi.delete(parseInt(id!));
+      const impiantoId = parseInt(id!);
+
+      // Calcola PRIMA se questo è l'ultimo impianto
+      const isLastImpianto = impianti.length <= 1;
+
+      await impiantiApi.delete(impiantoId);
+
+      // Aggiorna lo store locale
+      removeImpianto(impiantoId);
+
       toast.success('Impianto eliminato con successo');
-      navigate('/impianti');
+
+      // Se era l'ultimo, vai al setup wizard
+      if (isLastImpianto) {
+        navigate('/setup', { replace: true });
+      } else {
+        // Ri-sincronizza lo store con il backend prima di navigare
+        await fetchImpianti();
+        navigate('/impianti', { replace: true });
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
     }

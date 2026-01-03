@@ -83,6 +83,13 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
     if (!impiantoCorrente?.id) return;
     setLoading(true);
     try {
+      // Triggera discovery per richiedere i nodi al Gateway
+      await omniapiApi.discover();
+
+      // Attendi che i nodi rispondano via MQTT (1.5 secondi)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Carica nodi e stanze
       const [nodesRes, stanzeRes] = await Promise.all([
         omniapiApi.getAvailableNodes(impiantoCorrente.id),
         stanzeApi.getStanze(impiantoCorrente.id),

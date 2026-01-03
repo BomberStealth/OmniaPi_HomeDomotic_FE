@@ -17,6 +17,7 @@ interface ImpiantiState {
   fetchImpianti: () => Promise<void>;
   fetchImpianto: (id: number) => Promise<void>;
   setImpiantoCorrente: (impianto: Impianto | null) => void;
+  removeImpianto: (id: number) => void;
   initializeSelection: () => void;
 }
 
@@ -58,6 +59,22 @@ export const useImpiantiStore = create<ImpiantiState>((set, get) => ({
     if (impianto) {
       localStorage.setItem(STORAGE_KEY, impianto.id.toString());
     } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  },
+
+  // Rimuove un impianto dalla lista e resetta selezione se necessario
+  removeImpianto: (id) => {
+    const { impianti, impiantoCorrente } = get();
+    const newImpianti = impianti.filter(i => i.id !== id);
+
+    // Se l'impianto eliminato era quello corrente, deseleziona
+    const newCorrente = impiantoCorrente?.id === id ? null : impiantoCorrente;
+
+    set({ impianti: newImpianti, impiantoCorrente: newCorrente });
+
+    // Pulisci localStorage se era quello salvato
+    if (impiantoCorrente?.id === id) {
       localStorage.removeItem(STORAGE_KEY);
     }
   },

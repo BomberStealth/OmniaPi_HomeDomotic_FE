@@ -277,6 +277,13 @@ export const Dispositivi = () => {
   const loadAvailableNodes = async () => {
     if (!impiantoId) return;
     try {
+      // Triggera discovery per richiedere i nodi al Gateway
+      await omniapiApi.discover();
+
+      // Attendi che i nodi rispondano via MQTT (1.5 secondi)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Carica nodi disponibili
       const res = await omniapiApi.getAvailableNodes(impiantoId);
       setAvailableOmniapiNodes(res.nodes || []);
     } catch (error) {

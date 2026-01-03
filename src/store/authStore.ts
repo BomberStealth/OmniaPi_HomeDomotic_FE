@@ -41,6 +41,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem('token');
+    // Pulisci anche lo stato del wizard
+    localStorage.removeItem('omniapi_setup_wizard');
     socketService.disconnect();
     set({ user: null, token: null });
   },

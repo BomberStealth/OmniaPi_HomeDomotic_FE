@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
-import { Input } from '@/components/common/Input';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiDeleteBin2Line, RiLoader4Line } from 'react-icons/ri';
+import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine } from 'react-icons/ri';
 import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { api } from '@/services/api';
 
 // ============================================
 // SETTINGS PAGE - Dark Luxury Style
@@ -34,29 +32,9 @@ export const Settings = () => {
   const { user, logout } = useAuthStore();
   const { colorTheme, setColorTheme, colors: themeColors } = useThemeColor();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const isAdmin = user?.ruolo === UserRole.ADMIN;
-  const [cleaningScenes, setCleaningScenes] = useState(false);
-
-  // Pulizia scene orfane
-  const handleCleanupScenes = async () => {
-    if (cleaningScenes) return;
-    setCleaningScenes(true);
-    try {
-      const { data } = await api.post('/api/admin/cleanup-scenes');
-      if (data.azioniRimosse > 0) {
-        toast.success(`Pulite ${data.sceneAggiornate} scene (${data.azioniRimosse} azioni rimosse)`);
-      } else {
-        toast.success('Nessuna azione orfana trovata');
-      }
-    } catch (error) {
-      toast.error('Errore durante la pulizia');
-    } finally {
-      setCleaningScenes(false);
-    }
-  };
 
   // Colori dinamici basati sul tema
   const colors = {
@@ -244,13 +222,16 @@ export const Settings = () => {
           </div>
         </div>
 
-        {/* Profilo Utente Card */}
+        {/* Profilo Utente Card - Cliccabile */}
         <motion.div
+          onClick={() => navigate('/settings/profilo')}
           style={{
             ...cardStyle,
             padding: '16px',
+            cursor: 'pointer',
           }}
           whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
         >
           <div style={topHighlight} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -431,7 +412,7 @@ export const Settings = () => {
           </motion.div>
         </div>
 
-        {/* Preferenze Section */}
+        {/* Account Section */}
         <div>
           <h2 style={{
             fontSize: '12px',
@@ -441,7 +422,7 @@ export const Settings = () => {
             color: colors.textMuted,
             margin: '0 0 10px 4px',
           }}>
-            Preferenze
+            Account
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Notifiche Toggle */}
@@ -465,7 +446,7 @@ export const Settings = () => {
               iconBg={`${colors.warning}20`}
               title="Dispositivi Connessi"
               subtitle="Gestisci sessioni attive"
-              onClick={() => {}}
+              onClick={() => navigate('/settings/dispositivi-connessi')}
             />
           </div>
         </div>
@@ -484,11 +465,11 @@ export const Settings = () => {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <SettingRow
-              icon={RiShieldLine}
+              icon={RiLockLine}
               iconBg={`${colors.warning}20`}
               title="Password"
               subtitle="Modifica password"
-              onClick={() => {}}
+              onClick={() => navigate('/settings/password')}
             />
           </div>
         </div>
@@ -506,69 +487,15 @@ export const Settings = () => {
             }}>
               Amministrazione
             </h2>
-            <motion.div
-              style={{
-                ...cardStyle,
-                padding: '16px',
-              }}
-            >
-              <div style={topHighlight} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                <div
-                  style={{
-                    padding: '8px',
-                    borderRadius: '12px',
-                    background: `${colors.error}20`,
-                  }}
-                >
-                  <RiShieldLine size={18} style={{ color: colors.error }} />
-                </div>
-                <h3 style={{
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: colors.textPrimary,
-                  margin: 0,
-                }}>
-                  Gestione Account
-                </h3>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cerca utente..."
-                />
-                <motion.button
-                  onClick={handleCleanupScenes}
-                  disabled={cleaningScenes}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px',
-                    background: `${colors.warning}15`,
-                    border: `1px solid ${colors.warning}30`,
-                    borderRadius: '12px',
-                    color: colors.warning,
-                    fontSize: '13px',
-                    fontWeight: 500,
-                    cursor: cleaningScenes ? 'not-allowed' : 'pointer',
-                    opacity: cleaningScenes ? 0.7 : 1,
-                  }}
-                  whileHover={!cleaningScenes ? { scale: 1.02 } : undefined}
-                  whileTap={!cleaningScenes ? { scale: 0.98 } : undefined}
-                >
-                  {cleaningScenes ? (
-                    <RiLoader4Line size={16} className="animate-spin" />
-                  ) : (
-                    <RiDeleteBin2Line size={16} />
-                  )}
-                  {cleaningScenes ? 'Pulizia in corso...' : 'Pulisci Scene Orfane'}
-                </motion.button>
-              </div>
-            </motion.div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <SettingRow
+                icon={RiShieldLine}
+                iconBg={`${colors.error}20`}
+                title="Gestione Utenti"
+                subtitle="Amministra account utenti"
+                onClick={() => navigate('/settings/admin/utenti')}
+              />
+            </div>
           </div>
         )}
 
@@ -590,14 +517,14 @@ export const Settings = () => {
               iconBg={`${colors.accent}20`}
               title="Guida"
               subtitle="Come usare l'app"
-              onClick={() => {}}
+              onClick={() => navigate('/settings/guida')}
             />
             <SettingRow
               icon={RiInformationLine}
               iconBg={`${colors.accent}20`}
               title="Informazioni"
               subtitle={`OmniaPi v${APP_VERSION}`}
-              onClick={() => {}}
+              onClick={() => navigate('/settings/info')}
             />
           </div>
         </div>

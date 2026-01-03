@@ -25,6 +25,12 @@ const Stanze = lazy(() => import('@/pages/Stanze/Stanze').then(m => ({ default: 
 const Dispositivi = lazy(() => import('@/pages/Dispositivi/Dispositivi').then(m => ({ default: m.Dispositivi })));
 const Scene = lazy(() => import('@/pages/Scene/Scene').then(m => ({ default: m.Scene })));
 const Settings = lazy(() => import('@/pages/Settings/Settings').then(m => ({ default: m.Settings })));
+const Profilo = lazy(() => import('@/pages/Settings/Profilo').then(m => ({ default: m.Profilo })));
+const DispositiviConnessi = lazy(() => import('@/pages/Settings/DispositiviConnessi').then(m => ({ default: m.DispositiviConnessi })));
+const CambiaPassword = lazy(() => import('@/pages/Settings/CambiaPassword').then(m => ({ default: m.CambiaPassword })));
+const Guida = lazy(() => import('@/pages/Settings/Guida').then(m => ({ default: m.Guida })));
+const InfoApp = lazy(() => import('@/pages/Settings/InfoApp').then(m => ({ default: m.InfoApp })));
+const SetupWizard = lazy(() => import('@/pages/Wizard/SetupWizard').then(m => ({ default: m.SetupWizard })));
 const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then(m => ({ default: m.StylePreview })));
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
@@ -105,6 +111,12 @@ function App() {
                 <Route path="/dispositivi" element={<ProtectedRoute><Dispositivi /></ProtectedRoute>} />
                 <Route path="/scene" element={<ProtectedRoute><Scene /></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/settings/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
+                <Route path="/settings/dispositivi-connessi" element={<ProtectedRoute><DispositiviConnessi /></ProtectedRoute>} />
+                <Route path="/settings/password" element={<ProtectedRoute><CambiaPassword /></ProtectedRoute>} />
+                <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
+                <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
+                <Route path="/setup" element={<ProtectedRoute><SetupWizard /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />
               </Routes>

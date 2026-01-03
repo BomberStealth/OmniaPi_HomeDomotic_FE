@@ -296,7 +296,7 @@ export const Dashboard = () => {
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 8vw, 48px)', flexWrap: 'wrap', minWidth: 0 }}>
             {/* Luci */}
             <motion.button
               onClick={toggleAllLights}
@@ -311,6 +311,8 @@ export const Dashboard = () => {
                 border: 'none',
                 cursor: totLuci === 0 ? 'not-allowed' : 'pointer',
                 opacity: totLuci === 0 ? 0.5 : 1,
+                minWidth: 0,
+                flexShrink: 0,
               }}
               whileHover={totLuci > 0 ? { scale: 1.05 } : undefined}
               whileTap={totLuci > 0 ? { scale: 0.95 } : undefined}
@@ -321,6 +323,7 @@ export const Dashboard = () => {
                   borderRadius: '12px',
                   background: luciOn > 0 ? `${colors.accent}40` : `${colors.accent}25`,
                   boxShadow: luciOn > 0 ? `0 0 12px ${colors.accent}50` : 'none',
+                  flexShrink: 0,
                 }}
               >
                 {togglingAll === 'luci' ? (
@@ -335,15 +338,15 @@ export const Dashboard = () => {
                   />
                 )}
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '18px', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1 }}>
+              <div style={{ textAlign: 'center', minWidth: 0 }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>
                   {luciOn}/{totLuci}
                 </p>
                 <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0 }}>Luci</p>
               </div>
             </motion.button>
 
-            <div style={{ width: '1px', height: '40px', background: colors.border }} />
+            <div style={{ width: '1px', height: '40px', background: colors.border, flexShrink: 0 }} />
 
             {/* Termostati */}
             <motion.button
@@ -359,15 +362,17 @@ export const Dashboard = () => {
                 border: 'none',
                 cursor: termostati === 0 ? 'not-allowed' : 'pointer',
                 opacity: termostati === 0 ? 0.5 : 1,
+                minWidth: 0,
+                flexShrink: 0,
               }}
               whileHover={termostati > 0 ? { scale: 1.05 } : undefined}
               whileTap={termostati > 0 ? { scale: 0.95 } : undefined}
             >
-              <div style={{ padding: '8px', borderRadius: '12px', background: `${colors.accent}26` }}>
+              <div style={{ padding: '8px', borderRadius: '12px', background: `${colors.accent}26`, flexShrink: 0 }}>
                 <RiTempHotLine size={18} style={{ color: colors.accent }} />
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '18px', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1 }}>
+              <div style={{ textAlign: 'center', minWidth: 0 }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>
                   {termostati}
                 </p>
                 <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0 }}>Termostati</p>

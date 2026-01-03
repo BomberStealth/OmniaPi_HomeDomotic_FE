@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "axios": "^1.6.2",
+    "canvas-confetti": "^1.9.4",
     "framer-motion": "^10.16.16",
     "i18next": "^23.7.11",
     "lucide-react": "^0.302.0",
@@ -22,6 +23,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",

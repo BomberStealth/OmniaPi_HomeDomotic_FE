@@ -54,7 +54,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
 
   const handleCreateNew = () => {
     setIsOpen(false);
-    navigate('/impianti/nuovo');
+    navigate('/setup');
   };
 
   const handleDelete = async (e: React.MouseEvent, impiantoId: number, impiantoNome: string) => {

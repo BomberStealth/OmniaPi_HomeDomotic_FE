@@ -227,6 +227,15 @@ OmniaPi_HomeDomotic_Firmware/
 - [ ] Sensore PIR (motion detection)
 - [ ] Sensore temperatura/umidità
 - [ ] Tapparella (2 relè: su/giù)
+- [ ] **Riconoscimento Singolo/Doppio Relè**:
+  - Attualmente tutti i nodi sono trattati come doppio relè (2 slider)
+  - Il nodo deve comunicare `channelCount` (1 o 2) nel messaggio STATE
+  - Il gateway deve salvare questa info e inviarla al backend
+  - Il frontend deve mostrare 1 o 2 slider in base a channelCount
+  - Modifiche necessarie:
+    * Firmware nodo: includere `channelCount` nel boot/STATE
+    * Backend: salvare `relay_count` nel DB dispositivi
+    * Frontend: renderizzare slider dinamicamente
 
 ### MILESTONE 13: Produzione
 - [ ] Script flash automatizzato
