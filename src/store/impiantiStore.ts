@@ -68,14 +68,28 @@ export const useImpiantiStore = create<ImpiantiState>((set, get) => ({
     const { impianti, impiantoCorrente } = get();
     const newImpianti = impianti.filter(i => i.id !== id);
 
-    // Se l'impianto eliminato era quello corrente, deseleziona
-    const newCorrente = impiantoCorrente?.id === id ? null : impiantoCorrente;
-
-    set({ impianti: newImpianti, impiantoCorrente: newCorrente });
-
-    // Pulisci localStorage se era quello salvato
+    // Se l'impianto eliminato era quello corrente
     if (impiantoCorrente?.id === id) {
+      // Pulisci localStorage
       localStorage.removeItem(STORAGE_KEY);
+
+      // Auto-seleziona il primo impianto rimanente (o null se vuoto)
+      const newCorrente = newImpianti.length > 0 ? newImpianti[0] : null;
+
+      // Resetta initialized per permettere ri-inizializzazione
+      set({
+        impianti: newImpianti,
+        impiantoCorrente: newCorrente,
+        initialized: newImpianti.length === 0 // Reset solo se vuoto
+      });
+
+      // Se c'è un nuovo corrente, salvalo
+      if (newCorrente) {
+        localStorage.setItem(STORAGE_KEY, newCorrente.id.toString());
+      }
+    } else {
+      // L'impianto eliminato non era quello corrente
+      set({ impianti: newImpianti });
     }
   },
 

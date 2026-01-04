@@ -132,6 +132,24 @@ export const Scene = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   }), [themeColors]);
 
+  // Ordine scene predefinito: Entra, Esci, Giorno, Notte, poi custom
+  const ordineScenePredefinite = ['Entra', 'Esci', 'Giorno', 'Notte'];
+
+  const sceneOrdinate = useMemo(() => {
+    return [...scene].sort((a, b) => {
+      const indexA = ordineScenePredefinite.indexOf(a.nome);
+      const indexB = ordineScenePredefinite.indexOf(b.nome);
+
+      // Scene predefinite prima, in ordine specifico
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+
+      // Scene custom in ordine alfabetico
+      return a.nome.localeCompare(b.nome);
+    });
+  }, [scene]);
+
   const impiantoId = impiantoCorrente?.id || 0;
 
   useEffect(() => {
@@ -418,7 +436,7 @@ export const Scene = () => {
           <EmptyState icon={RiPlayLine} title="Nessuna scena" description="Crea la tua prima scena usando il pulsante in alto" />
         ) : (
           <SceneList
-            scene={scene}
+            scene={sceneOrdinate}
             executingId={executing}
             onExecute={executeScene}
             onDelete={handleDeleteScene}

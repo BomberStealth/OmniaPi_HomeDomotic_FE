@@ -76,7 +76,19 @@ export const Dashboard = () => {
       const data = await sceneApi.getScene(impiantoCorrente.id);
       const scenes = Array.isArray(data) ? data : [];
       const shortcuts = scenes.filter((s: any) => s.is_shortcut !== false && s.is_shortcut !== 0);
-      setSceneShortcuts(shortcuts);
+
+      // Ordina: Entra → Esci → Giorno → Notte → altre (alfabetico)
+      const ordineScene = ['Entra', 'Esci', 'Giorno', 'Notte'];
+      const shortcutsOrdinati = [...shortcuts].sort((a: any, b: any) => {
+        const indexA = ordineScene.indexOf(a.nome);
+        const indexB = ordineScene.indexOf(b.nome);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.nome.localeCompare(b.nome);
+      });
+
+      setSceneShortcuts(shortcutsOrdinati);
     } catch (error) {
       console.error('Errore caricamento scene:', error);
       setSceneShortcuts([]);

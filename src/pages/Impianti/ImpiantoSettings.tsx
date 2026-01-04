@@ -153,16 +153,16 @@ export const ImpiantoSettings = () => {
 
       await impiantiApi.delete(impiantoId);
 
-      // Aggiorna lo store locale
+      // Aggiorna lo store locale (auto-seleziona il prossimo)
       removeImpianto(impiantoId);
 
       toast.success('Impianto eliminato con successo');
 
-      // Se era l'ultimo, vai al setup wizard
+      // Se era l'ultimo, vai alla home, altrimenti alla lista
       if (isLastImpianto) {
-        navigate('/setup', { replace: true });
+        navigate('/', { replace: true });
       } else {
-        // Ri-sincronizza lo store con il backend prima di navigare
+        // Forza reload della lista dal backend e naviga
         await fetchImpianti();
         navigate('/impianti', { replace: true });
       }

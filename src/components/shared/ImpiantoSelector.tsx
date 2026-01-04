@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useImpiantiStore } from '@/store/impiantiStore';
 import { useNavigate } from 'react-router-dom';
 import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiDeleteBinLine } from 'react-icons/ri';
 import { useState } from 'react';
@@ -40,6 +41,7 @@ interface ImpiantoSelectorProps {
 export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) => {
   const navigate = useNavigate();
   const { impiantoCorrente, setImpiantoCorrente, impianti, loading, refresh } = useImpiantoContext();
+  const { removeImpianto } = useImpiantiStore();
   const [isOpen, setIsOpen] = useState(false);
   const { colors: themeColors } = useThemeColor();
 
@@ -65,10 +67,24 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
     }
 
     try {
-      await impiantiApi.delete(impiantoId);
-      toast.success('Impianto eliminato con successo!');
-      await refresh();
+      // Chiudi dropdown prima per UX migliore
       setIsOpen(false);
+
+      // Elimina dal backend
+      await impiantiApi.delete(impiantoId);
+
+      // Aggiorna lo store locale (auto-seleziona il prossimo impianto)
+      removeImpianto(impiantoId);
+
+      toast.success('Impianto eliminato con successo!');
+
+      // Se non ci sono più impianti, vai alla home
+      if (impianti.length <= 1) {
+        navigate('/', { replace: true });
+      } else {
+        // Forza refresh per sincronizzare con backend
+        await refresh();
+      }
     } catch (error: any) {
       console.error('Errore eliminazione impianto:', error);
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');

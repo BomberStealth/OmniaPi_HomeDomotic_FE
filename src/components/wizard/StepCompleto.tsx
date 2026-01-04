@@ -11,7 +11,7 @@ import {
   RiAlertLine,
 } from 'react-icons/ri';
 import confetti from 'canvas-confetti';
-import { impiantiApi, stanzeApi } from '@/services/api';
+import { impiantiApi, stanzeApi, api } from '@/services/api';
 import { gatewayApi } from '@/services/gatewayApi';
 import { omniapiApi } from '@/services/omniapiApi';
 
@@ -130,11 +130,32 @@ export const StepCompleto = ({
       }
 
       // 4. Registra tutti i dispositivi
+      console.log('[Wizard] ====== INIZIO REGISTRAZIONE DISPOSITIVI ======');
+      console.log('[Wizard] Dispositivi da registrare:', dispositivi.length);
+
       for (const dispositivo of dispositivi) {
         const stanzaId = dispositivo.stanza_nome ? stanzeMap[dispositivo.stanza_nome] : undefined;
+        console.log('[Wizard] Registrando:', dispositivo.nome, dispositivo.mac, 'stanza:', stanzaId);
         await omniapiApi.registerNode(createdImpiantoId, dispositivo.mac, dispositivo.nome, stanzaId);
-        console.log('Dispositivo registrato:', dispositivo.nome, dispositivo.mac);
+        console.log('[Wizard] Dispositivo registrato OK:', dispositivo.nome);
       }
+
+      console.log('[Wizard] ====== TUTTI I DISPOSITIVI REGISTRATI ======');
+
+      // 5. Auto-popola scene Entra/Esci con tutti i dispositivi
+      console.log('[Wizard] ====== INIZIO AUTO-POPULATE SCENE ======');
+      console.log('[Wizard] Impianto ID per auto-populate:', createdImpiantoId);
+
+      try {
+        const autoPopulateResponse = await api.post(`/api/impianti/${createdImpiantoId}/scene/auto-populate`);
+        console.log('[Wizard] Auto-populate RESPONSE:', autoPopulateResponse.data);
+      } catch (sceneErr: any) {
+        console.error('[Wizard] Auto-populate ERRORE:', sceneErr);
+        console.error('[Wizard] Auto-populate ERRORE response:', sceneErr.response?.data);
+        // Non blocca il flusso, le scene possono essere configurate manualmente
+      }
+
+      console.log('[Wizard] ====== FINE AUTO-POPULATE ======');
 
       // Effetto confetti
       triggerConfetti();
