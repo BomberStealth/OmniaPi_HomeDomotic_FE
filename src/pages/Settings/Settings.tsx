@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine } from 'react-icons/ri';
+import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line } from 'react-icons/ri';
 import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useNotifications } from '@/hooks/useNotifications';
 
 // ============================================
 // SETTINGS PAGE - Dark Luxury Style
@@ -32,7 +32,7 @@ export const Settings = () => {
   const { user, logout } = useAuthStore();
   const { colorTheme, setColorTheme, colors: themeColors } = useThemeColor();
   const navigate = useNavigate();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
 
   const isAdmin = user?.ruolo === UserRole.ADMIN;
 
@@ -426,19 +426,53 @@ export const Settings = () => {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {/* Notifiche Toggle */}
-            <SettingRow
-              icon={RiNotification3Line}
-              iconBg={`${colors.accent}20`}
-              title="Notifiche"
-              subtitle={notificationsEnabled ? 'Attive' : 'Disattivate'}
-              showArrow={false}
-              rightElement={
-                <ToggleSwitch
-                  enabled={notificationsEnabled}
-                  onToggle={() => setNotificationsEnabled(!notificationsEnabled)}
-                />
-              }
-            />
+            {isSupported ? (
+              <SettingRow
+                icon={RiNotification3Line}
+                iconBg={`${colors.accent}20`}
+                title="Notifiche Push"
+                subtitle={
+                  notificationsLoading
+                    ? 'Caricamento...'
+                    : notificationsError
+                      ? notificationsError
+                      : isEnabled
+                        ? 'Attive'
+                        : 'Disattivate'
+                }
+                showArrow={false}
+                rightElement={
+                  notificationsLoading ? (
+                    <RiLoader4Line
+                      size={24}
+                      style={{
+                        color: colors.accent,
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                  ) : (
+                    <ToggleSwitch
+                      enabled={isEnabled}
+                      onToggle={async () => {
+                        if (isEnabled) {
+                          await disableNotifications();
+                        } else {
+                          await enableNotifications();
+                        }
+                      }}
+                    />
+                  )
+                }
+              />
+            ) : (
+              <SettingRow
+                icon={RiNotification3Line}
+                iconBg={`${colors.textMuted}20`}
+                title="Notifiche Push"
+                subtitle="Non supportate su questo browser"
+                showArrow={false}
+              />
+            )}
 
             {/* Dispositivi Connessi */}
             <SettingRow
