@@ -82,6 +82,29 @@ class SocketService {
   offOmniapiNodesUpdate() {
     this.socket?.off('omniapi-nodes-update');
   }
+
+  // ============================================
+  // NOTIFICATION WEBSOCKET EVENTS
+  // ============================================
+
+  onNotification(callback: (notification: NotificationEvent) => void) {
+    this.socket?.on('notification', callback);
+  }
+
+  offNotification() {
+    this.socket?.off('notification');
+  }
+}
+
+// Notification event type
+export interface NotificationEvent {
+  id: number;
+  impiantoId: number;
+  type: string;
+  title: string;
+  body: string;
+  data?: any;
+  created_at: string;
 }
 
 export const socketService = new SocketService();

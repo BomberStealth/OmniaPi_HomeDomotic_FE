@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { requestNotificationPermission, onForegroundMessage } from '../config/firebase';
-import api from '../services/api';
+import { api } from '../services/api';
 
 interface NotificationState {
   permission: NotificationPermission | 'unsupported';
@@ -51,19 +51,35 @@ export function useNotifications() {
 
   // Request permission and register token
   const enableNotifications = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    // IMPORTANTE: requestPermission DEVE essere la prima cosa chiamata
+    // altrimenti il browser blocca la richiesta perché non è "direttamente" dal click
 
     try {
+      // Prima chiedi il permesso - SUBITO, senza setState prima!
+      const permission = await Notification.requestPermission();
+
+      if (permission !== 'granted') {
+        setState(prev => ({
+          ...prev,
+          permission: permission,
+          error: permission === 'denied'
+            ? 'Notifiche bloccate. Abilita dalle impostazioni del browser.'
+            : 'Permesso notifiche non concesso'
+        }));
+        return false;
+      }
+
+      // Ora aggiorna lo stato e continua
+      setState(prev => ({ ...prev, loading: true, error: null }));
+
       const token = await requestNotificationPermission();
 
       if (!token) {
         setState(prev => ({
           ...prev,
           loading: false,
-          permission: Notification.permission,
-          error: Notification.permission === 'denied'
-            ? 'Notifiche bloccate. Abilita dalle impostazioni del browser.'
-            : 'Impossibile ottenere il token'
+          permission: 'granted',
+          error: 'Impossibile ottenere il token FCM'
         }));
         return false;
       }

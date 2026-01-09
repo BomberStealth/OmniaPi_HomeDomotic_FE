@@ -8,11 +8,14 @@ import {
   RiSettings4Line,
   RiLogoutBoxLine,
   RiDoorOpenLine,
+  RiNotification3Line,
+  RiDownloadLine,
 } from 'react-icons/ri';
 import { useAuthStore } from '@/store/authStore';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
 import { APP_VERSION, APP_NAME } from '@/config/version';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // ============================================
 // SIDEBAR NAVIGATION - Dark Luxury Style
@@ -42,6 +45,7 @@ export const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const { colors: themeColors, colorTheme } = useThemeColor();
+  const { canInstall, promptInstall } = usePWAInstall();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -57,6 +61,7 @@ export const Sidebar = () => {
     { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
     { path: '/dispositivi', icon: RiLightbulbLine, label: t('nav.dispositivi') },
     { path: '/scene', icon: RiSparklingLine, label: t('nav.scene') },
+    { path: '/notifications', icon: RiNotification3Line, label: 'Notifiche' },
     { path: '/settings', icon: RiSettings4Line, label: t('nav.settings') }
   ];
 
@@ -187,6 +192,34 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+
+      {/* Install PWA Button - solo se canInstall */}
+      {canInstall && (
+        <button
+          onClick={promptInstall}
+          className="flex items-center gap-3 px-4 py-3 w-full transition-all hover:scale-[0.98] relative overflow-hidden mb-2"
+          style={{
+            borderRadius: '20px',
+            color: colors.accent,
+            background: `rgba(${hexToRgb(colors.accent)}, 0.15)`,
+            border: `1px solid ${colors.accent}33`,
+            cursor: 'pointer',
+          }}
+        >
+          {/* Effetto pulse sottile */}
+          <span
+            className="absolute inset-0 rounded-xl animate-pulse"
+            style={{
+              backgroundColor: colors.accent,
+              opacity: 0.1,
+            }}
+          />
+          <RiDownloadLine size={20} className="flex-shrink-0 relative z-10" />
+          <span style={{ fontWeight: 600, fontSize: '14px' }} className="relative z-10">
+            Installa App
+          </span>
+        </button>
+      )}
 
       {/* Logout Button */}
       <button

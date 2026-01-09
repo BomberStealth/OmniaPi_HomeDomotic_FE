@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBQ0Sus1favmoE4RU-ysHstq0fn5qNx6t4",
+  apiKey: "AIzaSyBWmY5zR2R7xyMuL1cZEnXS7JL1fbfJ2KY",
   authDomain: "omniapihomedomotic.firebaseapp.com",
   projectId: "omniapihomedomotic",
   storageBucket: "omniapihomedomotic.firebasestorage.app",
@@ -11,7 +11,7 @@ const firebaseConfig = {
   measurementId: "G-C5KC6N5ZR8"
 };
 
-const VAPID_KEY = "BHdu4cn-TUV6FwTnBASdkRFzLELq00mrwZWXLAKlm8W7-LiLIKPmM7pVxqo_FskJ55_8tOESvQ3ZxSkGB_ih69I";
+const VAPID_KEY = "BGxPCFAPcfhftj2c3LwuzmoEgIA8Ey6nXlZZPOwU4iF6eNseNTv5n6UcPrvlqGzW5keO3Tq2GY3OAca8QQvSbYQ";
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

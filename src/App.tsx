@@ -34,6 +34,7 @@ const SetupWizard = lazy(() => import('@/pages/Wizard/SetupWizard').then(m => ({
 const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then(m => ({ default: m.StylePreview })));
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
+const Notifiche = lazy(() => import('@/pages/Notifiche').then(m => ({ default: m.Notifiche })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -116,6 +117,7 @@ function App() {
                 <Route path="/settings/password" element={<ProtectedRoute><CambiaPassword /></ProtectedRoute>} />
                 <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
                 <Route path="/setup" element={<ProtectedRoute><SetupWizard /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />

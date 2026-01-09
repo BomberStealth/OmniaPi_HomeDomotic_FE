@@ -2,12 +2,13 @@ import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line } from 'react-icons/ri';
+import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine } from 'react-icons/ri';
 import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useNotifications } from '@/hooks/useNotifications';
+import { usePWAInstall } from '@/hooks/usePWAInstall';
 
 // ============================================
 // SETTINGS PAGE - Dark Luxury Style
@@ -33,6 +34,7 @@ export const Settings = () => {
   const { colorTheme, setColorTheme, colors: themeColors } = useThemeColor();
   const navigate = useNavigate();
   const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
+  const { isStandalone } = usePWAInstall();
 
   const isAdmin = user?.ruolo === UserRole.ADMIN;
 
@@ -482,6 +484,17 @@ export const Settings = () => {
               subtitle="Gestisci sessioni attive"
               onClick={() => navigate('/settings/dispositivi-connessi')}
             />
+
+            {/* Stato App Installata - mostrato solo se in standalone mode */}
+            {isStandalone && (
+              <SettingRow
+                icon={RiCheckboxCircleLine}
+                iconBg="rgba(34, 197, 94, 0.2)"
+                title="App Installata"
+                subtitle="Stai usando l'app installata"
+                showArrow={false}
+              />
+            )}
           </div>
         </div>
 

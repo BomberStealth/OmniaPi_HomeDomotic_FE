@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyBQ0Sus1favmoE4RU-ysHstq0fn5qNx6t4",
+  apiKey: "AIzaSyBWmY5zR2R7xyMuL1cZEnXS7JL1fbfJ2KY",
   authDomain: "omniapihomedomotic.firebaseapp.com",
   projectId: "omniapihomedomotic",
   storageBucket: "omniapihomedomotic.firebasestorage.app",
