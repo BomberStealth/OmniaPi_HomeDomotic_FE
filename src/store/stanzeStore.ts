@@ -34,7 +34,7 @@ export const useStanzeStore = create<StanzeState>((set) => ({
   fetchStanze: async (impiantoId: number) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.get(`/api/stanze/impianto/${impiantoId}`);
+      const { data } = await api.get(`/api/impianti/${impiantoId}/stanze`);
       set({ stanze: Array.isArray(data) ? data : [], loading: false });
     } catch (error: any) {
       console.error('Errore fetch stanze:', error);

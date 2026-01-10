@@ -42,7 +42,7 @@ export const useDispositiviStore = create<DispositiviState>((set) => ({
   fetchDispositivi: async (impiantoId: number) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.get(`/api/tasmota/impianto/${impiantoId}`);
+      const { data } = await api.get(`/api/impianti/${impiantoId}/dispositivi/all`);
       set({ dispositivi: Array.isArray(data) ? data : [], loading: false });
     } catch (error: any) {
       console.error('Errore fetch dispositivi:', error);

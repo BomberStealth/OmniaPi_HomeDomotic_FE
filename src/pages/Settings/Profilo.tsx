@@ -73,7 +73,7 @@ export const Profilo = () => {
 
     setLoading(true);
     try {
-      const response = await api.put('/auth/profile', { nome, email });
+      const response = await api.put('/api/auth/profile', { nome, email });
       setUser(response.data.user);
       toast.success('Profilo aggiornato con successo');
       navigate('/settings');

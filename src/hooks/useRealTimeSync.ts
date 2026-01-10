@@ -88,7 +88,8 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // Dispositivi (Tasmota + altri)
     socketService.onDispositivoUpdate(({ dispositivo, action }) => {
-      console.log('💡 Real-time dispositivo:', action, dispositivo);
+      console.log('💡 [DEBUG] Real-time dispositivo:', action, JSON.stringify(dispositivo));
+      console.log(`   → ID=${dispositivo.id}, power_state=${dispositivo.power_state}`);
       switch (action) {
         case 'created':
           addDispositivo(dispositivo);
@@ -100,6 +101,7 @@ export const useRealTimeSync = (impiantoId: number | null) => {
           removeDispositivo(dispositivo.id);
           break;
         case 'state-changed':
+          console.log(`   → Updating power state: id=${dispositivo.id}, state=${dispositivo.power_state}`);
           updatePowerState(dispositivo.id, dispositivo.power_state);
           break;
       }
@@ -107,13 +109,36 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // OmniaPi Nodes
     socketService.onOmniapiNodeUpdate((node) => {
-      console.log('📡 Real-time OmniaPi node:', node);
+      console.log('📡 [DEBUG] Real-time OmniaPi node update received:', JSON.stringify(node));
+      console.log(`   → MAC=${node.mac}, relay1=${node.relay1}, relay2=${node.relay2}, online=${node.online}`);
       updateNode(node);
+
+      // SYNC: Aggiorna anche dispositiviStore per sincronizzare lo slider
+      // Trova il dispositivo con questo MAC e aggiorna power_state
+      const dispositivo = useDispositiviStore.getState().dispositivi.find(
+        (d) => d.mac_address === node.mac
+      );
+      if (dispositivo) {
+        const newPowerState = node.relay1 || node.relay2;
+        console.log(`   → Syncing to dispositiviStore: id=${dispositivo.id}, power_state=${newPowerState}`);
+        updatePowerState(dispositivo.id, newPowerState);
+      }
     });
 
     socketService.onOmniapiNodesUpdate((nodes) => {
-      console.log('📡 Real-time OmniaPi nodes:', nodes);
+      console.log('📡 [DEBUG] Real-time OmniaPi nodes update received:', nodes.length, 'nodes');
+      nodes.forEach((n: any) => console.log(`   → ${n.mac}: relay1=${n.relay1}, relay2=${n.relay2}`));
       updateNodes(nodes);
+
+      // SYNC: Aggiorna anche dispositiviStore per tutti i nodi
+      const dispositivi = useDispositiviStore.getState().dispositivi;
+      nodes.forEach((node: any) => {
+        const dispositivo = dispositivi.find((d) => d.mac_address === node.mac);
+        if (dispositivo) {
+          const newPowerState = node.relay1 || node.relay2;
+          updatePowerState(dispositivo.id, newPowerState);
+        }
+      });
     });
 
     // Full Sync (dopo riconnessione)

@@ -96,7 +96,7 @@ export const CambiaPassword = () => {
 
     setLoading(true);
     try {
-      await api.put('/auth/password', {
+      await api.post('/api/auth/change-password', {
         currentPassword,
         newPassword,
       });

@@ -230,6 +230,8 @@ export const Dispositivi = () => {
     if (impiantoId) {
       loadNodes();
     }
+    // Fetch gateway status on mount
+    fetchGateway();
   }, [impiantoId]);
 
   // WebSocket listener per aggiornamenti real-time dei nodi
@@ -424,6 +426,41 @@ export const Dispositivi = () => {
           >
             <RiAddLine size={20} style={{ color: colors.bg }} />
           </motion.button>
+        </div>
+
+        {/* Gateway Status Card */}
+        <div style={{
+          padding: '16px',
+          background: gateway?.online ? `${colors.success}10` : `${colors.error}10`,
+          border: `1px solid ${gateway?.online ? `${colors.success}30` : `${colors.error}30`}`,
+          borderRadius: '20px',
+          marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: gateway?.online ? colors.success : colors.error,
+              boxShadow: `0 0 10px ${gateway?.online ? colors.success : colors.error}`,
+            }} />
+            <div style={{ flex: 1 }}>
+              <span style={{
+                fontSize: '14px',
+                color: gateway?.online ? colors.success : colors.error,
+                fontWeight: 600,
+              }}>
+                Gateway {gateway?.online ? 'Online' : 'Offline'}
+              </span>
+              {gateway?.online && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '6px', fontSize: '12px', color: colors.textMuted }}>
+                  {gateway.ip && <span>IP: <b style={{ color: colors.textSecondary }}>{gateway.ip}</b></span>}
+                  {gateway.version && <span>Firmware: <b style={{ color: colors.textSecondary }}>v{gateway.version}</b></span>}
+                  <span>MQTT: <b style={{ color: gateway.mqttConnected ? colors.success : colors.error }}>{gateway.mqttConnected ? 'Connesso' : 'Disconnesso'}</b></span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Content */}
@@ -647,24 +684,30 @@ export const Dispositivi = () => {
             background: gateway?.online ? `${colors.success}10` : `${colors.error}10`,
             border: `1px solid ${gateway?.online ? `${colors.success}30` : `${colors.error}30`}`,
             borderRadius: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
           }}>
-            <div style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              background: gateway?.online ? colors.success : colors.error,
-              boxShadow: `0 0 8px ${gateway?.online ? colors.success : colors.error}`,
-            }} />
-            <span style={{
-              fontSize: '13px',
-              color: gateway?.online ? colors.success : colors.error,
-              fontWeight: 500,
-            }}>
-              Gateway {gateway?.online ? 'connesso' : 'disconnesso'}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: gateway?.online ? '8px' : '0' }}>
+              <div style={{
+                width: '10px',
+                height: '10px',
+                borderRadius: '50%',
+                background: gateway?.online ? colors.success : colors.error,
+                boxShadow: `0 0 8px ${gateway?.online ? colors.success : colors.error}`,
+              }} />
+              <span style={{
+                fontSize: '13px',
+                color: gateway?.online ? colors.success : colors.error,
+                fontWeight: 600,
+              }}>
+                Gateway {gateway?.online ? 'connesso' : 'disconnesso'}
+              </span>
+            </div>
+            {gateway?.online && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: colors.textMuted }}>
+                {gateway.ip && <span>IP: <b style={{ color: colors.textSecondary }}>{gateway.ip}</b></span>}
+                {gateway.version && <span>v{gateway.version}</span>}
+                <span>MQTT: <b style={{ color: gateway.mqttConnected ? colors.success : colors.error }}>{gateway.mqttConnected ? 'OK' : 'OFF'}</b></span>
+              </div>
+            )}
           </div>
 
           {/* Available Nodes */}
