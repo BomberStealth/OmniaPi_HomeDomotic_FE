@@ -3,6 +3,8 @@ import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { MobileHeader } from './MobileHeader';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 
 // ============================================
 // MAIN LAYOUT - Dark Luxury Style
@@ -24,6 +26,10 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { colors: themeColors } = useThemeColor();
+  const { impiantoCorrente } = useImpiantoContext();
+
+  // Real-time sync - carica dati e ascolta WebSocket
+  useRealTimeSync(impiantoCorrente?.id ?? null);
 
   // Background dinamico basato sul tema
   const { bgGradient, ambientGlow } = useMemo(() => {

@@ -5,7 +5,10 @@ import { ContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useAuthStore } from '@/store/authStore';
-import { sceneApi, tasmotaApi, stanzeApi } from '@/services/api';
+import { useStanzeStore } from '@/store/stanzeStore';
+import { useSceneStore } from '@/store/sceneStore';
+import { useDispositiviStore } from '@/store/dispositiviStore';
+import { sceneApi, tasmotaApi } from '@/services/api';
 import { omniapiApi } from '@/services/omniapiApi';
 import { DeviceCard } from '@/components/dispositivi/DeviceCard';
 import { SceneIcon } from '@/pages/Scene/Scene';
@@ -45,13 +48,31 @@ export const Dashboard = () => {
   const { impiantoCorrente } = useImpiantoContext();
   const { colors: themeColors } = useThemeColor();
   const { user } = useAuthStore();
-  const [sceneShortcuts, setSceneShortcuts] = useState<any[]>([]);
-  const [dispositivi, setDispositivi] = useState<any[]>([]);
-  const [stanze, setStanze] = useState<any[]>([]);
+
+  // Store data (real-time via useRealTimeSync nel Layout)
+  const { stanze } = useStanzeStore();
+  const { scene } = useSceneStore();
+  const { dispositivi, updatePowerState } = useDispositiviStore();
+
   const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set());
   const [executing, setExecuting] = useState<number | null>(null);
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [togglingAll, setTogglingAll] = useState<string | null>(null);
+
+  // Deriva sceneShortcuts dallo store
+  const sceneShortcuts = useMemo(() => {
+    const shortcuts = scene.filter((s: any) => s.is_shortcut !== false && s.is_shortcut !== 0);
+    // Ordina: Entra → Esci → Giorno → Notte → altre (alfabetico)
+    const ordineScene = ['Entra', 'Esci', 'Giorno', 'Notte'];
+    return [...shortcuts].sort((a: any, b: any) => {
+      const indexA = ordineScene.indexOf(a.nome);
+      const indexB = ordineScene.indexOf(b.nome);
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.nome.localeCompare(b.nome);
+    });
+  }, [scene]);
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -62,62 +83,12 @@ export const Dashboard = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   }), [themeColors]);
 
+  // Espandi tutte le stanze di default quando cambiano
   useEffect(() => {
-    if (impiantoCorrente) {
-      loadScene();
-      loadDispositivi();
-      loadStanze();
+    if (stanze.length > 0) {
+      setExpandedRooms(new Set(stanze.map((s: any) => s.id)));
     }
-  }, [impiantoCorrente]);
-
-  const loadScene = async () => {
-    if (!impiantoCorrente) return;
-    try {
-      const data = await sceneApi.getScene(impiantoCorrente.id);
-      const scenes = Array.isArray(data) ? data : [];
-      const shortcuts = scenes.filter((s: any) => s.is_shortcut !== false && s.is_shortcut !== 0);
-
-      // Ordina: Entra → Esci → Giorno → Notte → altre (alfabetico)
-      const ordineScene = ['Entra', 'Esci', 'Giorno', 'Notte'];
-      const shortcutsOrdinati = [...shortcuts].sort((a: any, b: any) => {
-        const indexA = ordineScene.indexOf(a.nome);
-        const indexB = ordineScene.indexOf(b.nome);
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.nome.localeCompare(b.nome);
-      });
-
-      setSceneShortcuts(shortcutsOrdinati);
-    } catch (error) {
-      console.error('Errore caricamento scene:', error);
-      setSceneShortcuts([]);
-    }
-  };
-
-  const loadDispositivi = async () => {
-    if (!impiantoCorrente) return;
-    try {
-      const data = await tasmotaApi.getAllDispositivi(impiantoCorrente.id);
-      setDispositivi(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Errore caricamento dispositivi:', error);
-      setDispositivi([]);
-    }
-  };
-
-  const loadStanze = async () => {
-    if (!impiantoCorrente) return;
-    try {
-      const data = await stanzeApi.getStanze(impiantoCorrente.id);
-      const stanzeArray = Array.isArray(data) ? data : [];
-      setStanze(stanzeArray);
-      setExpandedRooms(new Set(stanzeArray.map((s: any) => s.id)));
-    } catch (error) {
-      console.error('Errore caricamento stanze:', error);
-      setStanze([]);
-    }
-  };
+  }, [stanze]);
 
   const toggleRoom = (roomId: number) => {
     setExpandedRooms(prev => {
@@ -145,9 +116,8 @@ export const Dashboard = () => {
         await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
       }
 
-      setDispositivi(prev => prev.map(d =>
-        d.id === dispositivo.id ? { ...d, power_state: newState } : d
-      ));
+      // Update ottimistico - il WebSocket aggiornerà comunque
+      updatePowerState(dispositivo.id, newState);
     } catch (error: any) {
       console.error('Errore toggle dispositivo:', error);
       // Gestione dispositivo bloccato
@@ -177,8 +147,7 @@ export const Dashboard = () => {
       } else {
         toast.success('OK');
       }
-      // Ricarica stato dispositivi dopo esecuzione scena per sync UI
-      setTimeout(() => loadDispositivi(), 300);
+      // WebSocket aggiornerà automaticamente lo stato dispositivi
     } catch (error) {
       console.error('Errore esecuzione scena:', error);
       toast.error('Errore');
@@ -191,7 +160,7 @@ export const Dashboard = () => {
     try {
       await sceneApi.toggleShortcut(scenaId, false);
       toast.success('Rimossa');
-      await loadScene();
+      // WebSocket aggiornerà automaticamente la scena
     } catch (error) {
       console.error('Errore rimozione shortcut:', error);
       toast.error('Errore');
@@ -238,10 +207,8 @@ export const Dashboard = () => {
         }
       }
 
-      // Aggiorna solo le luci che sono state controllate
-      setDispositivi(prev => prev.map(d =>
-        luciControllate.includes(d.id) ? { ...d, power_state: turnOn } : d
-      ));
+      // Update ottimistico per le luci controllate
+      luciControllate.forEach(id => updatePowerState(id, turnOn));
 
       if (bloccate > 0) {
         toast.warning(`${controllate} OK, ${bloccate} bloccat${bloccate === 1 ? 'a' : 'e'}`);

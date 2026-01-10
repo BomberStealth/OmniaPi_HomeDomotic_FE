@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
@@ -7,7 +7,9 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { SceneList } from '@/components/scene/SceneList';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
-import { sceneApi, tasmotaApi } from '@/services/api';
+import { useSceneStore } from '@/store/sceneStore';
+import { useDispositiviStore } from '@/store/dispositiviStore';
+import { sceneApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import type { IconType } from 'react-icons';
 import {
@@ -105,10 +107,13 @@ export const SceneIcon = ({ iconId, size = 24, style }: { iconId: string; size?:
 export const Scene = () => {
   const { impiantoCorrente } = useImpiantoContext();
   const { colors: themeColors } = useThemeColor();
-  const [scene, setScene] = useState<any[]>([]);
-  const [dispositivi, setDispositivi] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+
+  // Store data (real-time via useRealTimeSync nel Layout)
+  const { scene, loading: sceneLoading } = useSceneStore();
+  const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
+
   const [executing, setExecuting] = useState<number | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingScene, setEditingScene] = useState<any | null>(null);
@@ -121,6 +126,8 @@ export const Scene = () => {
     mode: 'daily',
     days: []
   });
+
+  const loading = sceneLoading || dispositiviLoading;
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -150,40 +157,6 @@ export const Scene = () => {
     });
   }, [scene]);
 
-  const impiantoId = impiantoCorrente?.id || 0;
-
-  useEffect(() => {
-    if (impiantoId) {
-      loadScene();
-      loadDispositivi();
-    }
-  }, [impiantoId]);
-
-  const loadScene = async () => {
-    if (!impiantoId) return;
-    try {
-      setLoading(true);
-      const data = await sceneApi.getScene(impiantoId);
-      setScene(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Errore caricamento scene:', error);
-      setScene([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadDispositivi = async () => {
-    if (!impiantoId) return;
-    try {
-      const data = await tasmotaApi.getAllDispositivi(impiantoId);
-      setDispositivi(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Errore caricamento dispositivi:', error);
-      setDispositivi([]);
-    }
-  };
-
   const executeScene = async (scenaId: number) => {
     setExecuting(scenaId);
     try {
@@ -202,19 +175,24 @@ export const Scene = () => {
     }
   };
 
+  const impiantoId = impiantoCorrente?.id || 0;
+
   const handleCreateScene = async () => {
     if (!newScene.nome) {
       toast.error('Nome richiesto');
       return;
     }
     try {
+      setActionLoading(true);
       await sceneApi.createScena(impiantoId, newScene);
       toast.success('Creata');
       setModalOpen(false);
       setNewScene({ nome: '', icona: 'zap', azioni: [] });
-      await loadScene();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -223,7 +201,7 @@ export const Scene = () => {
     try {
       await sceneApi.deleteScena(id);
       toast.success('Eliminata');
-      await loadScene();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
     }
@@ -233,7 +211,7 @@ export const Scene = () => {
     try {
       await sceneApi.toggleShortcut(scenaId, isShortcut);
       toast.success(isShortcut ? 'Aggiunta' : 'Rimossa');
-      await loadScene();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
     }
@@ -258,6 +236,7 @@ export const Scene = () => {
   const handleUpdateScene = async () => {
     if (!editingScene) return;
     try {
+      setActionLoading(true);
       await sceneApi.updateScena(editingScene.id, {
         nome: newScene.nome,
         icona: newScene.icona,
@@ -267,9 +246,11 @@ export const Scene = () => {
       setEditModalOpen(false);
       setEditingScene(null);
       setNewScene({ nome: '', icona: 'zap', azioni: [] });
-      await loadScene();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -311,7 +292,7 @@ export const Scene = () => {
       });
       toast.success('Salvata');
       setScheduleModalOpen(false);
-      await loadScene();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
     }
@@ -343,7 +324,7 @@ export const Scene = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <motion.button
-                onClick={() => toggleDispositivoInScene(disp.id, disp.topic_mqtt)}
+                onClick={() => toggleDispositivoInScene(disp.id, disp.topic_mqtt || '')}
                 style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer' }}
               >
                 <div
@@ -491,7 +472,7 @@ export const Scene = () => {
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             <Button variant="ghost" onClick={() => setModalOpen(false)} fullWidth>Annulla</Button>
-            <Button variant="primary" onClick={handleCreateScene} fullWidth disabled={loading}>{loading ? 'Creazione...' : 'Crea Scena'}</Button>
+            <Button variant="primary" onClick={handleCreateScene} fullWidth disabled={actionLoading}>{actionLoading ? 'Creazione...' : 'Crea Scena'}</Button>
           </div>
         </div>
       </Modal>
@@ -643,7 +624,7 @@ export const Scene = () => {
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
             <Button variant="ghost" onClick={() => { setEditModalOpen(false); setEditingScene(null); setNewScene({ nome: '', icona: '⚡', azioni: [] }); }} fullWidth>Annulla</Button>
-            <Button variant="primary" onClick={handleUpdateScene} fullWidth disabled={loading}>{loading ? 'Salvataggio...' : 'Salva Modifiche'}</Button>
+            <Button variant="primary" onClick={handleUpdateScene} fullWidth disabled={actionLoading}>{actionLoading ? 'Salvataggio...' : 'Salva Modifiche'}</Button>
           </div>
         </div>
       </Modal>

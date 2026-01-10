@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useStanzeStore } from '@/store/stanzeStore';
+import { useDispositiviStore } from '@/store/dispositiviStore';
 import { stanzeApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
@@ -39,6 +41,10 @@ export const Stanze = () => {
   const { impiantoCorrente } = useImpiantoContext();
   const { colors: themeColors } = useThemeColor();
 
+  // Store data (real-time via useRealTimeSync nel Layout)
+  const { stanze, loading: stanzeLoading } = useStanzeStore();
+  const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
+
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
     ...baseColors,
@@ -48,9 +54,7 @@ export const Stanze = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   }), [themeColors]);
 
-  const [stanze, setStanze] = useState<any[]>([]);
-  const [dispositivi, setDispositivi] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [deviceListModalOpen, setDeviceListModalOpen] = useState(false);
@@ -66,29 +70,7 @@ export const Stanze = () => {
   const [editStanza, setEditStanza] = useState({ nome: '', icona: '' });
 
   const impiantoId = impiantoCorrente?.id || 0;
-
-  useEffect(() => {
-    if (impiantoId) loadData();
-  }, [impiantoId]);
-
-  const loadData = async () => {
-    if (!impiantoId) return;
-    try {
-      setLoading(true);
-      const [stanzeData, dispositiviData] = await Promise.all([
-        stanzeApi.getStanze(impiantoId),
-        tasmotaApi.getAllDispositivi(impiantoId)
-      ]);
-      setStanze(Array.isArray(stanzeData) ? stanzeData : []);
-      setDispositivi(Array.isArray(dispositiviData) ? dispositiviData : []);
-    } catch (error) {
-      console.error('Errore caricamento dati:', error);
-      setStanze([]);
-      setDispositivi([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = stanzeLoading || dispositiviLoading;
 
   const handleCreateStanza = async () => {
     if (!newStanza.nome) {
@@ -96,16 +78,16 @@ export const Stanze = () => {
       return;
     }
     try {
-      setLoading(true);
+      setActionLoading(true);
       await stanzeApi.createStanza(impiantoId, newStanza);
       toast.success('Stanza creata!');
       setModalOpen(false);
       setNewStanza({ nome: '', icona: '🚪' });
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante la creazione');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -116,7 +98,7 @@ export const Stanze = () => {
       toast.success('Stanza eliminata!');
       setSettingsModalOpen(false);
       setSelectedStanza(null);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
     }
@@ -133,7 +115,7 @@ export const Stanze = () => {
       setRenameStanzaModalOpen(false);
       setSettingsModalOpen(false);
       setSelectedStanza(null);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante la rinomina');
     }
@@ -153,7 +135,7 @@ export const Stanze = () => {
       setMoveModalOpen(false);
       setDeviceActionModalOpen(false);
       setSelectedDispositivo(null);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante lo spostamento');
     }
@@ -165,7 +147,7 @@ export const Stanze = () => {
     try {
       await tasmotaApi.assignToStanza(dispositivo.id, selectedStanza.id);
       toast.success(`${dispositivo.nome} aggiunto!`);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'assegnazione');
     }
@@ -183,7 +165,7 @@ export const Stanze = () => {
       setDeviceActionModalOpen(false);
       setNewDeviceName('');
       setSelectedDispositivo(null);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante la rinomina');
     }
@@ -197,7 +179,7 @@ export const Stanze = () => {
       toast.success('Dispositivo eliminato!');
       setDeviceActionModalOpen(false);
       setSelectedDispositivo(null);
-      await loadData();
+      // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
     }
@@ -493,7 +475,7 @@ export const Stanze = () => {
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <Button variant="ghost" onClick={() => setModalOpen(false)} fullWidth>Annulla</Button>
-            <Button variant="primary" onClick={handleCreateStanza} fullWidth disabled={loading}>{loading ? 'Creazione...' : 'Crea'}</Button>
+            <Button variant="primary" onClick={handleCreateStanza} fullWidth disabled={actionLoading}>{actionLoading ? 'Creazione...' : 'Crea'}</Button>
           </div>
         </div>
       </Modal>

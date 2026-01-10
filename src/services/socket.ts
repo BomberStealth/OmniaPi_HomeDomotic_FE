@@ -39,6 +39,10 @@ class SocketService {
     }
   }
 
+  isConnected(): boolean {
+    return this.socket?.connected ?? false;
+  }
+
   joinImpianto(impiantoId: number) {
     this.socket?.emit('join-impianto', impiantoId);
   }
@@ -47,12 +51,44 @@ class SocketService {
     this.socket?.emit('leave-impianto', impiantoId);
   }
 
-  onDispositivoUpdate(callback: (dispositivo: any) => void) {
+  // ============================================
+  // STANZE, SCENE, DISPOSITIVI WEBSOCKET EVENTS
+  // ============================================
+
+  // Stanze
+  onStanzaUpdate(callback: (data: { stanza: any; action: string }) => void) {
+    this.socket?.on('stanza-update', callback);
+  }
+
+  offStanzaUpdate() {
+    this.socket?.off('stanza-update');
+  }
+
+  // Scene
+  onScenaUpdate(callback: (data: { scena: any; action: string }) => void) {
+    this.socket?.on('scena-update', callback);
+  }
+
+  offScenaUpdate() {
+    this.socket?.off('scena-update');
+  }
+
+  // Dispositivi (Tasmota + altri)
+  onDispositivoUpdate(callback: (data: { dispositivo: any; action: string }) => void) {
     this.socket?.on('dispositivo-update', callback);
   }
 
   offDispositivoUpdate() {
     this.socket?.off('dispositivo-update');
+  }
+
+  // Full Sync (dopo riconnessione)
+  onFullSync(callback: (data: { stanze?: any[]; scene?: any[]; dispositivi?: any[] }) => void) {
+    this.socket?.on('full-sync', callback);
+  }
+
+  offFullSync() {
+    this.socket?.off('full-sync');
   }
 
   // ============================================

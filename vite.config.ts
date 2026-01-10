@@ -72,10 +72,17 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
     port: 5173,
+    allowedHosts: ['localhost', '127.0.0.1', '192.168.1.253', 'ofwd.asuscomm.com'],
     proxy: {
       '/api': {
-        target: 'http://192.168.1.11:3000',
+        target: 'http://192.168.1.253:3000',
+        changeOrigin: true
+      },
+      '/socket.io': {
+        target: 'http://192.168.1.253:3000',
+        ws: true,
         changeOrigin: true
       }
     }

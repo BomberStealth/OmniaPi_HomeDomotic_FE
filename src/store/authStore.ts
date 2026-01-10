@@ -24,17 +24,22 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     set({ isLoading: true });
+    console.log('🔵 LOGIN START - URL:', '/api/auth/login');
+    console.log('🔵 LOGIN DATA:', { email, password: '***' });
     try {
       const response = await authApi.login(email, password);
+      console.log('🟢 LOGIN RESPONSE:', response);
       if (response.success && response.data) {
         const { token, user } = response.data;
         localStorage.setItem('token', token);
         set({ user, token, isLoading: false });
+        console.log('🟢 LOGIN SUCCESS - User:', user.email);
 
         // Connetti WebSocket
         socketService.connect(token);
       }
     } catch (error) {
+      console.log('🔴 LOGIN ERROR:', error);
       set({ isLoading: false });
       throw error;
     }
