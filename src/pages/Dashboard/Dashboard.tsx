@@ -15,23 +15,27 @@ import { SceneIcon } from '@/pages/Scene/Scene';
 import { motion } from 'framer-motion';
 import {
   RiLightbulbLine, RiTempHotLine, RiLoader4Line, RiUnpinLine,
-  RiArrowDownSLine, RiBox3Line
+  RiArrowDownSLine, RiBox3Line, RiFlashlightLine, RiHistoryLine
 } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
+import { getRoomIcon } from '@/config/roomIcons';
+import { spacing, radius } from '@/styles/responsive';
+
+// Icone meteo
+const weatherIcons: Record<number, string> = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+  45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌧️',
+  61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '🌨️', 73: '🌨️', 75: '❄️',
+  80: '🌦️', 81: '🌧️', 82: '⛈️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️',
+};
 
 // ============================================
 // DASHBOARD PAGE - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -42,11 +46,33 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
+// Helper per formattare tempo relativo
+const formatTimeAgo = (date: string): string => {
+  const now = new Date();
+  const then = new Date(date);
+  const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
+  if (diff < 60) return 'ora';
+  if (diff < 3600) return `${Math.floor(diff / 60)} min fa`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} ore fa`;
+  return `${Math.floor(diff / 86400)} giorni fa`;
+};
+
+
+// Variants per animazioni card stanze (uniformi per tutte)
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
+};
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } }
+};
 
 export const Dashboard = () => {
-  const { t } = useTranslation();
+  useTranslation(); // Hook per traduzioni (non usato direttamente ma necessario)
   const { impiantoCorrente } = useImpiantoContext();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const { user } = useAuthStore();
 
   // Store data (real-time via useRealTimeSync nel Layout)
@@ -54,10 +80,20 @@ export const Dashboard = () => {
   const { scene } = useSceneStore();
   const { dispositivi, updatePowerState } = useDispositiviStore();
 
-  const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set());
+  const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Detect mobile/desktop
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [executing, setExecuting] = useState<number | null>(null);
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [togglingAll, setTogglingAll] = useState<string | null>(null);
+  const [weather, setWeather] = useState<{ temp: number; icon: string } | null>(null);
+  const [recentActivity] = useState<any[]>([]);  // Placeholder per futuro
 
   // Deriva sceneShortcuts dallo store
   const sceneShortcuts = useMemo(() => {
@@ -74,31 +110,77 @@ export const Dashboard = () => {
     });
   }, [scene]);
 
-  // Colori dinamici basati sul tema
+  // Colori dinamici basati sul tema (usa modeColors per dark/light)
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
-  // Espandi tutte le stanze di default quando cambiano
+  // Inizializza stanze espanse quando cambiano (tutte chiuse di default)
   useEffect(() => {
     if (stanze.length > 0) {
-      setExpandedRooms(new Set(stanze.map((s: any) => s.id)));
+      setExpandedRooms(prev => {
+        const newState: Record<number, boolean> = {};
+        stanze.forEach((s: any) => {
+          newState[s.id] = prev[s.id] ?? false; // Mantieni stato esistente o chiuso
+        });
+        return newState;
+      });
     }
   }, [stanze]);
 
+  // Fetch meteo (Rimini default)
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=44.06&longitude=12.57&current_weather=true');
+        const data = await res.json();
+        if (data.current_weather) {
+          const code = data.current_weather.weathercode;
+          setWeather({
+            temp: Math.round(data.current_weather.temperature),
+            icon: weatherIcons[code] || '🌡️'
+          });
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+    fetchWeather();
+  }, []);
+
+  // Attività recente - placeholder per futuro
+  // useEffect per fetch activity quando l'API sarà disponibile
+
   const toggleRoom = (roomId: number) => {
     setExpandedRooms(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(roomId)) {
-        newSet.delete(roomId);
-      } else {
-        newSet.add(roomId);
+      const newState = { ...prev };
+      const newValue = !newState[roomId];
+
+      // Caso speciale: "Non assegnati" (id = -1)
+      if (roomId === -1) {
+        newState[-1] = newValue;
+        return newState;
       }
-      return newSet;
+
+      if (isMobile) {
+        // Mobile: toggle singola stanza
+        newState[roomId] = newValue;
+      } else {
+        // Desktop: toggle stanze sulla stessa riga (grid 2 colonne)
+        const roomIndex = stanze.findIndex((s: any) => s.id === roomId);
+        const row = Math.floor(roomIndex / 2);
+        const startIndex = row * 2;
+
+        // Toggle entrambe le stanze nella riga
+        if (stanze[startIndex]) newState[stanze[startIndex].id] = newValue;
+        if (stanze[startIndex + 1]) newState[stanze[startIndex + 1].id] = newValue;
+      }
+
+      return newState;
     });
   };
 
@@ -230,9 +312,10 @@ export const Dashboard = () => {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Buongiorno';
-    if (hour < 18) return 'Buon pomeriggio';
-    return 'Buonasera';
+    if (hour >= 5 && hour < 13) return 'Buongiorno';
+    if (hour >= 13 && hour < 18) return 'Buon pomeriggio';
+    if (hour >= 18 && hour < 22) return 'Buonasera';
+    return 'Buonanotte';
   };
 
   const userName = user?.nome || 'Utente';
@@ -240,26 +323,46 @@ export const Dashboard = () => {
   return (
     <Layout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Header con Saluto */}
-        <div style={{ paddingTop: '8px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1.2 }}>
-            {getGreeting()}, {userName.split(' ')[0]}
-          </h1>
-          {impiantoCorrente && (
-            <p style={{ color: colors.textMuted, fontSize: '12px', margin: '4px 0 0 0' }}>
-              {impiantoCorrente.nome}
-            </p>
+        {/* Header con Saluto e Meteo */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1.2 }}>
+              {getGreeting()}, {userName.split(' ')[0]}
+            </h1>
+            {impiantoCorrente && (
+              <p style={{ color: colors.textMuted, fontSize: '12px', margin: '4px 0 0 0' }}>
+                {impiantoCorrente.nome}
+              </p>
+            )}
+          </div>
+          {weather && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                background: `${colors.accent}15`,
+                borderRadius: '12px',
+                border: `1px solid ${colors.border}`,
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>{weather.icon}</span>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>{weather.temp}°C</span>
+            </motion.div>
           )}
         </div>
 
-        {/* Quick Stats Card */}
+        {/* Quick Stats Card - RESPONSIVE */}
         <div
           style={{
             background: colors.bgCardLit,
             border: `1px solid ${colors.border}`,
-            borderRadius: '28px',
+            borderRadius: radius.lg,
             boxShadow: colors.cardShadowLit,
-            padding: '12px',
+            padding: spacing.sm,
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -275,115 +378,181 @@ export const Dashboard = () => {
             }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(16px, 8vw, 48px)', flexWrap: 'wrap', minWidth: 0 }}>
-            {/* Luci */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: spacing.xs, width: '100%' }}>
+            {/* Luci con Progress Bar */}
             <motion.button
               onClick={toggleAllLights}
               disabled={togglingAll === 'luci' || totLuci === 0}
               style={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px',
-                borderRadius: '16px',
+                gap: 'clamp(4px, 1.5vw, 6px)',
+                padding: 'clamp(8px, 2.5vw, 12px) clamp(4px, 1.5vw, 8px)',
+                borderRadius: radius.md,
                 background: 'transparent',
                 border: 'none',
                 cursor: totLuci === 0 ? 'not-allowed' : 'pointer',
                 opacity: totLuci === 0 ? 0.5 : 1,
-                minWidth: 0,
-                flexShrink: 0,
+                minWidth: 'clamp(60px, 20vw, 100px)',
               }}
-              whileHover={totLuci > 0 ? { scale: 1.05 } : undefined}
-              whileTap={totLuci > 0 ? { scale: 0.95 } : undefined}
+              whileHover={totLuci > 0 ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
+              whileTap={totLuci > 0 ? { scale: 0.98 } : undefined}
             >
               <div
                 style={{
-                  padding: '8px',
-                  borderRadius: '12px',
-                  background: luciOn > 0 ? `${colors.accent}40` : `${colors.accent}25`,
-                  boxShadow: luciOn > 0 ? `0 0 12px ${colors.accent}50` : 'none',
-                  flexShrink: 0,
+                  width: 'clamp(36px, 10vw, 48px)',
+                  height: 'clamp(36px, 10vw, 48px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: radius.md,
+                  background: luciOn > 0 ? `${colors.accent}30` : `${colors.accent}15`,
+                  boxShadow: luciOn > 0 ? `0 0 16px ${colors.accent}40` : 'none',
                 }}
               >
                 {togglingAll === 'luci' ? (
-                  <RiLoader4Line size={18} className="animate-spin" style={{ color: colors.accent }} />
+                  <RiLoader4Line style={{ width: 'clamp(18px, 5vw, 24px)', height: 'clamp(18px, 5vw, 24px)', color: colors.accent }} className="animate-spin" />
                 ) : (
                   <RiLightbulbLine
-                    size={18}
                     style={{
+                      width: 'clamp(18px, 5vw, 24px)',
+                      height: 'clamp(18px, 5vw, 24px)',
                       color: luciOn > 0 ? colors.accentLight : colors.accent,
-                      filter: luciOn > 0 ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
+                      filter: luciOn > 0 ? `drop-shadow(0 0 6px ${colors.accent})` : 'none',
                     }}
                   />
                 )}
               </div>
-              <div style={{ textAlign: 'center', minWidth: 0 }}>
-                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>
+              <div style={{ textAlign: 'center', width: '100%' }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0 }}>
                   {luciOn}/{totLuci}
                 </p>
-                <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0 }}>Luci</p>
+                <p style={{ fontSize: 'clamp(9px, 2.5vw, 11px)', color: colors.textMuted, margin: '2px 0 4px 0' }}>Luci</p>
+                {/* Progress Bar */}
+                <div style={{ width: '100%', height: 'clamp(3px, 1vw, 4px)', background: `${colors.accent}20`, borderRadius: '2px', overflow: 'hidden' }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: totLuci > 0 ? `${(luciOn / totLuci) * 100}%` : '0%' }}
+                    transition={{ duration: 0.5 }}
+                    style={{ height: '100%', background: colors.accent, borderRadius: '2px' }}
+                  />
+                </div>
               </div>
             </motion.button>
 
-            <div style={{ width: '1px', height: '40px', background: colors.border, flexShrink: 0 }} />
-
-            {/* Termostati */}
+            {/* Termostati/Clima */}
             <motion.button
               onClick={toggleAllTermostati}
               disabled={termostati === 0}
               style={{
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                gap: '8px',
-                padding: '8px',
-                borderRadius: '16px',
+                gap: 'clamp(4px, 1.5vw, 6px)',
+                padding: 'clamp(8px, 2.5vw, 12px) clamp(4px, 1.5vw, 8px)',
+                borderRadius: radius.md,
                 background: 'transparent',
                 border: 'none',
                 cursor: termostati === 0 ? 'not-allowed' : 'pointer',
                 opacity: termostati === 0 ? 0.5 : 1,
-                minWidth: 0,
-                flexShrink: 0,
+                minWidth: 'clamp(60px, 20vw, 100px)',
               }}
-              whileHover={termostati > 0 ? { scale: 1.05 } : undefined}
-              whileTap={termostati > 0 ? { scale: 0.95 } : undefined}
+              whileHover={termostati > 0 ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
+              whileTap={termostati > 0 ? { scale: 0.98 } : undefined}
             >
-              <div style={{ padding: '8px', borderRadius: '12px', background: `${colors.accent}26`, flexShrink: 0 }}>
-                <RiTempHotLine size={18} style={{ color: colors.accent }} />
+              <div style={{
+                width: 'clamp(36px, 10vw, 48px)',
+                height: 'clamp(36px, 10vw, 48px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.md,
+                background: `${colors.accent}15`
+              }}>
+                <RiTempHotLine style={{ width: 'clamp(18px, 5vw, 24px)', height: 'clamp(18px, 5vw, 24px)', color: colors.accent }} />
               </div>
-              <div style={{ textAlign: 'center', minWidth: 0 }}>
-                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0, lineHeight: 1, whiteSpace: 'nowrap' }}>
-                  {termostati}
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0 }}>
+                  {termostati > 0 ? termostati : '--'}
                 </p>
-                <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0 }}>Termostati</p>
+                <p style={{ fontSize: 'clamp(9px, 2.5vw, 11px)', color: colors.textMuted, margin: '2px 0 0 0' }}>Clima</p>
               </div>
             </motion.button>
+
+            {/* Energia (placeholder) */}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 'clamp(4px, 1.5vw, 6px)',
+                padding: 'clamp(8px, 2.5vw, 12px) clamp(4px, 1.5vw, 8px)',
+                borderRadius: radius.md,
+                opacity: 0.4,
+                minWidth: 'clamp(60px, 20vw, 100px)',
+              }}
+            >
+              <div style={{
+                width: 'clamp(36px, 10vw, 48px)',
+                height: 'clamp(36px, 10vw, 48px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.md,
+                background: `${colors.accent}15`
+              }}>
+                <RiFlashlightLine style={{ width: 'clamp(18px, 5vw, 24px)', height: 'clamp(18px, 5vw, 24px)', color: colors.accent }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 'clamp(14px, 4vw, 18px)', fontWeight: 700, color: colors.textPrimary, margin: 0 }}>--</p>
+                <p style={{ fontSize: 'clamp(9px, 2.5vw, 11px)', color: colors.textMuted, margin: '2px 0 0 0' }}>Energia</p>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Scene Rapide */}
         {sceneShortcuts.length > 0 && (
-          <div>
-            <h2 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, marginBottom: '8px' }}>
-              {t('dashboard.shortcuts')}
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: '8px' }}>
+          <div
+            style={{
+              background: colors.bgCardLit,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '20px',
+              boxShadow: colors.cardShadowLit,
+              padding: '10px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: '25%',
+                right: '25%',
+                height: '1px',
+                background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
+              }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {sceneShortcuts.filter(s => s !== null && s !== undefined).map((scena) => (
                 <ContextMenu key={scena.id} items={getContextMenuItems(scena.id)}>
                   <motion.button
                     onClick={() => executeScene(scena.id)}
                     disabled={executing === scena.id}
                     style={{
-                      width: '100%',
+                      width: '52px',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '4px',
-                      padding: '12px',
+                      gap: '3px',
+                      padding: '8px 4px',
                       background: colors.bgCardLit,
                       border: executing === scena.id ? `1px solid ${colors.accent}` : `1px solid ${colors.border}`,
-                      borderRadius: '20px',
-                      boxShadow: executing === scena.id ? `0 0 16px ${colors.accent}30` : colors.cardShadowLit,
+                      borderRadius: '14px',
+                      boxShadow: executing === scena.id ? `0 0 12px ${colors.accent}30` : colors.cardShadowLit,
                       cursor: 'pointer',
                       position: 'relative',
                       overflow: 'hidden',
@@ -391,46 +560,35 @@ export const Dashboard = () => {
                     whileHover={{ scale: 1.05, borderColor: colors.borderHover }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: '25%',
-                        right: '25%',
-                        height: '1px',
-                        background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
-                      }}
-                    />
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '36px',
-                      height: '36px',
-                      padding: '6px',
-                      borderRadius: '10px',
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '8px',
                       background: `${colors.accent}15`,
                     }}>
                       {executing === scena.id ? (
-                        <RiLoader4Line size={20} className="animate-spin" style={{ color: colors.accent }} />
+                        <RiLoader4Line size={16} className="animate-spin" style={{ color: colors.accent }} />
                       ) : (
                         <SceneIcon
                           iconId={scena.icona}
-                          size={20}
+                          size={16}
                           style={{
                             color: colors.accentLight,
-                            filter: `drop-shadow(0 0 4px ${colors.accent}50)`,
+                            filter: `drop-shadow(0 0 3px ${colors.accent}50)`,
                           }}
                         />
                       )}
                     </div>
                     <span
                       style={{
-                        fontSize: '10px',
+                        fontSize: '8px',
                         fontWeight: 500,
                         color: colors.textPrimary,
                         textAlign: 'center',
-                        lineHeight: 1.2,
+                        lineHeight: 1.1,
                         width: '100%',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -446,6 +604,47 @@ export const Dashboard = () => {
           </div>
         )}
 
+        {/* Attività Recente */}
+        {recentActivity.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              <RiHistoryLine size={14} style={{ color: colors.textMuted }} />
+              <h2 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
+                Attività recente
+              </h2>
+            </div>
+            <div
+              style={{
+                background: colors.bgCardLit,
+                border: `1px solid ${colors.border}`,
+                borderRadius: '16px',
+                padding: '8px 12px',
+                overflow: 'hidden',
+              }}
+            >
+              {recentActivity.slice(0, 4).map((activity, index) => (
+                <div
+                  key={activity.id || index}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 0',
+                    borderBottom: index < Math.min(recentActivity.length, 4) - 1 ? `1px solid ${colors.border}` : 'none',
+                  }}
+                >
+                  <span style={{ fontSize: '12px', color: colors.textSecondary }}>
+                    {activity.descrizione || activity.azione}
+                  </span>
+                  <span style={{ fontSize: '10px', color: colors.textMuted }}>
+                    {activity.tempo_fa || formatTimeAgo(activity.created_at)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stanze e Dispositivi */}
         {impiantoCorrente && (stanze.length > 0 || unassignedDevices.length > 0) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -453,20 +652,27 @@ export const Dashboard = () => {
               Stanze e Dispositivi
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+            <motion.div
+              initial="hidden"
+              animate="show"
+              variants={containerVariants}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}
+            >
               {stanze.map((stanza) => {
                 const roomDevices = getDevicesByRoom(stanza.id);
-                const isExpanded = expandedRooms.has(stanza.id);
+                const isExpanded = expandedRooms[stanza.id];
                 const devicesOn = roomDevices.filter(d => d.power_state).length;
 
                 return (
-                  <div
+                  <motion.div
                     key={stanza.id}
+                    variants={cardVariants}
+                    whileTap={{ scale: 0.98 }}
                     style={{
                       background: colors.bgCardLit,
                       border: `1px solid ${colors.border}`,
                       borderRadius: '24px',
-                      boxShadow: colors.cardShadowLit,
+                      boxShadow: devicesOn > 0 ? `0 0 20px ${colors.accent}30` : colors.cardShadowLit,
                       overflow: 'hidden',
                       position: 'relative',
                     }}
@@ -503,9 +709,12 @@ export const Dashboard = () => {
                             borderRadius: '12px',
                             background: `${colors.accent}20`,
                             boxShadow: `0 0 8px ${colors.accent}30`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                           }}
                         >
-                          <span style={{ fontSize: '20px' }}>{stanza.icona || '🚪'}</span>
+                          {(() => { const Icon = getRoomIcon(stanza.icona); return <Icon size={20} style={{ color: colors.accent }} />; })()}
                         </div>
                         <div style={{ textAlign: 'left' }}>
                           <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
@@ -541,20 +750,16 @@ export const Dashboard = () => {
                       </div>
                     )}
 
-                    {isExpanded && roomDevices.length === 0 && (
-                      <div style={{ padding: '16px', textAlign: 'center', borderTop: `1px solid ${colors.border}` }}>
-                        <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
-                          Nessun dispositivo in questa stanza
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                    {/* Rimuove il blocco "Nessun dispositivo" - stanza chiusa = solo header */}
+                  </motion.div>
                 );
               })}
 
               {/* Dispositivi non assegnati */}
               {unassignedDevices.length > 0 && (
-                <div
+                <motion.div
+                  variants={cardVariants}
+                  whileTap={{ scale: 0.98 }}
                   style={{
                     background: colors.bgCardLit,
                     border: `1px solid ${colors.border}`,
@@ -602,12 +807,12 @@ export const Dashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <motion.div animate={{ rotate: expandedRooms.has(-1) ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <motion.div animate={{ rotate: expandedRooms[-1] ? 180 : 0 }} transition={{ duration: 0.2 }}>
                       <RiArrowDownSLine size={20} style={{ color: colors.textMuted }} />
                     </motion.div>
                   </motion.button>
 
-                  {expandedRooms.has(-1) && (
+                  {expandedRooms[-1] && (
                     <div style={{ padding: '12px', borderTop: `1px solid ${colors.border}` }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
                         {unassignedDevices.map((dispositivo) => (
@@ -623,9 +828,9 @@ export const Dashboard = () => {
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               )}
-            </div>
+            </motion.div>
           </div>
         )}
 

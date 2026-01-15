@@ -1,23 +1,18 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { RiNotification3Line, RiDownloadLine } from 'react-icons/ri';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
-import { api } from '@/services/api';
+import { useNotificheStore } from '@/store/notificheStore';
 import { socketService } from '@/services/socket';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { spacing, radius, fontSize, getIconSizeNum } from '@/styles/responsive';
 
 // ============================================
 // MOBILE HEADER - Dark Luxury Style
 // Con supporto tema dinamico e notifiche real-time
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -29,68 +24,43 @@ const hexToRgb = (hex: string): string => {
 };
 
 export const MobileHeader = () => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, fetchUnreadCount, initWebSocketListener } = useNotificheStore();
   const { canInstall, promptInstall } = usePWAInstall();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-  }), [themeColors]);
-
-  // Fetch unread count iniziale
-  const fetchUnreadCount = useCallback(async () => {
-    if (!impiantoCorrente?.id) return;
-    try {
-      const { data } = await api.get(`/api/notifications/history?impiantoId=${impiantoCorrente.id}&limit=1`);
-      setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
-  }, [impiantoCorrente?.id]);
+  }), [themeColors, modeColors]);
 
   // Fetch iniziale e join room WebSocket
   useEffect(() => {
-    fetchUnreadCount();
-
     if (impiantoCorrente?.id) {
-      // Join impianto room per ricevere notifiche
+      fetchUnreadCount(impiantoCorrente.id);
       socketService.joinImpianto(impiantoCorrente.id);
     }
+    // Listener centralizzato nello store
+    initWebSocketListener();
 
     return () => {
       if (impiantoCorrente?.id) {
         socketService.leaveImpianto(impiantoCorrente.id);
       }
     };
-  }, [fetchUnreadCount, impiantoCorrente?.id]);
-
-  // Listen for real-time notifications
-  useEffect(() => {
-    const handleNotification = () => {
-      // Incrementa il contatore quando arriva una nuova notifica
-      setUnreadCount(prev => prev + 1);
-    };
-
-    socketService.onNotification(handleNotification);
-
-    return () => {
-      socketService.offNotification();
-    };
-  }, []);
+  }, [impiantoCorrente?.id, fetchUnreadCount, initWebSocketListener]);
 
   return (
     <div
-      className="md:hidden fixed top-0 left-0 right-0 z-40"
+      className="md:hidden flex-shrink-0"
       style={{
         background: colors.bgCardLit,
         borderBottom: `1px solid ${colors.border}`,
-        backdropFilter: 'blur(20px)',
         boxShadow: colors.cardShadow,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
     >
       {/* Top edge highlight - esatto dal preview */}
@@ -104,7 +74,10 @@ export const MobileHeader = () => {
           background: `linear-gradient(90deg, transparent, ${colors.accentLight}4D, transparent)`,
         }}
       />
-      <div className="px-4 py-3 flex items-center justify-between">
+      <div
+        className="flex items-center justify-between"
+        style={{ padding: `${spacing.sm} ${spacing.md}` }}
+      >
         <div className="flex-1">
           <ImpiantoSelector variant="mobile" />
         </div>
@@ -113,42 +86,46 @@ export const MobileHeader = () => {
         {canInstall && (
           <button
             onClick={promptInstall}
-            className="relative p-2 ml-2"
+            className="relative ml-2"
             style={{
+              padding: spacing.xs,
               background: `rgba(${hexToRgb(colors.accent)}, 0.15)`,
-              borderRadius: '12px',
+              borderRadius: radius.md,
             }}
           >
             {/* Effetto Pulse animato */}
             <span
-              className="absolute inset-0 rounded-xl animate-ping"
+              className="absolute inset-0 animate-ping"
               style={{
                 backgroundColor: colors.accent,
                 opacity: 0.25,
-                animationDuration: '2s'
+                animationDuration: '2s',
+                borderRadius: radius.md,
               }}
             />
             <span
-              className="absolute inset-0 rounded-xl animate-pulse"
+              className="absolute inset-0 animate-pulse"
               style={{
                 backgroundColor: colors.accent,
                 opacity: 0.15,
-                animationDuration: '1.5s'
+                animationDuration: '1.5s',
+                borderRadius: radius.md,
               }}
             />
-            <RiDownloadLine size={20} style={{ color: colors.accent }} className="relative z-10" />
+            <RiDownloadLine size={getIconSizeNum('sm')} style={{ color: colors.accent }} className="relative z-10" />
           </button>
         )}
 
         <Link
           to="/notifications"
-          className="relative p-2 ml-2"
+          className="relative ml-2"
           style={{
+            padding: spacing.xs,
             background: `rgba(${hexToRgb(colors.accent)}, 0.1)`,
-            borderRadius: '12px',
+            borderRadius: radius.md,
           }}
         >
-          <RiNotification3Line size={22} color={colors.accentLight} />
+          <RiNotification3Line size={getIconSizeNum('md')} color={colors.accentLight} />
           {unreadCount > 0 && (
             <span
               style={{
@@ -158,7 +135,7 @@ export const MobileHeader = () => {
                 minWidth: '16px',
                 height: '16px',
                 padding: '0 4px',
-                fontSize: '10px',
+                fontSize: fontSize.xs,
                 fontWeight: 'bold',
                 color: 'white',
                 backgroundColor: colors.accent,

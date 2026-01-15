@@ -16,14 +16,6 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-};
-
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -34,16 +26,16 @@ const hexToRgb = (hex: string): string => {
 };
 
 export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-2xl',
@@ -86,7 +78,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={`relative w-full ${sizeClasses[size]}`}
-            style={{ maxHeight: '90vh' }}
+            style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
           >
             <div
               style={{
@@ -96,6 +88,9 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                 boxShadow: colors.cardShadowLit,
                 position: 'relative',
                 overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                maxHeight: '85vh',
               }}
             >
               {/* Top edge highlight */}
@@ -157,7 +152,8 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                 style={{
                   padding: '24px',
                   overflowY: 'auto',
-                  maxHeight: 'calc(90vh - 80px)',
+                  flex: 1,
+                  minHeight: 0,
                 }}
               >
                 {children}

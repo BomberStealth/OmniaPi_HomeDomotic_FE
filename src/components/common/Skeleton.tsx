@@ -6,12 +6,6 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 // Con supporto tema dinamico
 // ============================================
 
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-};
-
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -34,7 +28,7 @@ export const Skeleton = ({
   height,
   className = ''
 }: SkeletonProps) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, isDarkMode } = useThemeColor();
   const accentRgb = hexToRgb(themeColors.accent);
 
   const getBorderRadius = () => {
@@ -60,13 +54,18 @@ export const Skeleton = ({
     ? (typeof height === 'number' ? `${height}px` : height)
     : (variant === 'circular' ? widthStyle : getDefaultHeight());
 
+  // Colori skeleton adattivi per dark/light mode
+  const skeletonBg = isDarkMode
+    ? `linear-gradient(90deg, rgba(42, 39, 34, 0.5) 0%, rgba(${accentRgb}, 0.08) 50%, rgba(42, 39, 34, 0.5) 100%)`
+    : `linear-gradient(90deg, rgba(220, 220, 220, 0.5) 0%, rgba(${accentRgb}, 0.08) 50%, rgba(220, 220, 220, 0.5) 100%)`;
+
   return (
     <div
       className={`animate-pulse ${className}`}
       style={{
         width: widthStyle,
         height: heightStyle,
-        background: `linear-gradient(90deg, rgba(42, 39, 34, 0.5) 0%, rgba(${accentRgb}, 0.08) 50%, rgba(42, 39, 34, 0.5) 100%)`,
+        background: skeletonBg,
         backgroundSize: '200% 100%',
         borderRadius: getBorderRadius(),
       }}
@@ -79,16 +78,16 @@ export const Skeleton = ({
 // ============================================
 
 export const SkeletonCard = () => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   const colors = useMemo(() => {
     const accentRgb = hexToRgb(themeColors.accent);
     return {
-      ...baseColors,
+      ...modeColors,
       accentLight: themeColors.accentLight,
       border: `rgba(${accentRgb}, 0.15)`,
     };
-  }, [themeColors]);
+  }, [themeColors, modeColors]);
 
   return (
     <div
@@ -137,16 +136,16 @@ export const SkeletonCard = () => {
 // ============================================
 
 export const SkeletonList = ({ count = 3 }: { count?: number }) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   const colors = useMemo(() => {
     const accentRgb = hexToRgb(themeColors.accent);
     return {
-      ...baseColors,
+      ...modeColors,
       accentLight: themeColors.accentLight,
       border: `rgba(${accentRgb}, 0.15)`,
     };
-  }, [themeColors]);
+  }, [themeColors, modeColors]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

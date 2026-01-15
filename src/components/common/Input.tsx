@@ -1,5 +1,6 @@
 import { InputHTMLAttributes, forwardRef, useMemo } from 'react';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, fontSize, radius } from '@/styles/responsive';
 
 // ============================================
 // INPUT COMPONENT - Dark Luxury Style
@@ -22,40 +23,42 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, className = '', style, ...props }, ref) => {
-    const { colors: themeColors } = useThemeColor();
+    const { colors: themeColors, modeColors } = useThemeColor();
 
     const colors = useMemo(() => {
       const accentRgb = hexToRgb(themeColors.accent);
       return {
+        ...modeColors,
         accent: themeColors.accent,
-        border: `rgba(${accentRgb}, 0.15)`,
+        inputBorder: `rgba(${accentRgb}, 0.15)`,
         focusRing: `rgba(${accentRgb}, 0.15)`,
       };
-    }, [themeColors]);
+    }, [themeColors, modeColors]);
 
     const inputStyles: React.CSSProperties = {
       width: '100%',
-      padding: '14px 18px',
-      background: '#1a1816', // bgCardSolid
-      border: `1px solid ${error ? '#ef4444' : colors.border}`,
-      borderRadius: '16px', // radius.md
-      color: '#ffffff',
-      fontSize: '14px',
+      height: 'clamp(38px, 9vw, 44px)',  // Altezza RIDOTTA
+      padding: '0 clamp(10px, 2.5vw, 14px)',  // Padding ridotto
+      background: colors.bgCard,
+      border: `1px solid ${error ? colors.error : colors.inputBorder}`,
+      borderRadius: radius.sm,  // Radius più piccolo
+      color: colors.textPrimary,
+      fontSize: 'clamp(13px, 3.2vw, 15px)',  // Font ridotto
       fontFamily: 'inherit',
       transition: 'all 0.2s ease',
-      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)',
+      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
       outline: 'none',
       ...style,
     };
 
     const labelStyles: React.CSSProperties = {
       display: 'block',
-      marginBottom: '8px',
-      fontSize: '11px',
+      marginBottom: spacing.xs,
+      fontSize: fontSize.xs,
       fontWeight: 600,
       textTransform: 'uppercase',
       letterSpacing: '0.1em',
-      color: 'rgba(255, 255, 255, 0.5)', // textMuted
+      color: colors.textMuted,
     };
 
     return (
@@ -70,13 +73,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           style={inputStyles}
           className={className}
           onFocus={(e) => {
-            e.target.style.borderColor = error ? '#ef4444' : colors.accent;
-            e.target.style.boxShadow = `inset 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 3px ${error ? 'rgba(239, 68, 68, 0.15)' : colors.focusRing}`;
+            e.target.style.borderColor = error ? colors.error : colors.accent;
+            e.target.style.boxShadow = `inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 3px ${error ? 'rgba(239, 68, 68, 0.15)' : colors.focusRing}`;
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = error ? '#ef4444' : colors.border;
-            e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.2)';
+            e.target.style.borderColor = error ? colors.error : colors.inputBorder;
+            e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.1)';
             props.onBlur?.(e);
           }}
           {...props}
@@ -85,7 +88,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <p style={{
             marginTop: '8px',
             fontSize: '12px',
-            color: '#ef4444',
+            color: colors.error,
           }}>
             {error}
           </p>

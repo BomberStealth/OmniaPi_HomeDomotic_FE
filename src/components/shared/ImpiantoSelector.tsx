@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiDeleteBinLine } from 'react-icons/ri';
 import { useState } from 'react';
 import { impiantiApi } from '@/services/api';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
@@ -13,17 +13,6 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 // IMPIANTO SELECTOR - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  bgCard: '#1e1c18',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  error: '#ef4444',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -43,16 +32,16 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
   const { impiantoCorrente, setImpiantoCorrente, impianti, loading, refresh } = useImpiantoContext();
   const { removeImpianto } = useImpiantiStore();
   const [isOpen, setIsOpen] = useState(false);
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   const handleCreateNew = () => {
     setIsOpen(false);
@@ -127,8 +116,8 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
         }}
         whileHover={{
           background: variant === 'desktop'
-            ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)'
-            : 'rgba(255, 255, 255, 0.05)',
+            ? (isDarkMode ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)' : colors.bgSecondary)
+            : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
           borderColor: colors.borderHover,
         }}
       >
@@ -158,8 +147,8 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
         }}
         whileHover={{
           background: variant === 'desktop'
-            ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)'
-            : 'rgba(255, 255, 255, 0.05)',
+            ? (isDarkMode ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)' : colors.bgSecondary)
+            : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
         }}
       >
         <RiBuilding2Line size={18} style={{ color: colors.accent }} />
@@ -308,7 +297,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                     border: 'none',
                     cursor: 'pointer',
                   }}
-                  whileHover={{ background: 'rgba(255, 255, 255, 0.05)' }}
+                  whileHover={{ background: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }}
                 >
                   <RiAddLine size={16} style={{ color: colors.accent }} />
                   <span style={{ fontSize: '14px', fontWeight: 500, color: colors.accent }}>

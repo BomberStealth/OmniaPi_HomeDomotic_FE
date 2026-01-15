@@ -4,7 +4,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { omniapiApi, OmniapiNode } from '@/services/omniapiApi';
 import { stanzeApi } from '@/services/api';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import {
   RiCloseLine,
   RiWifiLine,

@@ -5,13 +5,14 @@ import { MobileHeader } from './MobileHeader';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
+import { spacing } from '@/styles/responsive';
 
 // ============================================
-// MAIN LAYOUT - Dark Luxury Style
-// Con supporto tema dinamico
+// MAIN LAYOUT - Responsive Flexbox Layout
+// Mobile/Tablet: Header top, Navbar bottom
+// Desktop: Sidebar left
 // ============================================
 
-// Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (result) {
@@ -25,56 +26,64 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
 
-  // Real-time sync - carica dati e ascolta WebSocket
   useRealTimeSync(impiantoCorrente?.id ?? null);
 
-  // Background dinamico basato sul tema
   const { bgGradient, ambientGlow } = useMemo(() => {
     const accentRgb = hexToRgb(themeColors.accent);
-    return {
-      bgGradient: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(${accentRgb}, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)`,
-      ambientGlow: `radial-gradient(ellipse 100% 40% at 50% 0%, rgba(${accentRgb}, 0.06) 0%, transparent 70%)`,
-    };
-  }, [themeColors.accent]);
+    if (isDarkMode) {
+      return {
+        bgGradient: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(${accentRgb}, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)`,
+        ambientGlow: `radial-gradient(ellipse 100% 40% at 50% 0%, rgba(${accentRgb}, 0.06) 0%, transparent 70%)`,
+      };
+    } else {
+      return {
+        bgGradient: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(${accentRgb}, 0.05) 0%, transparent 60%), linear-gradient(to bottom, ${modeColors.bg} 0%, ${modeColors.bgSecondary} 100%)`,
+        ambientGlow: `radial-gradient(ellipse 100% 40% at 50% 0%, rgba(${accentRgb}, 0.04) 0%, transparent 70%)`,
+      };
+    }
+  }, [themeColors.accent, isDarkMode, modeColors]);
 
   return (
     <div
-      className="flex h-screen overflow-hidden"
+      className="flex flex-col md:flex-row overflow-hidden"
       style={{
+        height: '100dvh', // Dynamic viewport height per mobile
         background: bgGradient,
         fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
-      {/* Ambient glow overlay - esatto dal preview */}
+      {/* Ambient glow overlay */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{ background: ambientGlow }}
       />
 
-      {/* Mobile Header - Mobile only */}
-      <MobileHeader />
-
       {/* Sidebar - Desktop only */}
-      <div className="hidden md:block flex-shrink-0 relative z-10">
+      <aside className="hidden md:flex md:flex-shrink-0 relative z-10">
         <Sidebar />
-      </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-        {/* Spacer for fixed mobile header */}
-        <div className="h-16 flex-shrink-0 md:hidden" />
+      {/* Main area - flex column per header/content/navbar */}
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 relative z-10">
+        {/* Header - Mobile/Tablet only, NON fixed */}
+        <MobileHeader />
 
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
-          <div className="max-w-7xl mx-auto">{children}</div>
+        {/* Content - scrollabile */}
+        <main
+          className="flex-1 overflow-y-auto"
+          style={{ padding: spacing.lg }}
+        >
+          <div className="max-w-5xl mx-auto w-full">
+            {children}
+          </div>
         </main>
-      </div>
 
-      {/* Bottom Navigation - Mobile only */}
-      <BottomNav />
+        {/* Bottom Navbar - Mobile/Tablet only, NON fixed */}
+        <BottomNav />
+      </div>
     </div>
   );
 };

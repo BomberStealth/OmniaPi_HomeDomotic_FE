@@ -45,7 +45,7 @@ export const baseColors = {
 
 // Hook principale
 export const useThemeColors = () => {
-  const { colors: themeColors, colorTheme } = useThemeColor();
+  const { colors: themeColors, colorTheme, modeColors, isDarkMode } = useThemeColor();
 
   // Memoizza i colori derivati per evitare ricalcolo ad ogni render
   const colors = useMemo(() => {
@@ -53,8 +53,8 @@ export const useThemeColors = () => {
     const accentLightRgb = hexToRgb(themeColors.accentLight);
 
     return {
-      // Include tutti i colori base
-      ...baseColors,
+      // Include tutti i colori dal mode (dark/light)
+      ...modeColors,
 
       // Colori accent dal tema
       accent: themeColors.accent,
@@ -83,9 +83,9 @@ export const useThemeColors = () => {
       accentGlowShadow: `0 0 12px ${themeColors.accent}50`,
       accentGlowStrong: `0 4px 16px rgba(${accentRgb}, 0.3)`,
     };
-  }, [themeColors]);
+  }, [themeColors, modeColors]);
 
-  return { colors, colorTheme };
+  return { colors, colorTheme, isDarkMode };
 };
 
 export default useThemeColors;

@@ -1,12 +1,13 @@
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useAuthStore } from '@/store/authStore';
-import { useThemeColor, colorThemes, ColorTheme } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine } from 'react-icons/ri';
+import { useThemeColor, colorThemes, ColorTheme, ThemeMode } from '@/contexts/ThemeColorContext';
+import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
 import { UserRole } from '@/types';
-import { APP_VERSION } from '@/config/version';
+import { APP_VERSION, clearAllCache } from '@/config/version';
+import { RiRefreshLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 
@@ -15,32 +16,29 @@ import { usePWAInstall } from '@/hooks/usePWAInstall';
 // Con supporto tema dinamico
 // ============================================
 
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  bgCard: '#1e1c18',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  toggleTrack: 'rgba(50, 45, 38, 1)',
-  toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
-  error: '#ef4444',
-  warning: '#f59e0b',
+// Variants per animazioni card (uniformi come Dashboard)
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
+};
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } }
 };
 
 export const Settings = () => {
   const { user, logout } = useAuthStore();
-  const { colorTheme, setColorTheme, colors: themeColors } = useThemeColor();
+  const { colorTheme, setColorTheme, colors: themeColors, setThemeMode, isDarkMode, modeColors } = useThemeColor();
   const navigate = useNavigate();
   const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
   const { isStandalone } = usePWAInstall();
 
   const isAdmin = user?.ruolo === UserRole.ADMIN;
 
-  // Colori dinamici basati sul tema
+  // Colori dinamici basati sul tema (usa modeColors per dark/light)
   const colors = {
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
@@ -157,7 +155,7 @@ export const Settings = () => {
       onClick={onClick}
       style={{
         ...cardStyle,
-        padding: '14px',
+        padding: '10px',
         cursor: onClick ? 'pointer' : 'default',
       }}
       whileHover={onClick ? { scale: 1.01 } : undefined}
@@ -202,7 +200,12 @@ export const Settings = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={containerVariants}
+        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -226,10 +229,11 @@ export const Settings = () => {
 
         {/* Profilo Utente Card - Cliccabile */}
         <motion.div
+          variants={cardVariants}
           onClick={() => navigate('/settings/profilo')}
           style={{
             ...cardStyle,
-            padding: '16px',
+            padding: '12px',
             cursor: 'pointer',
           }}
           whileHover={{ scale: 1.01 }}
@@ -304,14 +308,14 @@ export const Settings = () => {
         </motion.div>
 
         {/* Aspetto Section */}
-        <div>
+        <motion.div variants={cardVariants} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h2 style={{
             fontSize: '12px',
             fontWeight: 600,
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             color: colors.textMuted,
-            margin: '0 0 10px 4px',
+            margin: '0 0 0 4px',
           }}>
             Aspetto
           </h2>
@@ -320,7 +324,7 @@ export const Settings = () => {
           <motion.div
             style={{
               ...cardStyle,
-              padding: '16px',
+              padding: '12px',
             }}
           >
             <div style={topHighlight} />
@@ -412,10 +416,98 @@ export const Settings = () => {
               })}
             </div>
           </motion.div>
-        </div>
+
+          {/* Dark/Light Mode Toggle */}
+          <motion.div
+            style={{
+              ...cardStyle,
+              padding: '12px',
+            }}
+          >
+            <div style={topHighlight} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '12px',
+                    background: isDarkMode ? `${colors.accent}20` : `${colors.warning}20`,
+                  }}
+                >
+                  {isDarkMode ? (
+                    <RiMoonLine size={18} style={{ color: colors.accent }} />
+                  ) : (
+                    <RiSunLine size={18} style={{ color: colors.warning }} />
+                  )}
+                </div>
+                <div>
+                  <h3 style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: colors.textPrimary,
+                    margin: 0,
+                  }}>
+                    Modalità {isDarkMode ? 'Scura' : 'Chiara'}
+                  </h3>
+                  <p style={{
+                    fontSize: '11px',
+                    color: colors.textMuted,
+                    margin: '2px 0 0 0',
+                  }}>
+                    {isDarkMode ? 'Tema scuro attivo' : 'Tema chiaro attivo'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <motion.button
+                onClick={() => {
+                  const newMode: ThemeMode = isDarkMode ? 'light' : 'dark';
+                  setThemeMode(newMode);
+                  toast.success(newMode === 'dark' ? 'Tema scuro' : 'Tema chiaro');
+                }}
+                style={{
+                  width: '52px',
+                  height: '28px',
+                  borderRadius: '14px',
+                  padding: '2px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: isDarkMode
+                    ? `linear-gradient(90deg, ${colors.accentDark}, ${colors.accent})`
+                    : `linear-gradient(90deg, ${colors.warning}, #fbbf24)`,
+                  boxShadow: `0 0 12px ${isDarkMode ? colors.accent : colors.warning}40`,
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'white',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  animate={{ x: isDarkMode ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                >
+                  {isDarkMode ? (
+                    <RiMoonLine size={12} style={{ color: colors.accent }} />
+                  ) : (
+                    <RiSunLine size={12} style={{ color: colors.warning }} />
+                  )}
+                </motion.div>
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
 
         {/* Account Section */}
-        <div>
+        <motion.div variants={cardVariants}>
           <h2 style={{
             fontSize: '12px',
             fontWeight: 600,
@@ -496,10 +588,10 @@ export const Settings = () => {
               />
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Sicurezza Section */}
-        <div>
+        <motion.div variants={cardVariants}>
           <h2 style={{
             fontSize: '12px',
             fontWeight: 600,
@@ -519,11 +611,11 @@ export const Settings = () => {
               onClick={() => navigate('/settings/password')}
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Admin Panel */}
         {isAdmin && (
-          <div>
+          <motion.div variants={cardVariants}>
             <h2 style={{
               fontSize: '12px',
               fontWeight: 600,
@@ -543,11 +635,11 @@ export const Settings = () => {
                 onClick={() => navigate('/settings/admin/utenti')}
               />
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Info Section */}
-        <div>
+        <motion.div variants={cardVariants}>
           <h2 style={{
             fontSize: '12px',
             fontWeight: 600,
@@ -570,10 +662,34 @@ export const Settings = () => {
               icon={RiInformationLine}
               iconBg={`${colors.accent}20`}
               title="Informazioni"
-              subtitle={`OmniaPi v${APP_VERSION}`}
+              subtitle={`OmniaPi ${APP_VERSION}`}
               onClick={() => navigate('/settings/info')}
             />
+            <SettingRow
+              icon={RiFlashlightLine}
+              iconBg={`${colors.accent}20`}
+              title="Test Animazione"
+              subtitle="Prova effetto WOW"
+              onClick={() => navigate('/settings/test-animation')}
+            />
+            <SettingRow
+              icon={RiRefreshLine}
+              iconBg={`${colors.warning}20`}
+              title="Svuota Cache"
+              subtitle="Forza aggiornamento app"
+              onClick={() => {
+                toast.info('Svuoto cache e ricarico...');
+                clearAllCache();
+              }}
+            />
           </div>
+        </motion.div>
+
+        {/* Versione App */}
+        <div style={{ textAlign: 'center', padding: '8px 0' }}>
+          <span style={{ fontSize: '12px', color: colors.textMuted }}>
+            {APP_VERSION}
+          </span>
         </div>
 
         {/* Logout Button */}
@@ -604,9 +720,7 @@ export const Settings = () => {
           Esci dall'account
         </motion.button>
 
-        {/* Footer Spacing for Bottom Nav */}
-        <div style={{ height: '80px' }} />
-      </div>
+      </motion.div>
     </Layout>
   );
 };

@@ -9,24 +9,14 @@ import { useDispositiviStore } from '@/store/dispositiviStore';
 import { stanzeApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { ROOM_ICON_OPTIONS, getRoomIcon, DEFAULT_ROOM_ICON } from '@/config/roomIcons';
 
 // ============================================
 // STANZE PAGE - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  success: '#10b981',
-  error: '#ef4444',
-  warning: '#f59e0b',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -37,22 +27,33 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
+// Variants per animazioni card (uniformi come Dashboard)
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
+};
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } }
+};
+
 export const Stanze = () => {
   const { impiantoCorrente } = useImpiantoContext();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   // Store data (real-time via useRealTimeSync nel Layout)
   const { stanze, loading: stanzeLoading } = useStanzeStore();
   const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
 
-  // Colori dinamici basati sul tema
+  // Colori dinamici basati sul tema (usa modeColors per dark/light)
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   const [actionLoading, setActionLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -65,7 +66,7 @@ export const Stanze = () => {
   const [selectedStanza, setSelectedStanza] = useState<any | null>(null);
   const [selectedDispositivo, setSelectedDispositivo] = useState<any | null>(null);
   const [isNonAssegnatiMode, setIsNonAssegnatiMode] = useState(false);
-  const [newStanza, setNewStanza] = useState({ nome: '', icona: '🚪' });
+  const [newStanza, setNewStanza] = useState({ nome: '', icona: DEFAULT_ROOM_ICON });
   const [newDeviceName, setNewDeviceName] = useState('');
   const [editStanza, setEditStanza] = useState({ nome: '', icona: '' });
 
@@ -77,12 +78,19 @@ export const Stanze = () => {
       toast.error('Inserisci il nome della stanza');
       return;
     }
+    // Validazione nome duplicato
+    const nomeNormalizzato = newStanza.nome.trim().toLowerCase();
+    const esisteGia = stanze.some((s: any) => s.nome.toLowerCase() === nomeNormalizzato);
+    if (esisteGia) {
+      toast.error('Esiste già una stanza con questo nome');
+      return;
+    }
     try {
       setActionLoading(true);
       await stanzeApi.createStanza(impiantoId, newStanza);
       toast.success('Stanza creata!');
       setModalOpen(false);
-      setNewStanza({ nome: '', icona: '🚪' });
+      setNewStanza({ nome: '', icona: DEFAULT_ROOM_ICON });
       // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante la creazione');
@@ -109,6 +117,13 @@ export const Stanze = () => {
       toast.error('Inserisci un nome valido');
       return;
     }
+    // Validazione nome duplicato (escludendo la stanza corrente)
+    const nomeNormalizzato = editStanza.nome.trim().toLowerCase();
+    const esisteGia = stanze.some((s: any) => s.id !== selectedStanza.id && s.nome.toLowerCase() === nomeNormalizzato);
+    if (esisteGia) {
+      toast.error('Esiste già una stanza con questo nome');
+      return;
+    }
     try {
       await stanzeApi.updateStanza(selectedStanza.id, { nome: editStanza.nome.trim(), icona: editStanza.icona });
       toast.success('Stanza rinominata!');
@@ -122,7 +137,7 @@ export const Stanze = () => {
   };
 
   const openRenameStanzaModal = () => {
-    setEditStanza({ nome: selectedStanza?.nome || '', icona: selectedStanza?.icona || '🚪' });
+    setEditStanza({ nome: selectedStanza?.nome || '', icona: selectedStanza?.icona || DEFAULT_ROOM_ICON });
     setSettingsModalOpen(false);
     setRenameStanzaModalOpen(true);
   };
@@ -243,18 +258,23 @@ export const Stanze = () => {
             onClick={() => setModalOpen(true)}
             disabled={!impiantoId}
             style={{
-              padding: '10px',
+              width: '44px',
+              height: '44px',
+              padding: 0,
               borderRadius: '16px',
-              background: `linear-gradient(165deg, ${colors.accent}, #4aa870)`,
+              background: `linear-gradient(135deg, ${themeColors.accent}, ${themeColors.accentDark})`,
               border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: !impiantoId ? 'not-allowed' : 'pointer',
               opacity: !impiantoId ? 0.5 : 1,
-              boxShadow: `0 4px 16px ${colors.accent}40`,
+              boxShadow: `0 4px 20px ${themeColors.accent}50`,
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, boxShadow: `0 6px 24px ${themeColors.accent}60` }}
             whileTap={{ scale: 0.95 }}
           >
-            <RiAddLine size={20} style={{ color: '#0a0a0c' }} />
+            <RiAddLine size={20} style={{ color: modeColors.bg, display: 'block' }} />
           </motion.button>
         </div>
 
@@ -279,20 +299,26 @@ export const Stanze = () => {
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={containerVariants}
+            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+          >
             {/* Dispositivi Non Assegnati */}
             {dispositiviNonAssegnati.length > 0 && (
               <motion.div
+                variants={cardVariants}
+                whileTap={{ scale: 0.98 }}
                 style={{
                   background: colors.bgCardLit,
                   border: `1px solid ${colors.border}`,
                   borderRadius: '20px',
                   boxShadow: colors.cardShadowLit,
-                  padding: '12px',
+                  padding: '10px',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
-                whileHover={{ borderColor: colors.borderHover }}
               >
                 <div
                   style={{
@@ -313,10 +339,10 @@ export const Stanze = () => {
                     <span style={{ fontSize: '12px', color: colors.textMuted }}>{dispositiviNonAssegnati.length}</span>
                     <motion.button
                       onClick={openNonAssegnatiSettings}
-                      style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                      whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                      style={{ padding: '8px', background: `${colors.accent}15`, border: `1px solid ${colors.border}`, borderRadius: '10px', cursor: 'pointer' }}
+                      whileHover={{ background: `${colors.accent}25`, borderColor: colors.accent }}
                     >
-                      <RiSettings4Line size={16} style={{ color: colors.textMuted }} />
+                      <RiSettings4Line size={18} style={{ color: colors.accent }} />
                     </motion.button>
                   </div>
                 </div>
@@ -373,16 +399,17 @@ export const Stanze = () => {
                 return (
                   <motion.div
                     key={stanza.id}
+                    variants={cardVariants}
+                    whileTap={{ scale: 0.98 }}
                     style={{
                       background: colors.bgCardLit,
                       border: `1px solid ${colors.border}`,
                       borderRadius: '20px',
                       boxShadow: colors.cardShadowLit,
-                      padding: '12px',
+                      padding: '10px',
                       position: 'relative',
                       overflow: 'hidden',
                     }}
-                    whileHover={{ borderColor: colors.borderHover }}
                   >
                     <div
                       style={{
@@ -396,17 +423,17 @@ export const Stanze = () => {
                     />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '18px' }}>{stanza.icona || '🚪'}</span>
+                        {(() => { const Icon = getRoomIcon(stanza.icona); return <Icon size={18} style={{ color: colors.accent }} />; })()}
                         <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>{stanza.nome}</h3>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '12px', color: colors.textMuted }}>{dispositiviStanza.length}</span>
                         <motion.button
                           onClick={() => openSettings(stanza)}
-                          style={{ padding: '6px', background: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                          whileHover={{ background: 'rgba(255,255,255,0.1)' }}
+                          style={{ padding: '8px', background: `${colors.accent}15`, border: `1px solid ${colors.border}`, borderRadius: '10px', cursor: 'pointer' }}
+                          whileHover={{ background: `${colors.accent}25`, borderColor: colors.accent }}
                         >
-                          <RiSettings4Line size={16} style={{ color: colors.textMuted }} />
+                          <RiSettings4Line size={18} style={{ color: colors.accent }} />
                         </motion.button>
                       </div>
                     </div>
@@ -442,7 +469,7 @@ export const Stanze = () => {
                 );
               })
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -452,28 +479,35 @@ export const Stanze = () => {
           <Input label="Nome Stanza" value={newStanza.nome} onChange={(e) => setNewStanza({ ...newStanza, nome: e.target.value })} placeholder="es. Soggiorno" />
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
-              {['🚪', '🛋️', '🍳', '🛏️', '🚿', '🏢', '🏠', '📺', '💻', '🌳', '🚗', '🎮'].map((icon) => (
-                <motion.button
-                  key={icon}
-                  onClick={() => setNewStanza({ ...newStanza, icona: icon })}
-                  style={{
-                    padding: '10px',
-                    fontSize: '20px',
-                    borderRadius: '12px',
-                    border: newStanza.icona === icon ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
-                    background: newStanza.icona === icon ? `${colors.accent}20` : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {icon}
-                </motion.button>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
+              {ROOM_ICON_OPTIONS.map((opt) => {
+                const Icon = getRoomIcon(opt.id);
+                return (
+                  <motion.button
+                    key={opt.id}
+                    onClick={() => setNewStanza({ ...newStanza, icona: opt.id })}
+                    style={{
+                      padding: '12px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      borderRadius: '12px',
+                      border: newStanza.icona === opt.id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                      background: newStanza.icona === opt.id ? `${colors.accent}20` : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icon size={22} style={{ color: newStanza.icona === opt.id ? colors.accent : colors.textMuted }} />
+                    <span style={{ fontSize: '10px', color: newStanza.icona === opt.id ? colors.accent : colors.textMuted }}>{opt.label}</span>
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
             <Button variant="ghost" onClick={() => setModalOpen(false)} fullWidth>Annulla</Button>
             <Button variant="primary" onClick={handleCreateStanza} fullWidth disabled={actionLoading}>{actionLoading ? 'Creazione...' : 'Crea'}</Button>
           </div>
@@ -481,7 +515,7 @@ export const Stanze = () => {
       </Modal>
 
       {/* Modal Impostazioni Stanza */}
-      <Modal isOpen={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} title={`${selectedStanza?.icona || '🚪'} ${selectedStanza?.nome || ''}`} size="sm">
+      <Modal isOpen={settingsModalOpen} onClose={() => setSettingsModalOpen(false)} title={selectedStanza?.nome || 'Stanza'} size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <motion.button
             onClick={openDeviceList}
@@ -520,7 +554,7 @@ export const Stanze = () => {
       </Modal>
 
       {/* Modal Lista Dispositivi */}
-      <Modal isOpen={deviceListModalOpen} onClose={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} title={isNonAssegnatiMode ? '📦 Non assegnati' : `${selectedStanza?.icona || ''} ${selectedStanza?.nome || ''}`} size="sm">
+      <Modal isOpen={deviceListModalOpen} onClose={() => { setDeviceListModalOpen(false); setIsNonAssegnatiMode(false); }} title={isNonAssegnatiMode ? 'Non assegnati' : (selectedStanza?.nome || '')} size="sm">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {isNonAssegnatiMode ? (
             /* Modal per Non Assegnati - comportamento originale */
@@ -644,19 +678,22 @@ export const Stanze = () => {
             {!selectedDispositivo?.stanza_id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
           </motion.button>
           <div style={{ maxHeight: '192px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {stanzeValide.map((stanza) => (
-              <motion.button
-                key={stanza.id}
-                onClick={() => handleMoveDispositivo(stanza.id)}
-                disabled={selectedDispositivo?.stanza_id === stanza.id}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: selectedDispositivo?.stanza_id === stanza.id ? `${colors.accent}20` : 'rgba(255,255,255,0.05)', border: selectedDispositivo?.stanza_id === stanza.id ? `1px solid ${colors.accent}` : 'none', cursor: selectedDispositivo?.stanza_id === stanza.id ? 'default' : 'pointer' }}
-                whileHover={selectedDispositivo?.stanza_id !== stanza.id ? { background: 'rgba(255,255,255,0.1)' } : undefined}
-              >
-                <span style={{ fontSize: '18px' }}>{stanza.icona || '🚪'}</span>
-                <span style={{ fontSize: '14px', color: colors.textPrimary, flex: 1, textAlign: 'left' }}>{stanza.nome}</span>
-                {selectedDispositivo?.stanza_id === stanza.id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
-              </motion.button>
-            ))}
+            {stanzeValide.map((stanza) => {
+              const StanzaIcon = getRoomIcon(stanza.icona);
+              return (
+                <motion.button
+                  key={stanza.id}
+                  onClick={() => handleMoveDispositivo(stanza.id)}
+                  disabled={selectedDispositivo?.stanza_id === stanza.id}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '12px', background: selectedDispositivo?.stanza_id === stanza.id ? `${colors.accent}20` : 'rgba(255,255,255,0.05)', border: selectedDispositivo?.stanza_id === stanza.id ? `1px solid ${colors.accent}` : 'none', cursor: selectedDispositivo?.stanza_id === stanza.id ? 'default' : 'pointer' }}
+                  whileHover={selectedDispositivo?.stanza_id !== stanza.id ? { background: 'rgba(255,255,255,0.1)' } : undefined}
+                >
+                  <StanzaIcon size={18} style={{ color: selectedDispositivo?.stanza_id === stanza.id ? colors.accent : colors.textMuted }} />
+                  <span style={{ fontSize: '14px', color: colors.textPrimary, flex: 1, textAlign: 'left' }}>{stanza.nome}</span>
+                  {selectedDispositivo?.stanza_id === stanza.id && <span style={{ fontSize: '12px', color: colors.accent }}>Attuale</span>}
+                </motion.button>
+              );
+            })}
           </div>
           <Button variant="ghost" onClick={() => setMoveModalOpen(false)} fullWidth style={{ marginTop: '12px' }}>Annulla</Button>
         </div>
@@ -679,25 +716,32 @@ export const Stanze = () => {
           <Input label="Nome Stanza" value={editStanza.nome} onChange={(e) => setEditStanza({ ...editStanza, nome: e.target.value })} placeholder="es. Soggiorno" autoFocus />
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
-              {['🚪', '🛋️', '🍳', '🛏️', '🚿', '🏢', '🏠', '📺', '💻', '🌳', '🚗', '🎮'].map((icon) => (
-                <motion.button
-                  key={icon}
-                  onClick={() => setEditStanza({ ...editStanza, icona: icon })}
-                  style={{
-                    padding: '10px',
-                    fontSize: '20px',
-                    borderRadius: '12px',
-                    border: editStanza.icona === icon ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
-                    background: editStanza.icona === icon ? `${colors.accent}20` : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {icon}
-                </motion.button>
-              ))}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {ROOM_ICON_OPTIONS.map((opt) => {
+                const Icon = getRoomIcon(opt.id);
+                return (
+                  <motion.button
+                    key={opt.id}
+                    onClick={() => setEditStanza({ ...editStanza, icona: opt.id })}
+                    style={{
+                      padding: '12px 8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      borderRadius: '12px',
+                      border: editStanza.icona === opt.id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                      background: editStanza.icona === opt.id ? `${colors.accent}20` : 'transparent',
+                      cursor: 'pointer',
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icon size={22} style={{ color: editStanza.icona === opt.id ? colors.accent : colors.textMuted }} />
+                    <span style={{ fontSize: '10px', color: editStanza.icona === opt.id ? colors.accent : colors.textMuted }}>{opt.label}</span>
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>

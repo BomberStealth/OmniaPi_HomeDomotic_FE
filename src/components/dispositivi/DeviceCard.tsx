@@ -26,10 +26,10 @@ const DeviceCardComponent = ({ nome, isOn, isLoading, bloccato, onClick }: Devic
     <motion.button
       onClick={bloccato ? undefined : onClick}
       disabled={isDisabled}
-      className="p-4 text-left relative overflow-hidden w-full"
+      className="p-3 text-left relative overflow-hidden w-full"
       style={{
         background: bloccato
-          ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)'
+          ? colors.bgCardLit
           : isOn
             ? `linear-gradient(165deg, ${colors.accent}12, ${colors.bgCard})`
             : colors.bgCardLit,
@@ -83,7 +83,7 @@ const DeviceCardComponent = ({ nome, isOn, isLoading, bloccato, onClick }: Devic
       )}
 
       <div className="relative">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           {/* Icon box */}
           <div
             style={{
@@ -121,6 +121,8 @@ const DeviceCardComponent = ({ nome, isOn, isLoading, bloccato, onClick }: Devic
           <div
             style={{
               width: '44px',
+              minWidth: '44px',
+              maxWidth: '44px',
               height: '24px',
               padding: '3px',
               borderRadius: '9999px',
@@ -132,6 +134,8 @@ const DeviceCardComponent = ({ nome, isOn, isLoading, bloccato, onClick }: Devic
                 : `inset 0 2px 4px rgba(0,0,0,0.3), inset 0 0 0 1px ${colors.toggleTrackBorder}`,
               transition: 'all 0.3s ease',
               position: 'relative',
+              overflow: 'hidden',
+              flexShrink: 0,
             }}
           >
             {/* Track marks for OFF state */}

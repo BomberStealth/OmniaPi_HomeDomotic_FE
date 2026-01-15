@@ -278,9 +278,6 @@ export const Guida = () => {
             <span style={{ color: colors.accent }}>Contattaci</span> per supporto.
           </p>
         </motion.div>
-
-        {/* Footer Spacing */}
-        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

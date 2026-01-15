@@ -30,6 +30,7 @@ const DispositiviConnessi = lazy(() => import('@/pages/Settings/DispositiviConne
 const CambiaPassword = lazy(() => import('@/pages/Settings/CambiaPassword').then(m => ({ default: m.CambiaPassword })));
 const Guida = lazy(() => import('@/pages/Settings/Guida').then(m => ({ default: m.Guida })));
 const InfoApp = lazy(() => import('@/pages/Settings/InfoApp').then(m => ({ default: m.InfoApp })));
+const TestAnimation = lazy(() => import('@/pages/Settings/TestAnimation').then(m => ({ default: m.TestAnimation })));
 const SetupWizard = lazy(() => import('@/pages/Wizard/SetupWizard').then(m => ({ default: m.SetupWizard })));
 const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then(m => ({ default: m.StylePreview })));
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
@@ -87,14 +88,52 @@ function App() {
     };
 
     document.addEventListener('contextmenu', handleContextMenu);
-    return () => document.removeEventListener('contextmenu', handleContextMenu);
+
+    // Click-to-dismiss toasts - click anywhere on toast to close it
+    const handleToastClick = (e: MouseEvent) => {
+      const toastEl = (e.target as HTMLElement).closest('[data-sonner-toast]');
+      if (toastEl) {
+        // Sonner usa data-sonner-toast come attributo vuoto e data-id per l'ID
+        const toastId = toastEl.getAttribute('data-id') || toastEl.getAttribute('data-sonner-toast');
+        import('sonner').then(({ toast }) => {
+          if (toastId) {
+            toast.dismiss(toastId);
+          } else {
+            // Fallback: chiudi tutti i toast
+            toast.dismiss();
+          }
+        });
+      }
+    };
+    document.addEventListener('click', handleToastClick, true);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('click', handleToastClick);
+    };
   }, []);
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <ThemeColorProvider>
-          <Toaster position="top-right" richColors expand={false} />
+          <Toaster
+            position="top-center"
+            expand={false}
+            visibleToasts={1}
+            toastOptions={{
+              duration: 500,
+              style: {
+                cursor: 'pointer',
+                background: 'var(--toast-bg, #1a1918)',
+                color: 'var(--toast-color, #fff)',
+                border: '1px solid var(--accent-color, #6ad4a0)',
+              },
+              classNames: {
+                error: 'toast-error',
+              },
+            }}
+          />
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -117,6 +156,7 @@ function App() {
                 <Route path="/settings/password" element={<ProtectedRoute><CambiaPassword /></ProtectedRoute>} />
                 <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
+                <Route path="/settings/test-animation" element={<ProtectedRoute><TestAnimation /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
                 <Route path="/setup" element={<ProtectedRoute><SetupWizard /></ProtectedRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />

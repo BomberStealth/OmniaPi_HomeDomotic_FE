@@ -8,17 +8,12 @@ import {
   RiSettings4Line
 } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, radius, fontSize, getIconSizeNum } from '@/styles/responsive';
 
 // ============================================
 // BOTTOM NAVIGATION - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -31,15 +26,15 @@ const hexToRgb = (hex: string): string => {
 
 export const BottomNav = () => {
   const location = useLocation();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   const menuItems = [
     { path: '/dashboard', icon: RiHome4Line, label: 'Home' },
@@ -52,13 +47,16 @@ export const BottomNav = () => {
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden p-4">
+    <nav
+      className="flex-shrink-0 md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       <div
-        className="flex items-center justify-around py-3 px-4 mx-auto max-w-md relative overflow-hidden"
+        className="flex items-center justify-around relative overflow-hidden"
         style={{
+          padding: `${spacing.xs} ${spacing.md}`,
           background: colors.bgCardLit,
-          border: `1px solid ${colors.border}`,
-          borderRadius: '28px', // radius['2xl']
+          borderTop: `1px solid ${colors.border}`,
           backdropFilter: 'blur(20px)',
           boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
         }}
@@ -81,15 +79,16 @@ export const BottomNav = () => {
             <Link
               key={item.path}
               to={item.path}
-              className="p-2.5 transition-all flex flex-col items-center gap-1"
+              className="transition-all flex flex-col items-center gap-0.5"
               style={{
+                padding: spacing.xs,
                 background: active ? `${colors.accent}15` : 'transparent',
-                borderRadius: '20px', // radius.lg
+                borderRadius: radius.lg,
                 boxShadow: active ? `0 0 12px ${colors.accent}30` : 'none',
               }}
             >
               <item.icon
-                size={22}
+                size={getIconSizeNum('sm')}
                 style={{
                   color: active ? colors.accentLight : colors.textMuted,
                   filter: active ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
@@ -97,7 +96,7 @@ export const BottomNav = () => {
               />
               <span
                 style={{
-                  fontSize: '10px',
+                  fontSize: fontSize.xs,
                   fontWeight: 500,
                   color: active ? colors.accentLight : colors.textMuted,
                 }}

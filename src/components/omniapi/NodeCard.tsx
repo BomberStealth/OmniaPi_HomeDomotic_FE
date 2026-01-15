@@ -9,21 +9,6 @@ import { OmniapiNode } from '@/services/omniapiApi';
 // Visualizza stato nodo ESP-NOW con controlli relay
 // ============================================
 
-// Colori base (invarianti)
-const baseColors = {
-  bgCard: '#1e1c18',
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
-  toggleTrack: 'rgba(50, 45, 38, 1)',
-  toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
-  success: '#22c55e',
-  error: '#ef4444',
-  warning: '#f59e0b',
-};
-
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -60,8 +45,8 @@ const RelayButton = ({ relay, isOn, isLoading, disabled, colors, onToggle }: Rel
       borderRadius: '16px',
       background: isOn
         ? `linear-gradient(135deg, ${colors.accent}20, ${colors.accentDark}15)`
-        : baseColors.toggleTrack,
-      border: `1px solid ${isOn ? `${colors.accent}50` : baseColors.toggleTrackBorder}`,
+        : colors.toggleTrack,
+      border: `1px solid ${isOn ? `${colors.accent}50` : colors.toggleTrackBorder}`,
       cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
       opacity: disabled ? 0.5 : 1,
       display: 'flex',
@@ -80,7 +65,7 @@ const RelayButton = ({ relay, isOn, isLoading, disabled, colors, onToggle }: Rel
         <RiToggleLine
           size={16}
           style={{
-            color: isOn ? colors.accent : baseColors.textMuted,
+            color: isOn ? colors.accent : colors.textMuted,
             filter: isOn ? `drop-shadow(0 0 4px ${colors.accent})` : 'none',
           }}
         />
@@ -89,7 +74,7 @@ const RelayButton = ({ relay, isOn, isLoading, disabled, colors, onToggle }: Rel
         style={{
           fontSize: '13px',
           fontWeight: 600,
-          color: isOn ? colors.accent : baseColors.textMuted,
+          color: isOn ? colors.accent : colors.textMuted,
         }}
       >
         Relay {relay}
@@ -105,7 +90,7 @@ const RelayButton = ({ relay, isOn, isLoading, disabled, colors, onToggle }: Rel
         borderRadius: '10px',
         background: isOn
           ? `linear-gradient(90deg, ${colors.accentDark}, ${colors.accentLight})`
-          : baseColors.toggleTrack,
+          : colors.toggleTrack,
         boxShadow: isOn
           ? `0 0 8px ${colors.accent}40`
           : `inset 0 1px 3px rgba(0,0,0,0.3)`,
@@ -142,18 +127,18 @@ interface NodeCardProps {
 }
 
 export const NodeCard = ({ node, onCommand, registeredInfo }: NodeCardProps) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const [loadingRelay, setLoadingRelay] = useState<1 | 2 | null>(null);
 
   const colors = useMemo(
     () => ({
-      ...baseColors,
+      ...modeColors,
       accent: themeColors.accent,
       accentLight: themeColors.accentLight,
       accentDark: themeColors.accentDark,
       border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     }),
-    [themeColors]
+    [themeColors, modeColors]
   );
 
   const rssiInfo = getRssiInfo(node.rssi);
@@ -220,21 +205,20 @@ export const NodeCard = ({ node, onCommand, registeredInfo }: NodeCardProps) => 
                 {registeredInfo.nome}
               </div>
               <div style={{ fontSize: '12px', color: colors.textMuted }}>
-                {registeredInfo.stanzaNome || 'Nessuna stanza'} · {node.mac}
+                {registeredInfo.stanzaNome || 'Nessuna stanza'}
               </div>
             </>
           ) : (
             <>
               <div
                 style={{
-                  fontFamily: 'monospace',
                   fontSize: '14px',
                   fontWeight: 600,
                   color: node.online ? colors.accent : colors.textMuted,
                   marginBottom: '4px',
                 }}
               >
-                {node.mac}
+                Nodo ESP-NOW
               </div>
               <div style={{ fontSize: '12px', color: colors.textMuted }}>
                 Firmware: {node.version || 'N/A'}

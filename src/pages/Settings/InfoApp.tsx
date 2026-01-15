@@ -298,9 +298,6 @@ export const InfoApp = () => {
             </div>
           </div>
         </motion.div>
-
-        {/* Footer Spacing */}
-        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

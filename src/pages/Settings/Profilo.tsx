@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { RiArrowLeftLine, RiUserLine, RiMailLine, RiSaveLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { api } from '@/services/api';
 
 // ============================================
@@ -185,9 +185,6 @@ export const Profilo = () => {
             </Button>
           </div>
         </motion.div>
-
-        {/* Footer Spacing */}
-        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

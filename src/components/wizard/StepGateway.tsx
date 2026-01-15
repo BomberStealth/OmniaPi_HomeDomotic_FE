@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { gatewayApi, Gateway } from '@/services/gatewayApi';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, fontSize, radius } from '@/styles/responsive';
 import {
   RiRouterLine,
   RiWifiLine,
@@ -27,23 +29,20 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
   const [pendingGateways, setPendingGateways] = useState<Gateway[]>([]);
   const [selecting, setSelecting] = useState<string | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { modeColors, isDarkMode, colors } = useThemeColor();
 
-  // Polling per gateway pending
   useEffect(() => {
     const pollGateways = async () => {
       try {
         const response = await gatewayApi.getPendingGateways();
         setPendingGateways(response.gateways || []);
       } catch (err) {
-        // Ignora errori di polling silenziosamente
         console.error('Errore polling gateways:', err);
       }
     };
 
-    // Prima chiamata immediata
     pollGateways();
 
-    // Polling ogni 3 secondi
     if (polling) {
       pollIntervalRef.current = setInterval(pollGateways, 3000);
     }
@@ -58,8 +57,6 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
   const handleSelectGateway = (gateway: Gateway) => {
     setSelecting(gateway.mac);
     setPolling(false);
-
-    // Salva solo in locale, l'associazione avverrà a Step 5
     onGatewaySelected({
       mac: gateway.mac,
       ip: gateway.ip,
@@ -76,35 +73,83 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
   ];
 
   return (
-    <Card variant="glass" className="p-6">
+    <Card variant="glass" style={{ padding: spacing.md }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="p-3 rounded-xl bg-secondary/20">
-          <RiRouterLine size={28} className="text-secondary" />
+      <div
+        className="flex items-center"
+        style={{ gap: spacing.sm, marginBottom: spacing.md }}
+      >
+        <div
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            background: `${colors.accent}20`,
+          }}
+        >
+          <RiRouterLine
+            style={{
+              width: 'clamp(20px, 6vw, 28px)',
+              height: 'clamp(20px, 6vw, 28px)',
+              color: colors.accent,
+            }}
+          />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-copy">
+          <h2
+            style={{
+              fontSize: fontSize.lg,
+              fontWeight: 'bold',
+              color: modeColors.textPrimary,
+            }}
+          >
             Collega il Gateway
           </h2>
-          <p className="text-copy-lighter text-sm">
-            Segui le istruzioni per configurare il Gateway
+          <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
+            Segui le istruzioni
           </p>
         </div>
       </div>
 
       {/* Istruzioni */}
-      <div className="space-y-3 mb-6">
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.xs,
+          marginBottom: spacing.md,
+        }}
+      >
         {instructions.map((instruction, index) => {
           const Icon = instruction.icon;
           return (
             <div
               key={index}
-              className="flex items-center gap-3 p-3 rounded-xl bg-foreground"
+              className="flex items-center"
+              style={{
+                gap: spacing.sm,
+                padding: spacing.sm,
+                borderRadius: radius.md,
+                background: isDarkMode ? modeColors.bgSecondary : '#f0f0f0',
+                border: `1px solid ${modeColors.border}`,
+              }}
             >
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Icon size={20} className="text-primary" />
+              <div
+                style={{
+                  padding: spacing.xs,
+                  borderRadius: radius.sm,
+                  background: `${colors.accent}15`,
+                  flexShrink: 0,
+                }}
+              >
+                <Icon
+                  style={{
+                    width: 'clamp(14px, 4vw, 18px)',
+                    height: 'clamp(14px, 4vw, 18px)',
+                    color: colors.accent,
+                  }}
+                />
               </div>
-              <span className="text-copy text-sm">
+              <span style={{ fontSize: fontSize.sm, color: modeColors.textPrimary }}>
                 {index + 1}. {instruction.text}
               </span>
             </div>
@@ -113,81 +158,108 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
       </div>
 
       {/* Stato Polling */}
-      <Card variant="glass-dark" className="p-4 mb-4">
+      <Card variant="glass-dark" style={{ padding: spacing.sm, marginBottom: spacing.sm }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center" style={{ gap: spacing.sm }}>
             {polling ? (
-              <RiLoader4Line size={24} className="text-warning animate-spin" />
+              <RiLoader4Line
+                className="animate-spin"
+                style={{
+                  width: 'clamp(18px, 5vw, 24px)',
+                  height: 'clamp(18px, 5vw, 24px)',
+                  color: '#eab308',
+                }}
+              />
             ) : (
-              <RiCheckLine size={24} className="text-success" />
+              <RiCheckLine
+                style={{
+                  width: 'clamp(18px, 5vw, 24px)',
+                  height: 'clamp(18px, 5vw, 24px)',
+                  color: '#22c55e',
+                }}
+              />
             )}
             <div>
-              <p className="text-copy font-medium">
+              <p
+                style={{
+                  fontWeight: 500,
+                  fontSize: fontSize.sm,
+                  color: modeColors.textPrimary,
+                }}
+              >
                 {polling ? 'In attesa del Gateway...' : 'Gateway trovato!'}
               </p>
-              <p className="text-copy-lighter text-xs">
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
                 {pendingGateways.length > 0
                   ? `${pendingGateways.length} gateway disponibil${pendingGateways.length === 1 ? 'e' : 'i'}`
-                  : 'Nessun gateway rilevato ancora'}
+                  : 'Nessun gateway rilevato'}
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPolling(true)}
-            disabled={polling}
-          >
-            <RiRefreshLine size={18} />
+          <Button variant="ghost" size="sm" onClick={() => setPolling(true)} disabled={polling}>
+            <RiRefreshLine size={16} />
           </Button>
         </div>
       </Card>
 
       {/* Lista Gateway Pending */}
       {pendingGateways.length > 0 && (
-        <div className="space-y-3 mb-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xs, marginBottom: spacing.sm }}>
           {pendingGateways.map((gateway) => (
-            <Card
+            <div
               key={gateway.mac}
-              variant="glass"
-              hover
-              className="p-4 cursor-pointer"
               onClick={() => handleSelectGateway(gateway)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: spacing.sm,
+                borderRadius: radius.md,
+                background: modeColors.bgCard,
+                border: `1px solid ${modeColors.border}`,
+                cursor: 'pointer',
+              }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="p-2 rounded-lg bg-success/20 flex-shrink-0">
-                    <RiRouterLine size={20} className="text-success" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-copy font-medium truncate">
-                      Gateway {gateway.mac?.slice(-5)}
-                    </p>
-                    <p className="text-copy-lighter text-xs truncate">
-                      MAC: {gateway.mac} {gateway.ip && `| IP: ${gateway.ip}`}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={selecting === gateway.mac}
-                  className="flex-shrink-0 whitespace-nowrap"
+              <div className="flex items-center" style={{ gap: spacing.sm, flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    padding: spacing.xs,
+                    borderRadius: radius.sm,
+                    background: 'rgba(34, 197, 94, 0.2)',
+                    flexShrink: 0,
+                  }}
                 >
-                  {selecting === gateway.mac ? (
-                    <RiLoader4Line className="animate-spin" />
-                  ) : (
-                    'Seleziona'
-                  )}
-                </Button>
+                  <RiRouterLine style={{ width: 18, height: 18, color: '#22c55e' }} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p
+                    className="truncate"
+                    style={{
+                      fontWeight: 500,
+                      fontSize: fontSize.sm,
+                      color: modeColors.textPrimary,
+                    }}
+                  >
+                    Gateway {gateway.mac?.slice(-5)}
+                  </p>
+                  <p
+                    className="truncate"
+                    style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}
+                  >
+                    {gateway.ip || gateway.mac}
+                  </p>
+                </div>
               </div>
-            </Card>
+              <Button variant="primary" size="sm" disabled={selecting === gateway.mac}>
+                {selecting === gateway.mac ? <RiLoader4Line className="animate-spin" /> : 'Seleziona'}
+              </Button>
+            </div>
           ))}
         </div>
       )}
 
       {/* Bottoni */}
-      <div className="flex justify-between pt-4">
+      <div className="flex justify-between" style={{ paddingTop: spacing.sm }}>
         <Button variant="glass" onClick={onBack}>
           Indietro
         </Button>

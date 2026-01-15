@@ -87,7 +87,7 @@ const SceneCardComponent = ({ scena, executing, onExecute, onDelete, onSchedule,
             : colors.cardShadowLit,
           position: 'relative',
           overflow: 'hidden',
-          padding: '14px',
+          padding: '10px',
           cursor: 'pointer',
         }}
         whileHover={{ scale: 1.02, borderColor: colors.borderHover }}

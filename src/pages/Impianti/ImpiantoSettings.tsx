@@ -9,7 +9,7 @@ import { Modal } from '@/components/common/Modal';
 import { impiantiApi } from '@/services/api';
 import { useImpiantiStore } from '@/store/impiantiStore';
 import { Impianto } from '@/types';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 
 // ============================================
 // IMPIANTO SETTINGS PAGE

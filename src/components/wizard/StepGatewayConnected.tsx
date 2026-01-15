@@ -1,5 +1,7 @@
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, fontSize, radius } from '@/styles/responsive';
 import {
   RiCheckboxCircleLine,
   RiRouterLine,
@@ -28,55 +30,140 @@ export const StepGatewayConnected = ({
   onNext,
   onBack,
 }: StepGatewayConnectedProps) => {
+  const { modeColors, colors } = useThemeColor();
+
   return (
-    <Card variant="glass" className="p-6">
+    <Card variant="glass" style={{ padding: spacing.md }}>
       {/* Header con animazione successo */}
-      <div className="flex flex-col items-center text-center mb-8">
-        <div className="relative mb-4">
-          <div className="p-4 rounded-full bg-success/20">
-            <RiCheckboxCircleLine size={48} className="text-success" />
+      <div
+        className="flex flex-col items-center text-center"
+        style={{ marginBottom: spacing.lg }}
+      >
+        <div className="relative" style={{ marginBottom: spacing.sm }}>
+          <div
+            style={{
+              padding: spacing.md,
+              borderRadius: '50%',
+              background: 'rgba(34, 197, 94, 0.2)',
+            }}
+          >
+            <RiCheckboxCircleLine
+              style={{
+                width: 'clamp(36px, 10vw, 48px)',
+                height: 'clamp(36px, 10vw, 48px)',
+                color: '#22c55e',
+              }}
+            />
           </div>
           {/* Pulse animation */}
-          <div className="absolute inset-0 rounded-full bg-success/20 animate-ping" />
+          <div
+            className="absolute inset-0 animate-ping"
+            style={{
+              borderRadius: '50%',
+              background: 'rgba(34, 197, 94, 0.2)',
+            }}
+          />
         </div>
-        <h2 className="text-2xl font-bold text-copy mb-2">
+        <h2
+          style={{
+            fontSize: fontSize.xl,
+            fontWeight: 'bold',
+            color: modeColors.textPrimary,
+            marginBottom: spacing.xs,
+          }}
+        >
           Gateway Connesso!
         </h2>
-        <p className="text-copy-lighter">
-          Il Gateway e stato associato con successo al tuo impianto
+        <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
+          Associato con successo al tuo impianto
         </p>
       </div>
 
       {/* Info Gateway */}
-      <Card variant="glass-dark" className="p-4 mb-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="p-3 rounded-xl bg-primary/20">
-            <RiRouterLine size={24} className="text-primary" />
+      <Card variant="glass-dark" style={{ padding: spacing.sm, marginBottom: spacing.md }}>
+        <div
+          className="flex items-center"
+          style={{ gap: spacing.sm, marginBottom: spacing.sm }}
+        >
+          <div
+            style={{
+              padding: spacing.xs,
+              borderRadius: radius.md,
+              background: `${colors.accent}20`,
+            }}
+          >
+            <RiRouterLine
+              style={{
+                width: 'clamp(18px, 5vw, 24px)',
+                height: 'clamp(18px, 5vw, 24px)',
+                color: colors.accent,
+              }}
+            />
           </div>
           <div>
-            <p className="text-copy font-bold">Gateway OmniaPi</p>
-            <p className="text-copy-lighter text-sm">Pronto per ricevere dispositivi</p>
+            <p
+              style={{
+                fontWeight: 'bold',
+                fontSize: fontSize.md,
+                color: modeColors.textPrimary,
+              }}
+            >
+              Gateway OmniaPi
+            </p>
+            <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+              Pronto per ricevere dispositivi
+            </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: spacing.sm,
+          }}
+        >
           {/* MAC Address */}
-          <div className="flex items-center gap-2">
-            <RiCpuLine size={16} className="text-copy-lighter" />
-            <div>
-              <p className="text-copy-lighter text-xs">MAC Address</p>
-              <p className="text-copy text-sm font-mono">
+          <div className="flex items-center" style={{ gap: spacing.xs }}>
+            <RiCpuLine
+              style={{
+                width: 14,
+                height: 14,
+                color: modeColors.textSecondary,
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                MAC
+              </p>
+              <p
+                className="truncate font-mono"
+                style={{ fontSize: fontSize.xs, color: modeColors.textPrimary }}
+              >
                 {gateway.mac || 'N/A'}
               </p>
             </div>
           </div>
 
           {/* IP Address */}
-          <div className="flex items-center gap-2">
-            <RiWifiLine size={16} className="text-copy-lighter" />
-            <div>
-              <p className="text-copy-lighter text-xs">Indirizzo IP</p>
-              <p className="text-copy text-sm font-mono">
+          <div className="flex items-center" style={{ gap: spacing.xs }}>
+            <RiWifiLine
+              style={{
+                width: 14,
+                height: 14,
+                color: modeColors.textSecondary,
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                IP
+              </p>
+              <p
+                className="truncate font-mono"
+                style={{ fontSize: fontSize.xs, color: modeColors.textPrimary }}
+              >
                 {gateway.ip || 'In attesa...'}
               </p>
             </div>
@@ -84,11 +171,25 @@ export const StepGatewayConnected = ({
 
           {/* Firmware */}
           {gateway.version && (
-            <div className="col-span-2 flex items-center gap-2">
-              <RiCpuLine size={16} className="text-copy-lighter" />
+            <div
+              className="flex items-center col-span-2"
+              style={{ gap: spacing.xs }}
+            >
+              <RiCpuLine
+                style={{
+                  width: 14,
+                  height: 14,
+                  color: modeColors.textSecondary,
+                  flexShrink: 0,
+                }}
+              />
               <div>
-                <p className="text-copy-lighter text-xs">Firmware</p>
-                <p className="text-copy text-sm">v{gateway.version}</p>
+                <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                  Firmware
+                </p>
+                <p style={{ fontSize: fontSize.xs, color: modeColors.textPrimary }}>
+                  v{gateway.version}
+                </p>
               </div>
             </div>
           )}
@@ -96,20 +197,29 @@ export const StepGatewayConnected = ({
       </Card>
 
       {/* Prossimo step info */}
-      <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 mb-6">
-        <p className="text-copy text-sm">
-          <span className="font-bold">Prossimo passo:</span> Aggiungi i dispositivi
-          (interruttori, luci, etc.) al tuo impianto. Il Gateway rileva automaticamente
-          i nodi OmniaPi nella tua rete.
+      <div
+        style={{
+          padding: spacing.sm,
+          borderRadius: radius.md,
+          background: `${colors.accent}10`,
+          border: `1px solid ${colors.accent}20`,
+          marginBottom: spacing.md,
+        }}
+      >
+        <p style={{ fontSize: fontSize.sm, color: modeColors.textPrimary }}>
+          <span style={{ fontWeight: 'bold' }}>Prossimo passo:</span> Aggiungi i dispositivi al tuo impianto.
         </p>
       </div>
 
       {/* Bottoni */}
-      <div className="flex flex-wrap justify-between gap-3 pt-4">
-        <Button variant="glass" onClick={onBack} className="flex-shrink-0">
+      <div
+        className="flex flex-wrap justify-between"
+        style={{ gap: spacing.sm, paddingTop: spacing.sm }}
+      >
+        <Button variant="glass" onClick={onBack}>
           Indietro
         </Button>
-        <Button variant="primary" onClick={onNext} className="flex-shrink-0 whitespace-nowrap">
+        <Button variant="primary" onClick={onNext}>
           Aggiungi Dispositivi
         </Button>
       </div>

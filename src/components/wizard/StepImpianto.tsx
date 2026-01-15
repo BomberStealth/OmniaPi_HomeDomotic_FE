@@ -3,6 +3,8 @@ import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { RiHome4Line } from 'react-icons/ri';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, fontSize, radius } from '@/styles/responsive';
 
 // ============================================
 // STEP 1: DATI IMPIANTO (solo salvataggio locale)
@@ -22,6 +24,7 @@ interface StepImpiantoProps {
 
 export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
   const [error, setError] = useState('');
+  const { modeColors, colors } = useThemeColor();
 
   const validate = (): boolean => {
     if (!data.nome.trim()) {
@@ -34,31 +37,49 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
   const handleSubmit = () => {
     setError('');
     if (!validate()) return;
-
-    // Salva solo in locale e procedi
-    // L'impianto verrà creato nel DB solo a Step 5
     onNext();
   };
 
   return (
-    <Card variant="glass" className="p-6">
+    <Card variant="glass" style={{ padding: spacing.md }}>
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="p-3 rounded-xl bg-primary/20">
-          <RiHome4Line size={28} className="text-primary" />
+      <div
+        className="flex items-center"
+        style={{ gap: spacing.sm, marginBottom: spacing.md }}
+      >
+        <div
+          style={{
+            padding: spacing.sm,
+            borderRadius: radius.md,
+            background: `${colors.accent}20`,
+          }}
+        >
+          <RiHome4Line
+            style={{
+              width: 'clamp(20px, 6vw, 28px)',
+              height: 'clamp(20px, 6vw, 28px)',
+              color: colors.accent,
+            }}
+          />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-copy">
+          <h2
+            style={{
+              fontSize: fontSize.lg,
+              fontWeight: 'bold',
+              color: modeColors.textPrimary,
+            }}
+          >
             Crea il tuo Impianto
           </h2>
-          <p className="text-copy-lighter text-sm">
-            Inserisci le informazioni base del tuo impianto
+          <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
+            Inserisci le informazioni base
           </p>
         </div>
       </div>
 
       {/* Form */}
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
         <Input
           label="Nome Impianto *"
           value={data.nome}
@@ -74,15 +95,21 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
           placeholder="es. Via Roma 123"
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: spacing.sm,
+          }}
+        >
           <Input
-            label="Citta (opzionale)"
+            label="Città"
             value={data.citta}
             onChange={(e) => onUpdate({ citta: e.target.value })}
             placeholder="es. Milano"
           />
           <Input
-            label="CAP (opzionale)"
+            label="CAP"
             value={data.cap}
             onChange={(e) => onUpdate({ cap: e.target.value.replace(/\D/g, '').slice(0, 5) })}
             placeholder="es. 20100"
@@ -91,16 +118,15 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
         </div>
 
         {error && (
-          <p className="text-error text-sm">{error}</p>
+          <p style={{ color: '#ef4444', fontSize: fontSize.xs }}>{error}</p>
         )}
 
         {/* Bottone */}
-        <div className="flex justify-end pt-4">
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            className="min-w-32"
-          >
+        <div
+          className="flex justify-end"
+          style={{ paddingTop: spacing.sm }}
+        >
+          <Button variant="primary" onClick={handleSubmit}>
             Avanti
           </Button>
         </div>

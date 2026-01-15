@@ -17,29 +17,13 @@ import {
   RiShutDownLine,
   RiWifiLine,
 } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
 // DISPOSITIVI PAGE - ESP-NOW Only
 // Dark Luxury Style con tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bg: '#0a0a09',
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  bgCard: '#1e1c18',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  toggleTrack: 'rgba(50, 45, 38, 1)',
-  toggleTrackBorder: 'rgba(70, 62, 50, 0.8)',
-  success: '#22c55e',
-  error: '#ef4444',
-  warning: '#f59e0b',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -48,6 +32,17 @@ const hexToRgb = (hex: string): string => {
     return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
   }
   return '106, 212, 160';
+};
+
+// Variants per animazioni card (uniformi come Dashboard)
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
+};
+
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } }
 };
 
 // Device Toggle Component - Dark Luxury Style
@@ -62,15 +57,15 @@ const DeviceToggle = ({
   isLoading?: boolean;
   onChange: (value: boolean) => void;
 }) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const isDisabled = disabled || isLoading;
 
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   return (
     <motion.button
@@ -189,17 +184,17 @@ const DeviceToggle = ({
 
 export const Dispositivi = () => {
   const { impiantoCorrente } = useImpiantoContext();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   // Top edge highlight dinamico
   const topHighlight = {
@@ -409,7 +404,9 @@ export const Dispositivi = () => {
             onClick={openAddModal}
             disabled={!impiantoId}
             style={{
-              padding: '12px',
+              width: '44px',
+              height: '44px',
+              padding: 0,
               borderRadius: '16px',
               background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
               border: 'none',
@@ -424,7 +421,7 @@ export const Dispositivi = () => {
             whileTap={{ scale: 0.95 }}
             title="Aggiungi Dispositivo"
           >
-            <RiAddLine size={20} style={{ color: colors.bg }} />
+            <RiAddLine size={20} style={{ color: colors.bg, display: 'block' }} />
           </motion.button>
         </div>
 
@@ -519,22 +516,26 @@ export const Dispositivi = () => {
           </motion.div>
         ) : (
           /* Devices Grid */
-          <div
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={containerVariants}
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
               gap: '16px',
             }}
           >
-            {omniapiNodes.map((node, index) => (
+            {omniapiNodes.map((node) => (
               <motion.div
                 key={node.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                variants={cardVariants}
+                whileTap={{ scale: 0.98 }}
                 style={{
                   background: node.relay1
-                    ? `linear-gradient(165deg, ${colors.accent}08, #1e1c18 50%, #1a1816 100%)`
+                    ? isDarkMode
+                      ? `linear-gradient(165deg, ${colors.accent}15, ${colors.bgCard} 50%, ${colors.bgCard} 100%)`
+                      : `linear-gradient(165deg, ${colors.accent}25, ${colors.bgCard} 60%, ${colors.bgCard} 100%)`
                     : colors.bgCardLit,
                   border: `1px solid ${node.relay1 ? `${colors.accent}40` : colors.border}`,
                   borderRadius: '24px',
@@ -582,7 +583,7 @@ export const Dispositivi = () => {
                       />
                     </motion.div>
 
-                    {/* Name + MAC + Status */}
+                    {/* Name + Status */}
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <h3 style={{
                         fontSize: '15px',
@@ -595,14 +596,6 @@ export const Dispositivi = () => {
                       }}>
                         {node.nome}
                       </h3>
-                      <p style={{
-                        fontSize: '11px',
-                        color: colors.textMuted,
-                        margin: '3px 0 0 0',
-                        fontFamily: 'monospace',
-                      }}>
-                        {node.mac}
-                      </p>
                       {/* Status Badge */}
                       <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
                         <div style={{
@@ -662,7 +655,7 @@ export const Dispositivi = () => {
                 />
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -792,11 +785,10 @@ export const Dispositivi = () => {
                       </p>
                       <p style={{
                         fontSize: '11px',
-                        fontFamily: 'monospace',
                         color: colors.textMuted,
                         margin: '2px 0 0 0',
                       }}>
-                        {node.mac}
+                        v{node.version || 'N/A'} · {node.rssi} dBm
                       </p>
                     </div>
                     {selectedOmniapiNode?.mac === node.mac && (

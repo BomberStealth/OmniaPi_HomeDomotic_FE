@@ -1,6 +1,7 @@
 import { ButtonHTMLAttributes, ReactNode, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { radius } from '@/styles/responsive';
 
 // ============================================
 // BUTTON COMPONENT - Dark Luxury Style
@@ -32,12 +33,12 @@ export const Button = ({
   disabled,
   ...props
 }: ButtonProps) => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
 
   const sizeStyles = {
-    sm: { padding: '8px 16px', fontSize: '13px' },
-    md: { padding: '12px 24px', fontSize: '14px' },
-    lg: { padding: '16px 32px', fontSize: '16px' },
+    sm: { padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px)', fontSize: 'clamp(11px, 2.8vw, 13px)' },
+    md: { padding: 'clamp(10px, 2.5vw, 12px) clamp(18px, 4.5vw, 24px)', fontSize: 'clamp(12px, 3vw, 14px)' },
+    lg: { padding: 'clamp(12px, 3vw, 16px) clamp(24px, 6vw, 32px)', fontSize: 'clamp(14px, 3.5vw, 16px)' },
   };
 
   const getVariantStyles = useMemo(() => (): React.CSSProperties => {
@@ -46,23 +47,23 @@ export const Button = ({
       case 'primary':
         return {
           background: `linear-gradient(165deg, ${themeColors.accentDark}, ${themeColors.accent})`,
-          color: '#0a0a0c',
+          color: isDarkMode ? '#0a0a0c' : '#ffffff',
           border: 'none',
           boxShadow: `0 4px 16px rgba(${accentRgb}, 0.3)`,
         };
       case 'secondary':
         return {
-          background: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
+          background: modeColors.bgCardLit,
           color: themeColors.accentLight,
           border: `1px solid ${themeColors.accent}`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
+          boxShadow: modeColors.cardShadow,
         };
       case 'ghost':
         return {
-          background: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-          color: '#ffffff',
+          background: modeColors.bgCardLit,
+          color: modeColors.textPrimary,
           border: `1px solid rgba(${accentRgb}, 0.15)`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
+          boxShadow: modeColors.cardShadow,
         };
       case 'danger':
         return {
@@ -73,21 +74,21 @@ export const Button = ({
         };
       case 'glass':
         return {
-          background: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-          color: 'rgba(255, 255, 255, 0.75)',
+          background: modeColors.bgCardLit,
+          color: modeColors.textSecondary,
           border: `1px solid rgba(${accentRgb}, 0.15)`,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+          boxShadow: modeColors.cardShadowLit,
           backdropFilter: 'blur(12px)',
         };
       default:
         return {};
     }
-  }, [variant, themeColors]);
+  }, [variant, themeColors, modeColors, isDarkMode]);
 
   const accentRgb = hexToRgb(themeColors.accent);
 
   const baseStyles: React.CSSProperties = {
-    borderRadius: '20px', // radius.lg
+    borderRadius: radius.lg,
     fontWeight: 600,
     fontFamily: 'inherit',
     cursor: disabled ? 'not-allowed' : 'pointer',

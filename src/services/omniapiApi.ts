@@ -84,6 +84,12 @@ export const omniapiApi = {
     return data;
   },
 
+  // Test dispositivo (toggle 3 volte per identificarlo)
+  testDevice: async (mac: string): Promise<{ success: boolean }> => {
+    const { data } = await api.post(`/api/omniapi/nodes/${mac}/test`);
+    return data;
+  },
+
   // ============================================
   // REGISTRAZIONE NODI (Database)
   // ============================================

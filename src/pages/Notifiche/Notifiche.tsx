@@ -4,9 +4,10 @@ import { Layout } from '@/components/layout/Layout';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificheStore } from '@/store/notificheStore';
 import { api } from '@/services/api';
-import { socketService, NotificationEvent } from '@/services/socket';
-import { toast } from 'sonner';
+import { socketService } from '@/services/socket';
+import { toast } from '@/utils/toast';
 import {
   RiNotification3Line,
   RiWifiLine,
@@ -37,20 +38,6 @@ interface Notification {
   created_at: string;
 }
 
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  bgCard: '#1e1c18',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  error: '#ef4444',
-  success: '#22c55e',
-  warning: '#f59e0b',
-  info: '#3b82f6',
-};
-
 // Helper per convertire hex a rgb
 function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -61,9 +48,10 @@ function hexToRgb(hex: string): string {
 }
 
 export const Notifiche = () => {
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
   const { user } = useAuthStore();
+  const { resetUnreadCount, decrementUnreadCount } = useNotificheStore();
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -72,7 +60,7 @@ export const Notifiche = () => {
 
   // Colori dinamici basati sul tema
   const colors = {
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
@@ -122,39 +110,14 @@ export const Notifiche = () => {
     };
   }, [loadNotifications, impiantoCorrente?.id]);
 
-  // Listen for real-time notifications
+  // NON registrare listener qui - è centralizzato nello store
+  // Ricarica lista quando cambia unreadCount (notifica ricevuta via store)
   useEffect(() => {
-    const handleNewNotification = (notification: NotificationEvent) => {
-      // Aggiungi la nuova notifica in cima alla lista
-      const newNotif: Notification = {
-        id: notification.id,
-        impianto_id: notification.impiantoId,
-        user_id: null,
-        user_name: null,
-        type: notification.type as Notification['type'],
-        title: notification.title,
-        body: notification.body,
-        data: notification.data,
-        read_by: null,
-        created_at: notification.created_at
-      };
-
-      setNotifications(prev => [newNotif, ...prev]);
-      setUnreadCount(prev => prev + 1);
-
-      // Mostra toast per nuova notifica
-      toast.info(notification.title, {
-        description: notification.body,
-        duration: 4000
-      });
-    };
-
-    socketService.onNotification(handleNewNotification);
-
-    return () => {
-      socketService.offNotification();
-    };
-  }, []);
+    // Ricarica quando c'è una nuova notifica
+    if (impiantoCorrente?.id) {
+      loadNotifications();
+    }
+  }, [impiantoCorrente?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parse read_by - può arrivare come stringa JSON o array già parsato
   const parseReadBy = (readByField: string | number[] | null): number[] => {
@@ -192,6 +155,7 @@ export const Notifiche = () => {
         return n;
       }));
       setUnreadCount(prev => Math.max(0, prev - 1));
+      decrementUnreadCount(); // Aggiorna store globale
     } catch (error) {
       console.error('Error marking as read:', error);
     }
@@ -213,6 +177,7 @@ export const Notifiche = () => {
         return n;
       }));
       setUnreadCount(0);
+      resetUnreadCount(); // Aggiorna store globale - IMPORTANTE!
       toast.success('Tutte le notifiche segnate come lette');
     } catch (error) {
       console.error('Error marking all as read:', error);

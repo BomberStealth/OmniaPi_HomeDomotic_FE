@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
+import { toast } from '@/utils/toast';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
 import { omniapiApi, OmniapiNode } from '@/services/omniapiApi';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { spacing, fontSize, radius } from '@/styles/responsive';
 import {
   RiDeviceLine,
   RiLoader4Line,
   RiRefreshLine,
-  RiAddLine,
   RiCheckLine,
   RiSignalWifiLine,
+  RiFlashlightLine,
 } from 'react-icons/ri';
+import { Plus } from 'lucide-react';
 
 // ============================================
 // STEP 4: AGGIUNGI DISPOSITIVI (solo salvataggio locale)
@@ -43,6 +47,8 @@ export const StepDispositivi = ({
   const [loading, setLoading] = useState(true);
   const [availableNodes, setAvailableNodes] = useState<OmniapiNode[]>([]);
   const [error, setError] = useState('');
+  const [testingMac, setTestingMac] = useState<string | null>(null);
+  const { modeColors, isDarkMode, colors } = useThemeColor();
 
   // Form per aggiungere nodo
   const [selectedNode, setSelectedNode] = useState<OmniapiNode | null>(null);
@@ -80,6 +86,22 @@ export const StepDispositivi = ({
       console.error('Errore caricamento:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // TEST dispositivo - fa toggle 3 volte
+  const handleTest = async (node: OmniapiNode, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (testingMac) return;
+
+    setTestingMac(node.mac);
+    try {
+      await omniapiApi.testDevice(node.mac);
+      toast.success('Test inviato!');
+    } catch (err) {
+      toast.error('Errore test');
+    } finally {
+      setTimeout(() => setTestingMac(null), 3000);
     }
   };
 
@@ -128,28 +150,45 @@ export const StepDispositivi = ({
 
   if (loading) {
     return (
-      <Card variant="glass" className="p-6">
+      <Card variant="glass" style={{ padding: spacing.lg }}>
         <div className="flex flex-col items-center justify-center py-12">
           <RiLoader4Line size={48} className="text-primary animate-spin mb-4" />
-          <p className="text-copy-lighter">Ricerca dispositivi in corso...</p>
+          <p style={{ color: modeColors.textSecondary, fontSize: fontSize.sm }}>
+            Ricerca dispositivi in corso...
+          </p>
         </div>
       </Card>
     );
   }
 
   return (
-    <Card variant="glass" className="p-6">
+    <Card variant="glass" style={{ padding: spacing.md }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-warning/20">
-            <RiDeviceLine size={28} className="text-warning" />
+      <div
+        className="flex items-center justify-between"
+        style={{ marginBottom: spacing.md }}
+      >
+        <div className="flex items-center" style={{ gap: spacing.sm }}>
+          <div
+            style={{
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              background: 'rgba(234, 179, 8, 0.2)',
+            }}
+          >
+            <RiDeviceLine size={24} className="text-warning" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-copy">
+            <h2
+              style={{
+                fontSize: fontSize.lg,
+                fontWeight: 'bold',
+                color: modeColors.textPrimary,
+              }}
+            >
               Aggiungi Dispositivi
             </h2>
-            <p className="text-copy-lighter text-sm">
+            <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
               {availableNodes.length > 0
                 ? `${availableNodes.length} nod${availableNodes.length === 1 ? 'o' : 'i'} disponibil${availableNodes.length === 1 ? 'e' : 'i'}`
                 : 'Nessun nodo rilevato'}
@@ -161,23 +200,51 @@ export const StepDispositivi = ({
         </Button>
       </div>
 
-      {/* Lista dispositivi gia aggiunti */}
+      {/* Lista dispositivi già aggiunti - compatta */}
       {dispositivi.length > 0 && (
-        <div className="mb-6">
-          <p className="text-copy-lighter text-sm mb-2">Dispositivi aggiunti:</p>
-          <div className="space-y-2">
+        <div style={{ marginBottom: spacing.md }}>
+          <p
+            style={{
+              fontSize: fontSize.xs,
+              color: modeColors.textSecondary,
+              marginBottom: spacing.xs,
+            }}
+          >
+            Dispositivi aggiunti ({dispositivi.length}):
+          </p>
+          <div>
             {dispositivi.map((d) => (
               <div
                 key={d.mac}
-                className="flex items-center gap-3 p-3 rounded-xl bg-success/10 border border-success/20"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: spacing.sm,
+                  borderRadius: radius.md,
+                  background: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)',
+                  marginBottom: spacing.xs,
+                  gap: spacing.sm,
+                }}
               >
-                <RiCheckLine size={20} className="text-success" />
-                <div>
-                  <p className="text-copy font-medium">{d.nome}</p>
-                  <p className="text-copy-lighter text-xs">
-                    {d.stanza_nome || 'Senza stanza'}
-                  </p>
-                </div>
+                <RiCheckLine size={16} className="text-success flex-shrink-0" />
+                <span
+                  style={{
+                    flex: 1,
+                    fontSize: fontSize.sm,
+                    color: modeColors.textPrimary,
+                  }}
+                >
+                  {d.nome}
+                </span>
+                <span
+                  style={{
+                    fontSize: fontSize.xs,
+                    color: modeColors.textMuted,
+                  }}
+                >
+                  {d.stanza_nome || '-'}
+                </span>
               </div>
             ))}
           </div>
@@ -186,22 +253,37 @@ export const StepDispositivi = ({
 
       {/* Form aggiunta nodo */}
       {selectedNode ? (
-        <Card variant="glass-dark" className="p-4 mb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-primary/20">
-              <RiDeviceLine size={20} className="text-primary" />
+        <Card variant="glass-dark" style={{ padding: spacing.md, marginBottom: spacing.sm }}>
+          <div
+            className="flex items-center"
+            style={{ gap: spacing.sm, marginBottom: spacing.md }}
+          >
+            <div
+              style={{
+                padding: spacing.xs,
+                borderRadius: radius.sm,
+                background: `${colors.accent}20`,
+              }}
+            >
+              <RiDeviceLine size={18} style={{ color: colors.accent }} />
             </div>
             <div>
-              <p className="text-copy font-medium">
+              <p
+                style={{
+                  fontWeight: 500,
+                  fontSize: fontSize.sm,
+                  color: modeColors.textPrimary,
+                }}
+              >
                 Configura: {selectedNode.mac.slice(-8)}
               </p>
-              <p className="text-copy-lighter text-xs">
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
                 RSSI: {selectedNode.rssi} dBm
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
             <Input
               label="Nome Dispositivo"
               value={nodeName}
@@ -211,7 +293,14 @@ export const StepDispositivi = ({
 
             {/* Nome stanza */}
             <div>
-              <label className="block text-sm text-copy-lighter mb-2">
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: fontSize.xs,
+                  color: modeColors.textSecondary,
+                  marginBottom: spacing.xs,
+                }}
+              >
                 Stanza (opzionale)
               </label>
               <input
@@ -220,101 +309,164 @@ export const StepDispositivi = ({
                 value={stanzaName}
                 onChange={(e) => setStanzaName(e.target.value)}
                 placeholder="es. Soggiorno"
-                className="w-full p-3 rounded-xl bg-foreground border border-border text-copy placeholder:text-copy-lighter"
+                style={{
+                  width: '100%',
+                  height: 'clamp(38px, 9vw, 44px)',  // Altezza RIDOTTA
+                  padding: '0 clamp(10px, 2.5vw, 14px)',  // Padding ridotto
+                  borderRadius: radius.sm,
+                  background: isDarkMode ? modeColors.bgSecondary : '#f0f0f0',
+                  border: `1px solid ${modeColors.border}`,
+                  color: modeColors.textPrimary,
+                  fontSize: 'clamp(13px, 3.2vw, 15px)',  // Font ridotto
+                }}
               />
               <datalist id="stanze-list">
                 {stanzeGiaInserite.map((nome) => (
                   <option key={nome} value={nome} />
                 ))}
               </datalist>
-              {stanzeGiaInserite.length > 0 && (
-                <p className="text-copy-lighter text-xs mt-1">
-                  Suggerimenti: {stanzeGiaInserite.join(', ')}
-                </p>
-              )}
             </div>
 
-            {error && <p className="text-error text-sm">{error}</p>}
+            {error && (
+              <p style={{ color: '#ef4444', fontSize: fontSize.xs }}>{error}</p>
+            )}
 
-            <div className="flex flex-wrap gap-3">
-              <Button variant="glass" onClick={handleCancelSelection} className="flex-shrink-0">
+            <div className="flex flex-wrap" style={{ gap: spacing.sm }}>
+              <Button variant="glass" onClick={handleCancelSelection}>
                 Annulla
               </Button>
-              <Button
-                variant="primary"
+              <button
                 onClick={handleAddNode}
-                className="flex-1 min-w-[120px] flex-shrink-0"
+                style={{
+                  flex: 1,
+                  height: 'clamp(38px, 9vw, 44px)',  // Altezza RIDOTTA (stessa del form)
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: spacing.xs,
+                  padding: '0 clamp(10px, 2.5vw, 14px)',
+                  borderRadius: radius.sm,
+                  background: colors.accent,
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: 'clamp(13px, 3.2vw, 15px)',  // Font ridotto
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
               >
-                <RiAddLine size={18} className="mr-2 flex-shrink-0" />
+                <span style={{ lineHeight: 1 }}>+</span>
                 <span>Aggiungi</span>
-              </Button>
+              </button>
             </div>
           </div>
         </Card>
       ) : (
-        /* Lista nodi disponibili */
-        <div className="space-y-3 mb-4">
+        /* Lista nodi disponibili - CARD COMPATTE */
+        <div style={{ marginBottom: spacing.sm }}>
           {availableNodes.length === 0 ? (
-            <div className="text-center py-8">
-              <RiSignalWifiLine size={48} className="text-copy-lighter mx-auto mb-4" />
-              <p className="text-copy-lighter">
+            <div className="text-center" style={{ padding: `${spacing.lg} 0` }}>
+              <RiSignalWifiLine
+                size={40}
+                className="mx-auto"
+                style={{ color: modeColors.textMuted, marginBottom: spacing.sm }}
+              />
+              <p style={{ color: modeColors.textSecondary, fontSize: fontSize.sm }}>
                 Nessun nuovo dispositivo rilevato
               </p>
-              <p className="text-copy-lighter text-sm">
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textMuted }}>
                 Accendi i nodi OmniaPi e attendi qualche secondo
               </p>
             </div>
           ) : (
             availableNodes.map((node) => (
-              <Card
+              <div
                 key={node.mac}
-                variant="glass"
-                hover
-                className="p-4 cursor-pointer"
-                onClick={() => handleSelectNode(node)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 'clamp(6px, 1.5vw, 10px)',  // Padding RIDOTTO
+                  borderRadius: radius.sm,  // Radius più piccolo
+                  background: modeColors.bgCard,
+                  marginBottom: spacing.xs,
+                  border: `1px solid ${modeColors.border}`,
+                }}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className={`p-2 rounded-lg flex-shrink-0 ${
-                        node.online ? 'bg-success/20' : 'bg-copy-lighter/20'
-                      }`}
-                    >
-                      <RiDeviceLine
-                        size={20}
-                        className={node.online ? 'text-success' : 'text-copy-lighter'}
-                      />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-copy font-medium truncate">
-                        Nodo {node.mac.slice(-5)}
-                      </p>
-                      <p className="text-copy-lighter text-xs truncate">
-                        MAC: {node.mac} | RSSI: {node.rssi} dBm
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="flex-shrink-0">
-                    <RiAddLine size={18} />
-                  </Button>
-                </div>
-              </Card>
+                {/* Nome dispositivo - font ridotto */}
+                <span
+                  style={{
+                    fontSize: 'clamp(12px, 3vw, 14px)',  // Font PIÙ PICCOLO
+                    flex: 1,
+                    color: modeColors.textPrimary,
+                    fontWeight: 500,
+                  }}
+                >
+                  Nodo {node.mac.slice(-5)}
+                </span>
+
+                {/* Tasto TEST - più compatto */}
+                <button
+                  onClick={(e) => handleTest(node, e)}
+                  disabled={testingMac === node.mac}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '3px',
+                    height: 'clamp(28px, 7vw, 34px)',  // Altezza RIDOTTA
+                    padding: '0 clamp(6px, 1.5vw, 10px)',  // Padding ridotto
+                    marginRight: spacing.xs,
+                    borderRadius: radius.sm,
+                    background: testingMac === node.mac ? colors.accent : 'transparent',
+                    border: `1px solid ${colors.accent}`,
+                    fontSize: 'clamp(10px, 2.5vw, 12px)',  // Font più piccolo
+                    fontWeight: 500,
+                    color: testingMac === node.mac ? '#fff' : colors.accent,
+                    cursor: testingMac === node.mac ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <RiFlashlightLine size={12} />
+                  TEST
+                </button>
+
+                {/* Tasto + quadrato - più compatto */}
+                <button
+                  onClick={() => handleSelectNode(node)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 'clamp(28px, 7vw, 34px)',  // Larghezza RIDOTTA
+                    height: 'clamp(28px, 7vw, 34px)',  // Altezza RIDOTTA
+                    padding: 0,
+                    borderRadius: radius.sm,
+                    background: colors.accent,
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Plus size={16} color="#fff" strokeWidth={2.5} />
+                </button>
+              </div>
             ))
           )}
         </div>
       )}
 
       {/* Bottoni navigazione */}
-      <div className="flex flex-wrap justify-between gap-3 pt-4">
-        <Button variant="glass" onClick={onBack} className="flex-shrink-0">
+      <div
+        className="flex flex-wrap justify-between"
+        style={{ gap: spacing.sm, paddingTop: spacing.sm }}
+      >
+        <Button variant="glass" onClick={onBack}>
           Indietro
         </Button>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="glass" onClick={onSkip} className="flex-shrink-0">
+        <div className="flex flex-wrap" style={{ gap: spacing.sm }}>
+          <Button variant="glass" onClick={onSkip}>
             Salta
           </Button>
           {dispositivi.length > 0 && (
-            <Button variant="primary" onClick={onNext} className="flex-shrink-0">
+            <Button variant="primary" onClick={onNext}>
               Avanti
             </Button>
           )}

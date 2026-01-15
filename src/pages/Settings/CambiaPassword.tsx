@@ -6,7 +6,7 @@ import { Button } from '@/components/common/Button';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { RiArrowLeftLine, RiLockLine, RiEyeLine, RiEyeOffLine, RiShieldCheckLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import { api } from '@/services/api';
 
 // ============================================
@@ -298,9 +298,6 @@ export const CambiaPassword = () => {
             </Button>
           </div>
         </motion.div>
-
-        {/* Footer Spacing */}
-        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

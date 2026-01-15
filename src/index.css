@@ -368,3 +368,11 @@ body {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ============================================ */
+/* TOAST ERROR DURATION */
+/* ============================================ */
+
+[data-sonner-toast][data-type="error"] {
+  --toast-duration: 2000ms !important;
+}

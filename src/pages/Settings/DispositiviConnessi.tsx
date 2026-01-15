@@ -249,9 +249,6 @@ export const DispositiviConnessi = () => {
             Se noti attivita sospette, cambia subito la password.
           </p>
         </motion.div>
-
-        {/* Footer Spacing */}
-        <div style={{ height: '80px' }} />
       </div>
     </Layout>
   );

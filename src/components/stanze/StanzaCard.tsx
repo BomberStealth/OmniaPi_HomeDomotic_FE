@@ -1,6 +1,8 @@
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { RiDeleteBinLine } from 'react-icons/ri';
+import { getRoomIcon } from '@/config/roomIcons';
+import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
 // STANZA CARD - Singola stanza
@@ -12,11 +14,14 @@ interface StanzaCardProps {
 }
 
 export const StanzaCard = ({ stanza, onDelete }: StanzaCardProps) => {
+  const { colors } = useThemeColor();
+  const Icon = getRoomIcon(stanza.icona);
+
   return (
     <Card variant="glass" hover className="p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{stanza.icona}</span>
+          <Icon size={28} style={{ color: colors.accent }} />
           <div>
             <h3 className="font-bold dark:text-copy light:text-copy-light">
               {stanza.nome}

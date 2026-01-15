@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,20 +16,13 @@ import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
 import { APP_VERSION, APP_NAME } from '@/config/version';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
+import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useNotificheStore } from '@/store/notificheStore';
 
 // ============================================
 // SIDEBAR NAVIGATION - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.75)',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -44,17 +37,28 @@ export const Sidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuthStore();
-  const { colors: themeColors, colorTheme } = useThemeColor();
+  const { colors: themeColors, colorTheme, modeColors, isDarkMode } = useThemeColor();
   const { canInstall, promptInstall } = usePWAInstall();
+  const { impiantoCorrente } = useImpiantoContext();
+  const { unreadCount, fetchUnreadCount, initWebSocketListener } = useNotificheStore();
+
+  // Fetch iniziale + init listener centralizzato
+  useEffect(() => {
+    if (impiantoCorrente?.id) {
+      fetchUnreadCount(impiantoCorrente.id);
+    }
+    // Listener centralizzato nello store (chiamato una sola volta)
+    initWebSocketListener();
+  }, [impiantoCorrente?.id, fetchUnreadCount, initWebSocketListener]);
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   const menuItems = [
     { path: '/dashboard', icon: RiHome4Line, label: t('nav.dashboard') },
@@ -165,6 +169,7 @@ export const Sidebar = () => {
       <nav className="flex-1 space-y-2">
         {menuItems.map((item) => {
           const active = isActive(item.path);
+          const isNotifiche = item.path === '/notifications';
           return (
             <Link key={item.path} to={item.path}>
               <div
@@ -174,7 +179,7 @@ export const Sidebar = () => {
                   background: active
                     ? `linear-gradient(165deg, ${colors.accentDark}, ${colors.accent})`
                     : 'transparent',
-                  color: active ? '#0a0a0c' : colors.textSecondary,
+                  color: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.textSecondary,
                   boxShadow: active ? `0 4px 16px ${colors.accent}30` : 'none',
                   fontWeight: active ? 600 : 500,
                 }}
@@ -186,7 +191,27 @@ export const Sidebar = () => {
                     filter: active ? 'none' : 'none',
                   }}
                 />
-                <span style={{ fontSize: '14px' }}>{item.label}</span>
+                <span style={{ fontSize: '14px', flex: 1 }}>{item.label}</span>
+                {/* Badge notifiche non lette */}
+                {isNotifiche && unreadCount > 0 && (
+                  <span
+                    style={{
+                      minWidth: '20px',
+                      height: '20px',
+                      padding: '0 6px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: active ? colors.accent : '#fff',
+                      backgroundColor: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.accent,
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </div>
             </Link>
           );

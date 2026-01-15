@@ -7,7 +7,7 @@ import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { impiantiApi } from '@/services/api';
 import { RiArrowLeftLine, RiBuilding2Line, RiMapPinLine, RiHome4Line, RiHashtag, RiSunLine, RiFlashlightLine } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 
 // ============================================
 // NUOVO IMPIANTO PAGE - Creazione Impianto

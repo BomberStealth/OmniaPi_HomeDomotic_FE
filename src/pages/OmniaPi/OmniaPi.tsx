@@ -15,7 +15,7 @@ import {
   RiSignalWifiErrorLine,
   RiAddLine,
 } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 
 // ============================================
 // OMNIAPI PAGE - ESP-NOW Gateway & Nodes

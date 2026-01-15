@@ -18,22 +18,13 @@ import {
   RiSunFoggyLine, RiMoonClearLine, RiHome4Line, RiFireLine, RiSnowflakeLine,
   RiCupLine, RiHotelBedLine, RiTvLine, RiMusic2Line, RiShieldLine, RiHeartLine
 } from 'react-icons/ri';
-import { toast } from 'sonner';
+import { toast } from '@/utils/toast';
 import type { ScheduleConfig } from '@/types';
 
 // ============================================
 // SCENE PAGE - Dark Luxury Style
 // Con supporto tema dinamico
 // ============================================
-
-// Colori base (invarianti)
-const baseColors = {
-  bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
-  textPrimary: '#ffffff',
-  textMuted: 'rgba(255, 255, 255, 0.5)',
-  cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
-  success: '#10b981',
-};
 
 // Helper per convertire hex a rgb
 const hexToRgb = (hex: string): string => {
@@ -106,7 +97,7 @@ export const SceneIcon = ({ iconId, size = 24, style }: { iconId: string; size?:
 
 export const Scene = () => {
   const { impiantoCorrente } = useImpiantoContext();
-  const { colors: themeColors } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
 
   // Store data (real-time via useRealTimeSync nel Layout)
   const { scene, loading: sceneLoading } = useSceneStore();
@@ -131,13 +122,13 @@ export const Scene = () => {
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
-    ...baseColors,
+    ...modeColors,
     accent: themeColors.accent,
     accentLight: themeColors.accentLight,
     accentDark: themeColors.accentDark,
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors]);
+  }), [themeColors, modeColors]);
 
   // Ordine scene predefinito: Entra, Esci, Giorno, Notte, poi custom
   const ordineScenePredefinite = ['Entra', 'Esci', 'Giorno', 'Notte'];
@@ -394,17 +385,22 @@ export const Scene = () => {
           <motion.button
             onClick={() => setModalOpen(true)}
             style={{
-              padding: '10px',
+              width: '44px',
+              height: '44px',
+              padding: 0,
               borderRadius: '16px',
-              background: `linear-gradient(165deg, ${colors.accent}, #4aa870)`,
+              background: `linear-gradient(135deg, ${themeColors.accent}, ${themeColors.accentDark})`,
               border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: `0 4px 16px ${colors.accent}40`,
+              boxShadow: `0 4px 20px ${themeColors.accent}50`,
             }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, boxShadow: `0 6px 24px ${themeColors.accent}60` }}
             whileTap={{ scale: 0.95 }}
           >
-            <RiAddLine size={20} style={{ color: '#0a0a0c' }} />
+            <RiAddLine size={20} style={{ color: modeColors.bg, display: 'block' }} />
           </motion.button>
         </div>
 
