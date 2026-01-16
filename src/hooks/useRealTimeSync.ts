@@ -20,7 +20,7 @@ export const useRealTimeSync = (impiantoId: number | null) => {
   const { addStanza, updateStanza, removeStanza, setStanze, fetchStanze } = useStanzeStore();
   const { addScena, updateScena, removeScena, setScene, fetchScene, markExecuted } = useSceneStore();
   const { addDispositivo, updateDispositivo, removeDispositivo, setDispositivi, updatePowerState, fetchDispositivi } = useDispositiviStore();
-  const { updateNode, updateNodes } = useOmniapiStore();
+  const { updateNode, updateNodes, updateLedDevice } = useOmniapiStore();
 
   useEffect(() => {
     // Se non c'è impianto o token, non fare nulla
@@ -141,6 +141,13 @@ export const useRealTimeSync = (impiantoId: number | null) => {
       });
     });
 
+    // OmniaPi LED Strip
+    socketService.onOmniapiLedUpdate((ledDevice) => {
+      console.log('🌈 [DEBUG] Real-time LED update received:', JSON.stringify(ledDevice));
+      console.log(`   → MAC=${ledDevice.mac}, power=${ledDevice.power}, RGB=(${ledDevice.r},${ledDevice.g},${ledDevice.b}), brightness=${ledDevice.brightness}`);
+      updateLedDevice(ledDevice);
+    });
+
     // Full Sync (dopo riconnessione)
     socketService.onFullSync(({ stanze, scene, dispositivi }) => {
       console.log('🔄 Full sync received');
@@ -158,6 +165,7 @@ export const useRealTimeSync = (impiantoId: number | null) => {
       socketService.offDispositivoUpdate();
       socketService.offOmniapiNodeUpdate();
       socketService.offOmniapiNodesUpdate();
+      socketService.offOmniapiLedUpdate();
       socketService.offFullSync();
     };
   }, [impiantoId, token]);

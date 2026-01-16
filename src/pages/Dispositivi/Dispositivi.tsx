@@ -1,28 +1,24 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Button } from '@/components/common/Button';
-import { Input } from '@/components/common/Input';
-import { Modal } from '@/components/common/Modal';
 import { SkeletonList } from '@/components/common/Skeleton';
+import { UnifiedDeviceCard } from '@/components/devices';
+import { AddDeviceModal } from '@/components/dispositivi';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
-import { omniapiApi, RegisteredNode, OmniapiNode } from '@/services/omniapiApi';
-import { useOmniapiStore } from '@/store/omniapiStore';
-import { socketService } from '@/services/socket';
+import { useDispositiviStore, Dispositivo } from '@/store/dispositiviStore';
+import { omniapiApi } from '@/services/omniapiApi';
+import { tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import {
   RiLightbulbLine,
   RiAddLine,
-  RiDeleteBinLine,
-  RiLoader4Line,
-  RiShutDownLine,
-  RiWifiLine,
+  RiRefreshLine,
 } from 'react-icons/ri';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
-// DISPOSITIVI PAGE - ESP-NOW Only
-// Dark Luxury Style con tema dinamico
+// DISPOSITIVI PAGE - Same system as Dashboard
+// Uses useDispositiviStore (unified with Dashboard)
 // ============================================
 
 // Helper per convertire hex a rgb
@@ -34,7 +30,7 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
-// Variants per animazioni card (uniformi come Dashboard)
+// Variants per animazioni card
 const cardVariants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
@@ -42,149 +38,19 @@ const cardVariants = {
 
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
-
-// Device Toggle Component - Dark Luxury Style
-const DeviceToggle = ({
-  isOn,
-  disabled,
-  isLoading,
-  onChange,
-}: {
-  isOn: boolean;
-  disabled?: boolean;
-  isLoading?: boolean;
-  onChange: (value: boolean) => void;
-}) => {
-  const { colors: themeColors, modeColors } = useThemeColor();
-  const isDisabled = disabled || isLoading;
-
-  const colors = useMemo(() => ({
-    ...modeColors,
-    accent: themeColors.accent,
-    accentLight: themeColors.accentLight,
-    accentDark: themeColors.accentDark,
-  }), [themeColors, modeColors]);
-
-  return (
-    <motion.button
-      onClick={() => !isDisabled && onChange(!isOn)}
-      disabled={isDisabled}
-      style={{
-        width: '100%',
-        padding: '12px 16px',
-        borderRadius: '16px',
-        background: isOn
-          ? `linear-gradient(135deg, ${colors.accent}15, ${colors.accentDark}10)`
-          : colors.toggleTrack,
-        border: `1px solid ${isOn ? `${colors.accent}50` : colors.toggleTrackBorder}`,
-        cursor: isDisabled ? 'not-allowed' : 'pointer',
-        opacity: isDisabled ? 0.6 : 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        boxShadow: isOn ? `0 0 16px ${colors.accent}20` : 'none',
-        transition: 'all 0.3s ease',
-      }}
-      whileHover={!isDisabled ? { scale: 1.02, borderColor: colors.accent } : undefined}
-      whileTap={!isDisabled ? { scale: 0.98 } : undefined}
-    >
-      {/* Stato testuale */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        {isLoading ? (
-          <RiLoader4Line size={18} className="animate-spin" style={{ color: colors.accent }} />
-        ) : (
-          <RiShutDownLine
-            size={18}
-            style={{
-              color: isOn ? colors.accent : colors.textMuted,
-              filter: isOn ? `drop-shadow(0 0 6px ${colors.accent})` : 'none',
-            }}
-          />
-        )}
-        <span
-          style={{
-            fontSize: '13px',
-            fontWeight: 600,
-            color: isOn ? colors.accent : colors.textMuted,
-          }}
-        >
-          {isLoading ? 'Invio...' : isOn ? 'Acceso' : 'Spento'}
-        </span>
-      </div>
-
-      {/* Toggle Switch */}
-      <div
-        style={{
-          width: '44px',
-          height: '24px',
-          padding: '3px',
-          borderRadius: '9999px',
-          background: isOn
-            ? `linear-gradient(90deg, ${colors.accentDark}, ${colors.accentLight})`
-            : colors.toggleTrack,
-          boxShadow: isOn
-            ? `0 0 12px ${colors.accent}50, inset 0 1px 2px rgba(0,0,0,0.1)`
-            : `inset 0 2px 4px rgba(0,0,0,0.3), inset 0 0 0 1px ${colors.toggleTrackBorder}`,
-          transition: 'all 0.3s ease',
-          position: 'relative',
-          flexShrink: 0,
-        }}
-      >
-        {/* Track marks for OFF state */}
-        {!isOn && (
-          <>
-            <div
-              style={{
-                position: 'absolute',
-                right: '8px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '4px',
-                height: '4px',
-                borderRadius: '50%',
-                background: colors.textMuted,
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                right: '16px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '2px',
-                height: '2px',
-                borderRadius: '50%',
-                background: `${colors.textMuted}60`,
-              }}
-            />
-          </>
-        )}
-        {/* Knob */}
-        <motion.div
-          style={{
-            width: '18px',
-            height: '18px',
-            borderRadius: '50%',
-            background: isOn
-              ? 'linear-gradient(145deg, #ffffff, #f0f0f0)'
-              : 'linear-gradient(145deg, #e0e0e0, #c8c8c8)',
-            boxShadow: isOn
-              ? '0 2px 4px rgba(0,0,0,0.2), 0 0 8px rgba(255,255,255,0.3)'
-              : '0 1px 3px rgba(0,0,0,0.3)',
-          }}
-          animate={{ x: isOn ? 20 : 0 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-        />
-      </div>
-    </motion.button>
-  );
+  show: { transition: { staggerChildren: 0.08 } }
 };
 
 export const Dispositivi = () => {
   const { impiantoCorrente } = useImpiantoContext();
-  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
+
+  // Use the SAME store as Dashboard
+  const { dispositivi, loading, updatePowerState, updateLedState, fetchDispositivi } = useDispositiviStore();
+
+  const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -207,174 +73,86 @@ export const Dispositivi = () => {
     pointerEvents: 'none' as const,
   };
 
-  const [loading, setLoading] = useState(false);
+  // Toggle device (same logic as Dashboard)
+  const toggleDevice = async (dispositivo: Dispositivo) => {
+    if (togglingDevice === dispositivo.id) return;
+    setTogglingDevice(dispositivo.id);
 
-  // ESP-NOW state
-  const [omniapiNodes, setOmniapiNodes] = useState<RegisteredNode[]>([]);
-  const [availableOmniapiNodes, setAvailableOmniapiNodes] = useState<OmniapiNode[]>([]);
-  const [omniapiModalOpen, setOmniapiModalOpen] = useState(false);
-  const [selectedOmniapiNode, setSelectedOmniapiNode] = useState<OmniapiNode | null>(null);
-  const [omniapiNodeName, setOmniapiNodeName] = useState('');
-  const [togglingRelay, setTogglingRelay] = useState<string | null>(null);
-
-  const { gateway, sendCommand, fetchGateway } = useOmniapiStore();
-
-  const impiantoId = impiantoCorrente?.id || 0;
-
-  useEffect(() => {
-    if (impiantoId) {
-      loadNodes();
-    }
-    // Fetch gateway status on mount
-    fetchGateway();
-  }, [impiantoId]);
-
-  // WebSocket listener per aggiornamenti real-time dei nodi
-  useEffect(() => {
-    // Listener per singolo nodo update
-    const handleNodeUpdate = (updatedNode: OmniapiNode) => {
-      setOmniapiNodes(prev => prev.map(node =>
-        node.mac === updatedNode.mac
-          ? { ...node, ...updatedNode }
-          : node
-      ));
-    };
-
-    // Listener per lista nodi update
-    const handleNodesUpdate = (nodes: OmniapiNode[]) => {
-      setOmniapiNodes(prev => prev.map(node => {
-        const liveNode = nodes.find(n => n.mac === node.mac);
-        return liveNode ? { ...node, ...liveNode } : node;
-      }));
-    };
-
-    socketService.onOmniapiNodeUpdate(handleNodeUpdate);
-    socketService.onOmniapiNodesUpdate(handleNodesUpdate);
-
-    return () => {
-      socketService.offOmniapiNodeUpdate();
-      socketService.offOmniapiNodesUpdate();
-    };
-  }, []);
-
-  const loadNodes = async () => {
-    if (!impiantoId) return;
     try {
-      setLoading(true);
-      const res = await omniapiApi.getRegisteredNodes(impiantoId);
-      setOmniapiNodes(res.nodes || []);
-    } catch (error) {
-      console.error('Errore caricamento nodi:', error);
-      setOmniapiNodes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const newState = !dispositivo.power_state;
 
-  const loadAvailableNodes = async () => {
-    if (!impiantoId) return;
-    try {
-      // Triggera discovery per richiedere i nodi al Gateway
-      await omniapiApi.discover();
-
-      // Attendi che i nodi rispondano via MQTT (1.5 secondi)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Carica nodi disponibili
-      const res = await omniapiApi.getAvailableNodes(impiantoId);
-      setAvailableOmniapiNodes(res.nodes || []);
-    } catch (error) {
-      console.error('Errore caricamento nodi disponibili:', error);
-      setAvailableOmniapiNodes([]);
-    }
-  };
-
-  const handleAddNode = async () => {
-    if (!selectedOmniapiNode || !omniapiNodeName.trim()) {
-      toast.error('Seleziona un nodo e inserisci un nome');
-      return;
-    }
-    try {
-      await omniapiApi.registerNode(impiantoId, selectedOmniapiNode.mac, omniapiNodeName.trim());
-      toast.success('Dispositivo aggiunto!');
-      setOmniapiModalOpen(false);
-      setSelectedOmniapiNode(null);
-      setOmniapiNodeName('');
-      loadNodes();
+      // LED Strip
+      if (dispositivo.device_type === 'omniapi_led') {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address!, newState ? 'on' : 'off');
+        updateLedState(dispositivo.id, { led_power: newState });
+        updatePowerState(dispositivo.id, newState);
+      }
+      // OmniaPi relay nodes
+      else if (dispositivo.device_type === 'omniapi_node') {
+        await omniapiApi.controlNode(dispositivo.id, 1, newState ? 'on' : 'off');
+        updatePowerState(dispositivo.id, newState);
+      }
+      // Tasmota devices
+      else {
+        await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
+        updatePowerState(dispositivo.id, newState);
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Errore aggiunta dispositivo');
-    }
-  };
-
-  const handleDeleteNode = async (nodeId: number, nodeName: string) => {
-    if (!confirm(`Rimuovere "${nodeName}"?`)) return;
-    try {
-      await omniapiApi.unregisterNode(nodeId);
-      toast.success('Dispositivo rimosso');
-      loadNodes();
-    } catch (error) {
-      toast.error('Errore rimozione dispositivo');
-    }
-  };
-
-  const handleToggle = async (mac: string, channel: 1 | 2) => {
-    const key = `${mac}-${channel}`;
-    if (togglingRelay === key) return;
-    setTogglingRelay(key);
-
-    // Optimistic update locale
-    setOmniapiNodes(prev => prev.map(node => {
-      if (node.mac === mac) {
-        return {
-          ...node,
-          relay1: channel === 1 ? !node.relay1 : node.relay1,
-          relay2: channel === 2 ? !node.relay2 : node.relay2,
-        };
+      console.error('Errore toggle dispositivo:', error);
+      if (error.response?.data?.blocked) {
+        toast.error('Bloccato');
+      } else {
+        toast.error('Errore');
       }
-      return node;
-    }));
-
-    try {
-      const success = await sendCommand(mac, channel, 'toggle');
-      if (!success) {
-        // Rollback in caso di errore
-        setOmniapiNodes(prev => prev.map(node => {
-          if (node.mac === mac) {
-            return {
-              ...node,
-              relay1: channel === 1 ? !node.relay1 : node.relay1,
-              relay2: channel === 2 ? !node.relay2 : node.relay2,
-            };
-          }
-          return node;
-        }));
-        toast.error('Errore invio comando');
-      }
-    } catch {
-      // Rollback in caso di eccezione
-      setOmniapiNodes(prev => prev.map(node => {
-        if (node.mac === mac) {
-          return {
-            ...node,
-            relay1: channel === 1 ? !node.relay1 : node.relay1,
-            relay2: channel === 2 ? !node.relay2 : node.relay2,
-          };
-        }
-        return node;
-      }));
-      toast.error('Errore invio comando');
     } finally {
-      setTogglingRelay(null);
+      setTogglingDevice(null);
     }
   };
 
-  const openAddModal = async () => {
-    setOmniapiModalOpen(true);
-    await Promise.all([
-      fetchGateway(),
-      loadAvailableNodes()
-    ]);
+  // Handle LED brightness/color change
+  const handleLedChange = async (dispositivo: Dispositivo, color: { r: number; g: number; b: number }, brightness: number) => {
+    if (!dispositivo.mac_address) return;
+
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        brightness
+      });
+      updateLedState(dispositivo.id, {
+        led_r: color.r,
+        led_g: color.g,
+        led_b: color.b,
+        led_brightness: brightness
+      });
+    } catch (error) {
+      console.error('Errore controllo LED:', error);
+      toast.error('Errore LED');
+    }
   };
+
+  // Refresh devices
+  const handleRefresh = async () => {
+    if (!impiantoCorrente?.id) return;
+    setRefreshing(true);
+    try {
+      await fetchDispositivi(impiantoCorrente.id);
+      toast.success('Aggiornato');
+    } catch {
+      toast.error('Errore');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Filter valid devices
+  const validDevices = dispositivi.filter(d => d !== null && d !== undefined);
+
+  // Group devices by type for display
+  const relayDevices = validDevices.filter(d => d.device_type === 'omniapi_node' || d.device_type === 'tasmota' || !d.device_type);
+  const ledDevices = validDevices.filter(d => d.device_type === 'omniapi_led');
+  const sensorDevices = validDevices.filter(d => d.device_type === 'sensor');
 
   return (
     <Layout>
@@ -395,75 +173,68 @@ export const Dispositivi = () => {
               color: colors.textMuted,
               margin: '4px 0 0 0',
             }}>
-              {omniapiNodes.length} dispositiv{omniapiNodes.length === 1 ? 'o' : 'i'} configurati
+              {validDevices.length} dispositiv{validDevices.length === 1 ? 'o' : 'i'} configurati
             </p>
           </div>
 
-          {/* Add Button */}
-          <motion.button
-            onClick={openAddModal}
-            disabled={!impiantoId}
-            style={{
-              width: '44px',
-              height: '44px',
-              padding: 0,
-              borderRadius: '16px',
-              background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
-              border: 'none',
-              cursor: !impiantoId ? 'not-allowed' : 'pointer',
-              opacity: !impiantoId ? 0.5 : 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: `0 4px 20px ${colors.accent}50`,
-            }}
-            whileHover={{ scale: 1.05, boxShadow: `0 6px 24px ${colors.accent}60` }}
-            whileTap={{ scale: 0.95 }}
-            title="Aggiungi Dispositivo"
-          >
-            <RiAddLine size={20} style={{ color: colors.bg, display: 'block' }} />
-          </motion.button>
-        </div>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {/* Refresh */}
+            <motion.button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              style={{
+                width: '44px',
+                height: '44px',
+                padding: 0,
+                borderRadius: '16px',
+                background: colors.bgCardLit,
+                border: `1px solid ${colors.border}`,
+                cursor: refreshing ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Aggiorna"
+            >
+              <RiRefreshLine
+                size={18}
+                style={{ color: colors.textMuted }}
+                className={refreshing ? 'animate-spin' : ''}
+              />
+            </motion.button>
 
-        {/* Gateway Status Card */}
-        <div style={{
-          padding: '16px',
-          background: gateway?.online ? `${colors.success}10` : `${colors.error}10`,
-          border: `1px solid ${gateway?.online ? `${colors.success}30` : `${colors.error}30`}`,
-          borderRadius: '20px',
-          marginBottom: '16px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              background: gateway?.online ? colors.success : colors.error,
-              boxShadow: `0 0 10px ${gateway?.online ? colors.success : colors.error}`,
-            }} />
-            <div style={{ flex: 1 }}>
-              <span style={{
-                fontSize: '14px',
-                color: gateway?.online ? colors.success : colors.error,
-                fontWeight: 600,
-              }}>
-                Gateway {gateway?.online ? 'Online' : 'Offline'}
-              </span>
-              {gateway?.online && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginTop: '6px', fontSize: '12px', color: colors.textMuted }}>
-                  {gateway.ip && <span>IP: <b style={{ color: colors.textSecondary }}>{gateway.ip}</b></span>}
-                  {gateway.version && <span>Firmware: <b style={{ color: colors.textSecondary }}>v{gateway.version}</b></span>}
-                  <span>MQTT: <b style={{ color: gateway.mqttConnected ? colors.success : colors.error }}>{gateway.mqttConnected ? 'Connesso' : 'Disconnesso'}</b></span>
-                </div>
-              )}
-            </div>
+            {/* Add Device */}
+            <motion.button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                width: '44px',
+                height: '44px',
+                padding: 0,
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 4px 20px ${colors.accent}50`,
+              }}
+              whileHover={{ scale: 1.05, boxShadow: `0 6px 24px ${colors.accent}60` }}
+              whileTap={{ scale: 0.95 }}
+              title="Aggiungi Dispositivo"
+            >
+              <RiAddLine size={20} style={{ color: '#fff', display: 'block' }} />
+            </motion.button>
           </div>
         </div>
 
         {/* Content */}
         {loading ? (
           <SkeletonList count={6} />
-        ) : omniapiNodes.length === 0 ? (
+        ) : validDevices.length === 0 ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -511,334 +282,153 @@ export const Dispositivi = () => {
               marginLeft: 'auto',
               marginRight: 'auto',
             }}>
-              Usa il pulsante + in alto a destra per aggiungere dispositivi
+              Usa il Wizard nelle Impostazioni per aggiungere nuovi dispositivi
             </p>
           </motion.div>
         ) : (
-          /* Devices Grid */
-          <motion.div
-            initial="hidden"
-            animate="show"
-            variants={containerVariants}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {omniapiNodes.map((node) => (
-              <motion.div
-                key={node.id}
-                variants={cardVariants}
-                whileTap={{ scale: 0.98 }}
-                style={{
-                  background: node.relay1
-                    ? isDarkMode
-                      ? `linear-gradient(165deg, ${colors.accent}15, ${colors.bgCard} 50%, ${colors.bgCard} 100%)`
-                      : `linear-gradient(165deg, ${colors.accent}25, ${colors.bgCard} 60%, ${colors.bgCard} 100%)`
-                    : colors.bgCardLit,
-                  border: `1px solid ${node.relay1 ? `${colors.accent}40` : colors.border}`,
-                  borderRadius: '24px',
-                  boxShadow: node.relay1
-                    ? `0 0 24px ${colors.accent}15, ${colors.cardShadowLit}`
-                    : colors.cardShadowLit,
-                  padding: '16px',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <div style={topHighlight} />
-
-                {/* Header: Name + Status + Delete */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  marginBottom: '14px',
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* LED Strip Section */}
+            {ledDevices.length > 0 && (
+              <div>
+                <h2 style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: colors.textMuted,
+                  marginBottom: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                    {/* Status Icon */}
-                    <motion.div
-                      animate={node.relay1 ? { scale: [1, 1.1, 1] } : {}}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                      style={{
-                        padding: '10px',
-                        borderRadius: '14px',
-                        background: node.relay1
-                          ? `${colors.accent}25`
-                          : `${colors.textMuted}15`,
-                        border: `1px solid ${node.relay1
-                          ? `${colors.accent}50`
-                          : colors.border
-                        }`,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <RiLightbulbLine
-                        size={20}
-                        style={{
-                          color: node.relay1 ? colors.accentLight : colors.textMuted,
-                          filter: node.relay1 ? `drop-shadow(0 0 6px ${colors.accent})` : 'none',
+                  LED Strip ({ledDevices.length})
+                </h2>
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={containerVariants}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {ledDevices.map((dispositivo) => (
+                    <motion.div key={dispositivo.id} variants={cardVariants}>
+                      <UnifiedDeviceCard
+                        nome={dispositivo.nome}
+                        isOn={!!dispositivo.led_power || !!dispositivo.power_state}
+                        isLoading={togglingDevice === dispositivo.id}
+                        bloccato={!!dispositivo.bloccato}
+                        onToggle={() => toggleDevice(dispositivo)}
+                        deviceType="omniapi_led"
+                        variant="full"
+                        ledColor={{
+                          r: dispositivo.led_r ?? 255,
+                          g: dispositivo.led_g ?? 255,
+                          b: dispositivo.led_b ?? 255
                         }}
+                        ledBrightness={dispositivo.led_brightness ?? 255}
+                        onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
                       />
                     </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            )}
 
-                    {/* Name + Status */}
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <h3 style={{
-                        fontSize: '15px',
-                        fontWeight: 600,
-                        color: colors.textPrimary,
-                        margin: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {node.nome}
-                      </h3>
-                      {/* Status Badge */}
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          background: node.online ? `${colors.success}20` : `${colors.error}20`,
-                          border: `1px solid ${node.online ? `${colors.success}30` : `${colors.error}30`}`,
-                        }}>
-                          <div style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            background: node.online ? colors.success : colors.error,
-                            boxShadow: `0 0 6px ${node.online ? colors.success : colors.error}`,
-                          }} />
-                          <span style={{
-                            fontSize: '9px',
-                            fontWeight: 600,
-                            color: node.online ? colors.success : colors.error,
-                            textTransform: 'uppercase',
-                          }}>
-                            {node.online ? 'Online' : 'Offline'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Relay/Switch Section */}
+            {relayDevices.length > 0 && (
+              <div>
+                <h2 style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: colors.textMuted,
+                  marginBottom: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}>
+                  Interruttori ({relayDevices.length})
+                </h2>
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={containerVariants}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {relayDevices.map((dispositivo) => (
+                    <motion.div key={dispositivo.id} variants={cardVariants}>
+                      <UnifiedDeviceCard
+                        nome={dispositivo.nome}
+                        isOn={!!dispositivo.power_state}
+                        isLoading={togglingDevice === dispositivo.id}
+                        bloccato={!!dispositivo.bloccato}
+                        onToggle={() => toggleDevice(dispositivo)}
+                        deviceType={dispositivo.device_type || 'relay'}
+                        variant="full"
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            )}
 
-                  {/* Delete Button */}
-                  <motion.button
-                    onClick={() => handleDeleteNode(node.id, node.nome)}
-                    style={{
-                      padding: '8px',
-                      background: 'transparent',
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                    whileHover={{ background: `${colors.error}20`, borderColor: `${colors.error}50` }}
-                    whileTap={{ scale: 0.9 }}
-                    title="Elimina"
-                  >
-                    <RiDeleteBinLine size={14} style={{ color: colors.textMuted }} />
-                  </motion.button>
-                </div>
-
-                {/* Toggle Button */}
-                <DeviceToggle
-                  isOn={node.relay1 || false}
-                  disabled={!node.online}
-                  isLoading={togglingRelay === `${node.mac}-1`}
-                  onChange={() => handleToggle(node.mac, 1)}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </div>
-
-      {/* Modal: Aggiungi Dispositivo */}
-      <Modal
-        isOpen={omniapiModalOpen}
-        onClose={() => {
-          setOmniapiModalOpen(false);
-          setSelectedOmniapiNode(null);
-          setOmniapiNodeName('');
-        }}
-        title="Aggiungi Dispositivo"
-        size="sm"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Gateway Status */}
-          <div style={{
-            padding: '14px',
-            background: gateway?.online ? `${colors.success}10` : `${colors.error}10`,
-            border: `1px solid ${gateway?.online ? `${colors.success}30` : `${colors.error}30`}`,
-            borderRadius: '14px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: gateway?.online ? '8px' : '0' }}>
-              <div style={{
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                background: gateway?.online ? colors.success : colors.error,
-                boxShadow: `0 0 8px ${gateway?.online ? colors.success : colors.error}`,
-              }} />
-              <span style={{
-                fontSize: '13px',
-                color: gateway?.online ? colors.success : colors.error,
-                fontWeight: 600,
-              }}>
-                Gateway {gateway?.online ? 'connesso' : 'disconnesso'}
-              </span>
-            </div>
-            {gateway?.online && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', color: colors.textMuted }}>
-                {gateway.ip && <span>IP: <b style={{ color: colors.textSecondary }}>{gateway.ip}</b></span>}
-                {gateway.version && <span>v{gateway.version}</span>}
-                <span>MQTT: <b style={{ color: gateway.mqttConnected ? colors.success : colors.error }}>{gateway.mqttConnected ? 'OK' : 'OFF'}</b></span>
+            {/* Sensors Section */}
+            {sensorDevices.length > 0 && (
+              <div>
+                <h2 style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: colors.textMuted,
+                  marginBottom: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}>
+                  Sensori ({sensorDevices.length})
+                </h2>
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={containerVariants}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {sensorDevices.map((dispositivo) => (
+                    <motion.div key={dispositivo.id} variants={cardVariants}>
+                      <UnifiedDeviceCard
+                        nome={dispositivo.nome}
+                        isOn={false}
+                        onToggle={() => {}}
+                        deviceType="sensor"
+                        variant="full"
+                        temperature={dispositivo.temperature}
+                        humidity={dispositivo.humidity}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
               </div>
             )}
           </div>
+        )}
+      </div>
 
-          {/* Available Nodes */}
-          <div>
-            <label style={{
-              display: 'block',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: colors.textMuted,
-              marginBottom: '10px',
-            }}>
-              Nodi Disponibili
-            </label>
-            <div style={{
-              maxHeight: '200px',
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}>
-              {availableOmniapiNodes.length === 0 ? (
-                <p style={{
-                  textAlign: 'center',
-                  color: colors.textMuted,
-                  padding: '24px',
-                  fontSize: '13px',
-                  background: colors.bgCard,
-                  borderRadius: '12px',
-                  border: `1px solid ${colors.border}`,
-                }}>
-                  {gateway?.online
-                    ? 'Nessun nodo disponibile. Attendi che i nodi si annuncino...'
-                    : 'Connetti il Gateway per vedere i nodi disponibili'
-                  }
-                </p>
-              ) : (
-                availableOmniapiNodes.map((node) => (
-                  <motion.button
-                    key={node.mac}
-                    onClick={() => {
-                      setSelectedOmniapiNode(node);
-                      setOmniapiNodeName('');
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '14px',
-                      borderRadius: '12px',
-                      background: selectedOmniapiNode?.mac === node.mac
-                        ? `${colors.accent}15`
-                        : colors.bgCard,
-                      border: `1px solid ${selectedOmniapiNode?.mac === node.mac
-                        ? colors.accent
-                        : colors.border
-                      }`,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                    whileHover={{ borderColor: colors.borderHover }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <RiWifiLine
-                      size={20}
-                      style={{
-                        color: selectedOmniapiNode?.mac === node.mac
-                          ? colors.accent
-                          : colors.textMuted,
-                      }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: colors.textPrimary,
-                        margin: 0,
-                      }}>
-                        Nodo ESP-NOW
-                      </p>
-                      <p style={{
-                        fontSize: '11px',
-                        color: colors.textMuted,
-                        margin: '2px 0 0 0',
-                      }}>
-                        v{node.version || 'N/A'} · {node.rssi} dBm
-                      </p>
-                    </div>
-                    {selectedOmniapiNode?.mac === node.mac && (
-                      <div style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: colors.accent,
-                        boxShadow: `0 0 8px ${colors.accent}`,
-                      }} />
-                    )}
-                  </motion.button>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Node Name Input */}
-          {selectedOmniapiNode && (
-            <Input
-              label="Nome Dispositivo"
-              value={omniapiNodeName}
-              onChange={(e) => setOmniapiNodeName(e.target.value)}
-              placeholder="es. Luce Camera"
-            />
-          )}
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setOmniapiModalOpen(false);
-                setSelectedOmniapiNode(null);
-                setOmniapiNodeName('');
-              }}
-              fullWidth
-            >
-              Annulla
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAddNode}
-              fullWidth
-              disabled={!selectedOmniapiNode || !omniapiNodeName.trim()}
-            >
-              Aggiungi
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* Add Device Modal */}
+      <AddDeviceModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        impiantoId={impiantoCorrente?.id || 0}
+        onDeviceAdded={() => {
+          if (impiantoCorrente?.id) {
+            fetchDispositivi(impiantoCorrente.id);
+          }
+        }}
+        existingMacs={validDevices.map(d => d.mac_address || '').filter(Boolean)}
+      />
     </Layout>
   );
 };

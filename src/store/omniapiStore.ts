@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { omniapiApi, OmniapiGateway, OmniapiNode } from '@/services/omniapiApi';
+import { omniapiApi, OmniapiGateway, OmniapiNode, LedDevice } from '@/services/omniapiApi';
 
 // ============================================
 // OMNIAPI STORE - State Management
@@ -9,6 +9,7 @@ import { omniapiApi, OmniapiGateway, OmniapiNode } from '@/services/omniapiApi';
 interface OmniapiState {
   gateway: OmniapiGateway | null;
   nodes: OmniapiNode[];
+  ledDevices: LedDevice[];
   isLoading: boolean;
   error: string | null;
 
@@ -17,15 +18,22 @@ interface OmniapiState {
   fetchNodes: () => Promise<void>;
   sendCommand: (mac: string, channel: 1 | 2, action: 'on' | 'off' | 'toggle') => Promise<boolean>;
 
+  // LED Strip Actions
+  fetchLedDevices: () => Promise<void>;
+  sendLedCommand: (mac: string, action: string, params?: { r?: number; g?: number; b?: number; brightness?: number; effect?: number; speed?: number }) => Promise<boolean>;
+
   // WebSocket updates
   updateGateway: (gateway: OmniapiGateway) => void;
   updateNode: (node: OmniapiNode) => void;
   updateNodes: (nodes: OmniapiNode[]) => void;
+  updateLedDevice: (ledDevice: LedDevice) => void;
+  setLedDevices: (devices: LedDevice[]) => void;
 }
 
 export const useOmniapiStore = create<OmniapiState>((set, get) => ({
   gateway: null,
   nodes: [],
+  ledDevices: [],
   isLoading: false,
   error: null,
 
@@ -90,5 +98,47 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
 
   updateNodes: (nodes) => {
     set({ nodes });
+  },
+
+  // ============================================
+  // LED STRIP ACTIONS
+  // ============================================
+
+  fetchLedDevices: async () => {
+    try {
+      const response = await omniapiApi.getLedDevices();
+      set({ ledDevices: response.devices || [] });
+    } catch (error: any) {
+      console.error('Errore fetch LED devices:', error);
+    }
+  },
+
+  sendLedCommand: async (mac, action, params) => {
+    try {
+      await omniapiApi.sendLedCommand(mac, action, params);
+      return true;
+    } catch (error: any) {
+      console.error('Errore invio comando LED:', error);
+      return false;
+    }
+  },
+
+  updateLedDevice: (ledDevice) => {
+    set((state) => {
+      const existingIndex = state.ledDevices.findIndex((d) => d.mac === ledDevice.mac);
+      if (existingIndex >= 0) {
+        // Update existing device
+        const updatedDevices = [...state.ledDevices];
+        updatedDevices[existingIndex] = { ...updatedDevices[existingIndex], ...ledDevice };
+        return { ledDevices: updatedDevices };
+      } else {
+        // Add new device
+        return { ledDevices: [...state.ledDevices, ledDevice] };
+      }
+    });
+  },
+
+  setLedDevices: (devices) => {
+    set({ ledDevices: devices });
   },
 }));

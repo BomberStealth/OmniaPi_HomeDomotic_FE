@@ -22,6 +22,15 @@ export interface OmniapiNode {
   relay1: boolean;
   relay2: boolean;
   lastSeen?: string;
+  device_type?: 'omniapi_node' | 'omniapi_led';
+  ledState?: {
+    power: boolean;
+    r: number;
+    g: number;
+    b: number;
+    brightness: number;
+    effect: number;
+  };
 }
 
 // Nodo registrato nel database (estende OmniapiNode)
@@ -31,12 +40,33 @@ export interface RegisteredNode extends OmniapiNode {
   stanza_id: number | null;
   stanza_nome: string | null;
   impianto_id: number;
-  device_type: 'omniapi_node';
+  device_type: 'omniapi_node' | 'omniapi_led';
   firmware_version?: string;
 }
 
 export interface OmniapiNodesResponse {
   nodes: OmniapiNode[];
+  count: number;
+}
+
+// ============================================
+// LED STRIP TYPES
+// ============================================
+
+export interface LedDevice {
+  mac: string;
+  power: boolean;
+  r: number;
+  g: number;
+  b: number;
+  brightness: number;
+  effect: number;
+  online: boolean;
+  lastSeen?: string;
+}
+
+export interface LedDevicesResponse {
+  devices: LedDevice[];
   count: number;
 }
 
@@ -110,17 +140,19 @@ export const omniapiApi = {
     return data;
   },
 
-  // Registra un nodo
+  // Registra un nodo o LED Strip
   registerNode: async (
     impiantoId: number,
     mac: string,
     nome: string,
-    stanza_id?: number
+    stanza_id?: number,
+    device_type?: 'omniapi_node' | 'omniapi_led'
   ): Promise<{ success: boolean; dispositivo: RegisteredNode }> => {
     const { data } = await api.post(`/api/impianti/${impiantoId}/omniapi/register`, {
       mac,
       nome,
       stanza_id,
+      device_type,
     });
     return data;
   },
@@ -150,6 +182,32 @@ export const omniapiApi = {
       channel,
       action,
     });
+    return data;
+  },
+
+  // ============================================
+  // LED STRIP API
+  // ============================================
+
+  // Lista dispositivi LED
+  getLedDevices: async (): Promise<LedDevicesResponse> => {
+    const { data } = await api.get<LedDevicesResponse>('/api/led/devices');
+    return data;
+  },
+
+  // Stato singolo LED
+  getLedState: async (mac: string): Promise<LedDevice> => {
+    const { data } = await api.get<LedDevice>(`/api/led/state/${mac}`);
+    return data;
+  },
+
+  // Invia comando LED
+  sendLedCommand: async (
+    mac: string,
+    action: string,
+    params?: { r?: number; g?: number; b?: number; brightness?: number; effect?: number; speed?: number }
+  ): Promise<{ success: boolean; payload: any }> => {
+    const { data } = await api.post('/api/led/command', { mac, action, ...params });
     return data;
   },
 };

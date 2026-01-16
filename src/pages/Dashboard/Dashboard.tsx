@@ -10,7 +10,7 @@ import { useSceneStore } from '@/store/sceneStore';
 import { useDispositiviStore } from '@/store/dispositiviStore';
 import { sceneApi, tasmotaApi } from '@/services/api';
 import { omniapiApi } from '@/services/omniapiApi';
-import { DeviceCard } from '@/components/dispositivi/DeviceCard';
+import { UnifiedDeviceCard } from '@/components/devices';
 import { SceneIcon } from '@/pages/Scene/Scene';
 import { motion } from 'framer-motion';
 import {
@@ -78,7 +78,7 @@ export const Dashboard = () => {
   // Store data (real-time via useRealTimeSync nel Layout)
   const { stanze } = useStanzeStore();
   const { scene } = useSceneStore();
-  const { dispositivi, updatePowerState } = useDispositiviStore();
+  const { dispositivi, updatePowerState, updateLedState } = useDispositiviStore();
 
   const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -190,16 +190,21 @@ export const Dashboard = () => {
     try {
       const newState = !dispositivo.power_state;
 
+      // LED Strip
+      if (dispositivo.device_type === 'omniapi_led') {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address!, newState ? 'on' : 'off');
+        updateLedState(dispositivo.id, { led_power: newState });
+        updatePowerState(dispositivo.id, newState);
+      }
       // OmniaPi nodes use MQTT via gateway
-      if (dispositivo.device_type === 'omniapi_node') {
+      else if (dispositivo.device_type === 'omniapi_node') {
         await omniapiApi.controlNode(dispositivo.id, 1, newState ? 'on' : 'off');
+        updatePowerState(dispositivo.id, newState);
       } else {
         // Tasmota devices use HTTP
         await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
+        updatePowerState(dispositivo.id, newState);
       }
-
-      // Update ottimistico - il WebSocket aggiornerà comunque
-      updatePowerState(dispositivo.id, newState);
     } catch (error: any) {
       console.error('Errore toggle dispositivo:', error);
       // Gestione dispositivo bloccato
@@ -210,6 +215,28 @@ export const Dashboard = () => {
       }
     } finally {
       setTogglingDevice(null);
+    }
+  };
+
+  // Handle LED brightness/color change (for dashboard)
+  const handleLedChange = async (dispositivo: any, color: { r: number; g: number; b: number }, brightness: number) => {
+    if (!dispositivo.mac_address) return;
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        brightness
+      });
+      updateLedState(dispositivo.id, {
+        led_r: color.r,
+        led_g: color.g,
+        led_b: color.b,
+        led_brightness: brightness
+      });
+    } catch (error) {
+      console.error('Errore controllo LED:', error);
+      toast.error('Errore LED');
     }
   };
 
@@ -254,8 +281,13 @@ export const Dashboard = () => {
   ];
 
   const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
-  const luci = dispositiviValidi.filter(d => d.tipo === 'luce');
-  const luciOn = luci.filter(d => d.power_state).length;
+  // Luci: include tipo='luce' + LED Strip (device_type='omniapi_led' o tipo='led_strip')
+  const luci = dispositiviValidi.filter(d =>
+    d.tipo === 'luce' ||
+    d.tipo === 'led_strip' ||
+    d.device_type === 'omniapi_led'
+  );
+  const luciOn = luci.filter(d => d.power_state || d.led_power).length;
   const totLuci = luci.length;
   const termostatiList = dispositiviValidi.filter(d => d.tipo === 'termostato');
   const termostati = termostatiList.length;
@@ -271,8 +303,13 @@ export const Dashboard = () => {
     try {
       for (const luce of luci) {
         try {
+          // LED Strip
+          if (luce.device_type === 'omniapi_led') {
+            await omniapiApi.sendLedCommand(luce.mac_address!, turnOn ? 'on' : 'off');
+            updateLedState(luce.id, { led_power: turnOn });
+          }
           // OmniaPi nodes use MQTT via gateway
-          if (luce.device_type === 'omniapi_node') {
+          else if (luce.device_type === 'omniapi_node') {
             await omniapiApi.controlNode(luce.id, 1, turnOn ? 'on' : 'off');
           } else {
             // Tasmota devices use HTTP
@@ -735,15 +772,26 @@ export const Dashboard = () => {
 
                     {isExpanded && roomDevices.length > 0 && (
                       <div style={{ padding: '12px', borderTop: `1px solid ${colors.border}` }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
                           {roomDevices.map((dispositivo) => (
-                            <DeviceCard
+                            <UnifiedDeviceCard
                               key={dispositivo.id}
                               nome={dispositivo.nome}
-                              isOn={!!dispositivo.power_state}
+                              isOn={!!dispositivo.power_state || !!dispositivo.led_power}
                               isLoading={togglingDevice === dispositivo.id}
                               bloccato={!!dispositivo.bloccato}
-                              onClick={() => toggleDevice(dispositivo)}
+                              onToggle={() => toggleDevice(dispositivo)}
+                              deviceType={dispositivo.device_type || 'relay'}
+                              variant="compact"
+                              ledColor={dispositivo.device_type === 'omniapi_led' ? {
+                                r: dispositivo.led_r ?? 255,
+                                g: dispositivo.led_g ?? 255,
+                                b: dispositivo.led_b ?? 255
+                              } : undefined}
+                              ledBrightness={dispositivo.led_brightness ?? 255}
+                              onLedChange={dispositivo.device_type === 'omniapi_led'
+                                ? (color, brightness) => handleLedChange(dispositivo, color, brightness)
+                                : undefined}
                             />
                           ))}
                         </div>
@@ -814,15 +862,26 @@ export const Dashboard = () => {
 
                   {expandedRooms[-1] && (
                     <div style={{ padding: '12px', borderTop: `1px solid ${colors.border}` }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px' }}>
                         {unassignedDevices.map((dispositivo) => (
-                          <DeviceCard
+                          <UnifiedDeviceCard
                             key={dispositivo.id}
                             nome={dispositivo.nome}
-                            isOn={!!dispositivo.power_state}
+                            isOn={!!dispositivo.power_state || !!dispositivo.led_power}
                             isLoading={togglingDevice === dispositivo.id}
                             bloccato={!!dispositivo.bloccato}
-                            onClick={() => toggleDevice(dispositivo)}
+                            onToggle={() => toggleDevice(dispositivo)}
+                            deviceType={dispositivo.device_type || 'relay'}
+                            variant="compact"
+                            ledColor={dispositivo.device_type === 'omniapi_led' ? {
+                              r: dispositivo.led_r ?? 255,
+                              g: dispositivo.led_g ?? 255,
+                              b: dispositivo.led_b ?? 255
+                            } : undefined}
+                            ledBrightness={dispositivo.led_brightness ?? 255}
+                            onLedChange={dispositivo.device_type === 'omniapi_led'
+                              ? (color, brightness) => handleLedChange(dispositivo, color, brightness)
+                              : undefined}
                           />
                         ))}
                       </div>

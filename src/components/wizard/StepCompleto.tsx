@@ -35,6 +35,7 @@ interface StepCompletoProps {
   dispositivi: Array<{
     mac: string;
     nome: string;
+    device_type?: string;
     stanza_nome?: string;
   }>;
   onFinish: () => void;
@@ -142,6 +143,45 @@ export const StepCompleto = ({
     setIsGatewayError(false);
 
     let createdImpiantoId: number | null = null;
+    const createdStanzeIds: number[] = [];
+    const createdDispositiviIds: number[] = [];
+
+    // Funzione di rollback completo
+    const rollbackAll = async (reason: string) => {
+      console.error(`🔄 Rollback avviato: ${reason}`);
+
+      // 1. Elimina dispositivi creati
+      for (const id of createdDispositiviIds) {
+        try {
+          await omniapiApi.unregisterNode(id);
+          console.log(`  ↩️ Dispositivo ${id} eliminato`);
+        } catch (e) {
+          console.error(`  ❌ Errore eliminazione dispositivo ${id}:`, e);
+        }
+      }
+
+      // 2. Elimina stanze create
+      for (const id of createdStanzeIds) {
+        try {
+          await stanzeApi.deleteStanza(id);
+          console.log(`  ↩️ Stanza ${id} eliminata`);
+        } catch (e) {
+          console.error(`  ❌ Errore eliminazione stanza ${id}:`, e);
+        }
+      }
+
+      // 3. Elimina impianto (cascade eliminerà anche gateway association)
+      if (createdImpiantoId) {
+        try {
+          await impiantiApi.delete(createdImpiantoId);
+          console.log(`  ↩️ Impianto ${createdImpiantoId} eliminato`);
+        } catch (e) {
+          console.error(`  ❌ Errore eliminazione impianto ${createdImpiantoId}:`, e);
+        }
+      }
+
+      console.log('🔄 Rollback completato');
+    };
 
     try {
       // 1. Crea l'impianto
@@ -159,58 +199,77 @@ export const StepCompleto = ({
         throw new Error('Errore nella creazione dell\'impianto');
       }
 
-      console.log('Impianto creato:', createdImpiantoId);
+      console.log('✅ Impianto creato:', createdImpiantoId);
 
       // 2. Associa il gateway all'impianto
       if (gateway.mac) {
         try {
           await gatewayApi.associateGateway(createdImpiantoId, gateway.mac, 'Gateway OmniaPi');
-          console.log('Gateway associato:', gateway.mac);
+          console.log('✅ Gateway associato:', gateway.mac);
         } catch (gatewayErr: any) {
-          console.error('Errore associazione gateway, rollback impianto:', createdImpiantoId);
-          try {
-            await impiantiApi.delete(createdImpiantoId);
-            console.log('Impianto eliminato per rollback');
-          } catch (deleteErr) {
-            console.error('Errore durante rollback impianto:', deleteErr);
-          }
-
           const errorMsg = gatewayErr.response?.data?.error || gatewayErr.message || '';
           if (errorMsg.toLowerCase().includes('già associato') || errorMsg.toLowerCase().includes('already associated')) {
             setIsGatewayError(true);
           }
-
+          await rollbackAll('Gateway già associato');
           throw gatewayErr;
         }
       }
 
-      // 3. Crea le stanze uniche e registra i dispositivi
+      // 3. Crea le stanze uniche
       const stanzeUniche = [...new Set(dispositivi.map(d => d.stanza_nome).filter(Boolean))];
       const stanzeMap: Record<string, number> = {};
 
       for (const stanzaNome of stanzeUniche) {
         if (stanzaNome) {
-          const stanzaRes = await stanzeApi.createStanza(createdImpiantoId, { nome: stanzaNome });
-          stanzeMap[stanzaNome] = stanzaRes.id;
-          console.log('Stanza creata:', stanzaNome, '->', stanzaRes.id);
+          try {
+            const stanzaRes = await stanzeApi.createStanza(createdImpiantoId, { nome: stanzaNome });
+            stanzeMap[stanzaNome] = stanzaRes.id;
+            createdStanzeIds.push(stanzaRes.id);
+            console.log('✅ Stanza creata:', stanzaNome, '->', stanzaRes.id);
+          } catch (stanzaErr: any) {
+            await rollbackAll(`Errore creazione stanza "${stanzaNome}"`);
+            throw new Error(`Errore creazione stanza "${stanzaNome}": ${stanzaErr.response?.data?.error || stanzaErr.message}`);
+          }
         }
       }
 
       // 4. Registra tutti i dispositivi
       for (const dispositivo of dispositivi) {
         const stanzaId = dispositivo.stanza_nome ? stanzeMap[dispositivo.stanza_nome] : undefined;
-        await omniapiApi.registerNode(createdImpiantoId, dispositivo.mac, dispositivo.nome, stanzaId);
+        const deviceType = (dispositivo.device_type as 'omniapi_node' | 'omniapi_led') || 'omniapi_node';
+
+        try {
+          const result = await omniapiApi.registerNode(
+            createdImpiantoId,
+            dispositivo.mac,
+            dispositivo.nome,
+            stanzaId,
+            deviceType
+          );
+          if (result.dispositivo?.id) {
+            createdDispositiviIds.push(result.dispositivo.id);
+          }
+          console.log('✅ Dispositivo registrato:', dispositivo.nome);
+        } catch (dispErr: any) {
+          const errMsg = dispErr.response?.data?.error || dispErr.message || 'Errore sconosciuto';
+          await rollbackAll(`Errore registrazione dispositivo "${dispositivo.nome}"`);
+          throw new Error(`Dispositivo "${dispositivo.nome}" non registrabile: ${errMsg}`);
+        }
       }
 
-      // 5. Auto-popola scene Entra/Esci
+      // 5. Auto-popola scene Entra/Esci (non blocca se fallisce)
       try {
         await api.post(`/api/impianti/${createdImpiantoId}/scene/auto-populate`);
+        console.log('✅ Scene auto-popolate');
       } catch (sceneErr) {
-        // Non blocca il flusso
+        console.warn('⚠️ Auto-popolamento scene fallito (non bloccante)');
       }
 
+      console.log('🎉 Setup completato con successo!');
+
     } catch (err: any) {
-      console.error('Errore creazione:', err);
+      console.error('❌ Errore creazione:', err);
       setError(err.response?.data?.error || err.message || 'Errore durante la creazione');
     } finally {
       setCreating(false);

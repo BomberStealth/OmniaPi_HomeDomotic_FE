@@ -12,6 +12,7 @@ import {
   RiLoader4Line,
   RiCheckLine,
   RiHomeLine,
+  RiLightbulbLine,
 } from 'react-icons/ri';
 
 // ============================================
@@ -106,7 +107,8 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
 
   const handleSelectNode = (node: OmniapiNode) => {
     setSelectedNode(node);
-    setNodeName(`Nodo ${node.mac.slice(-5)}`);
+    const isLed = node.device_type === 'omniapi_led';
+    setNodeName(isLed ? `LED Strip ${node.mac.slice(-5)}` : `Nodo ${node.mac.slice(-5)}`);
     setStep('configure');
   };
 
@@ -114,19 +116,21 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
     if (!selectedNode || !nodeName.trim() || !impiantoCorrente?.id) return;
 
     setSubmitting(true);
+    const isLed = selectedNode.device_type === 'omniapi_led';
     try {
       await omniapiApi.registerNode(
         impiantoCorrente.id,
         selectedNode.mac,
         nodeName.trim(),
-        selectedStanza || undefined
+        selectedStanza || undefined,
+        isLed ? 'omniapi_led' : 'omniapi_node'
       );
-      toast.success('Nodo aggiunto con successo');
+      toast.success(isLed ? 'LED Strip aggiunto con successo' : 'Nodo aggiunto con successo');
       onNodeAdded();
       handleClose();
     } catch (error: any) {
       console.error('Errore registrazione:', error);
-      toast.error(error.response?.data?.error || 'Errore registrazione nodo');
+      toast.error(error.response?.data?.error || 'Errore registrazione dispositivo');
     } finally {
       setSubmitting(false);
     }
@@ -289,58 +293,85 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {availableNodes.map((node) => (
-                      <motion.button
-                        key={node.mac}
-                        onClick={() => handleSelectNode(node)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '14px',
-                          padding: '16px',
-                          borderRadius: '16px',
-                          background: 'rgba(0,0,0,0.2)',
-                          border: `1px solid rgba(255,255,255,0.05)`,
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                        }}
-                        whileHover={{
-                          background: `${colors.accent}10`,
-                          borderColor: `${colors.accent}30`,
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <div
+                    {availableNodes.map((node) => {
+                      const isLed = node.device_type === 'omniapi_led';
+                      return (
+                        <motion.button
+                          key={node.mac}
+                          onClick={() => handleSelectNode(node)}
                           style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '12px',
-                            background: `${colors.accent}20`,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            gap: '14px',
+                            padding: '16px',
+                            borderRadius: '16px',
+                            background: 'rgba(0,0,0,0.2)',
+                            border: `1px solid ${isLed ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255,255,255,0.05)'}`,
+                            cursor: 'pointer',
+                            textAlign: 'left',
                           }}
+                          whileHover={{
+                            background: isLed ? 'rgba(168, 85, 247, 0.1)' : `${colors.accent}10`,
+                            borderColor: isLed ? 'rgba(168, 85, 247, 0.4)' : `${colors.accent}30`,
+                          }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          <RiWifiLine size={20} style={{ color: colors.accent }} />
-                        </div>
-                        <div style={{ flex: 1 }}>
                           <div
                             style={{
-                              fontFamily: 'monospace',
-                              fontSize: '14px',
-                              fontWeight: 600,
-                              color: colors.textPrimary,
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '12px',
+                              background: isLed
+                                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3))'
+                                : `${colors.accent}20`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
                           >
-                            {node.mac}
+                            {isLed ? (
+                              <RiLightbulbLine size={20} style={{ color: '#a855f7' }} />
+                            ) : (
+                              <RiWifiLine size={20} style={{ color: colors.accent }} />
+                            )}
                           </div>
-                          <div style={{ fontSize: '12px', color: colors.textMuted }}>
-                            v{node.version} · {node.rssi} dBm
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '14px',
+                                  fontWeight: 600,
+                                  color: colors.textPrimary,
+                                }}
+                              >
+                                {node.mac}
+                              </span>
+                              {isLed && (
+                                <span
+                                  style={{
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: 'linear-gradient(135deg, #ef4444, #a855f7, #3b82f6)',
+                                    color: '#fff',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                  }}
+                                >
+                                  LED STRIP
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '12px', color: colors.textMuted }}>
+                              {isLed ? 'LED RGB' : `v${node.version} · ${node.rssi} dBm`}
+                            </div>
                           </div>
-                        </div>
-                        <RiAddLine size={20} style={{ color: colors.accent }} />
-                      </motion.button>
-                    ))}
+                          <RiAddLine size={20} style={{ color: isLed ? '#a855f7' : colors.accent }} />
+                        </motion.button>
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -451,13 +482,13 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
                   </div>
                 </div>
 
-                {/* Info nodo */}
+                {/* Info dispositivo */}
                 <div
                   style={{
                     padding: '16px',
                     borderRadius: '14px',
                     background: 'rgba(0,0,0,0.2)',
-                    border: `1px solid rgba(255,255,255,0.05)`,
+                    border: `1px solid ${selectedNode?.device_type === 'omniapi_led' ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255,255,255,0.05)'}`,
                   }}
                 >
                   <div
@@ -465,9 +496,26 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
                       fontSize: '12px',
                       color: colors.textMuted,
                       marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
                     }}
                   >
-                    Info nodo
+                    {selectedNode?.device_type === 'omniapi_led' ? 'Info LED Strip' : 'Info nodo'}
+                    {selectedNode?.device_type === 'omniapi_led' && (
+                      <span
+                        style={{
+                          fontSize: '9px',
+                          fontWeight: 600,
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          background: 'linear-gradient(135deg, #ef4444, #a855f7, #3b82f6)',
+                          color: '#fff',
+                        }}
+                      >
+                        RGB
+                      </span>
+                    )}
                   </div>
                   <div
                     style={{
@@ -492,28 +540,62 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
                     </div>
                     <div>
                       <div style={{ fontSize: '11px', color: colors.textMuted }}>
-                        Firmware
+                        {selectedNode?.device_type === 'omniapi_led' ? 'Tipo' : 'Firmware'}
                       </div>
-                      <div style={{ fontSize: '13px', color: colors.accent }}>
-                        v{selectedNode?.version}
-                      </div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: colors.textMuted }}>
-                        Segnale
-                      </div>
-                      <div style={{ fontSize: '13px', color: colors.textPrimary }}>
-                        {selectedNode?.rssi} dBm
+                      <div style={{ fontSize: '13px', color: selectedNode?.device_type === 'omniapi_led' ? '#a855f7' : colors.accent }}>
+                        {selectedNode?.device_type === 'omniapi_led' ? 'LED Strip RGB' : `v${selectedNode?.version}`}
                       </div>
                     </div>
-                    <div>
-                      <div style={{ fontSize: '11px', color: colors.textMuted }}>
-                        Relay
-                      </div>
-                      <div style={{ fontSize: '13px', color: colors.textPrimary }}>
-                        2 canali
-                      </div>
-                    </div>
+                    {selectedNode?.device_type === 'omniapi_led' ? (
+                      <>
+                        <div>
+                          <div style={{ fontSize: '11px', color: colors.textMuted }}>
+                            Stato
+                          </div>
+                          <div style={{ fontSize: '13px', color: selectedNode?.ledState?.power ? colors.success : colors.textMuted }}>
+                            {selectedNode?.ledState?.power ? 'Acceso' : 'Spento'}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '11px', color: colors.textMuted }}>
+                            Colore attuale
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div
+                              style={{
+                                width: '16px',
+                                height: '16px',
+                                borderRadius: '4px',
+                                background: `rgb(${selectedNode?.ledState?.r || 0}, ${selectedNode?.ledState?.g || 255}, ${selectedNode?.ledState?.b || 0})`,
+                                border: '1px solid rgba(255,255,255,0.2)',
+                              }}
+                            />
+                            <span style={{ fontSize: '12px', color: colors.textPrimary }}>
+                              {selectedNode?.ledState?.brightness || 0}%
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <div style={{ fontSize: '11px', color: colors.textMuted }}>
+                            Segnale
+                          </div>
+                          <div style={{ fontSize: '13px', color: colors.textPrimary }}>
+                            {selectedNode?.rssi} dBm
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '11px', color: colors.textMuted }}>
+                            Relay
+                          </div>
+                          <div style={{ fontSize: '13px', color: colors.textPrimary }}>
+                            2 canali
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -573,7 +655,7 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
                 ) : (
                   <RiCheckLine size={18} />
                 )}
-                Aggiungi Nodo
+                {selectedNode?.device_type === 'omniapi_led' ? 'Aggiungi LED Strip' : 'Aggiungi Nodo'}
               </motion.button>
             </div>
           )}

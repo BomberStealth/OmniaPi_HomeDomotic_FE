@@ -18,6 +18,21 @@ export interface Dispositivo {
   power_state?: boolean;
   bloccato?: boolean;
   device_type?: string;
+  // LED Strip properties
+  led_power?: boolean;
+  led_r?: number;
+  led_g?: number;
+  led_b?: number;
+  led_brightness?: number;
+  led_effect?: number;
+  // Sensor properties
+  temperature?: number;
+  humidity?: number;
+  // Dimmer properties
+  dimmer_level?: number;
+  // Online status
+  online?: boolean;
+  rssi?: number;
 }
 
 interface DispositiviState {
@@ -32,6 +47,10 @@ interface DispositiviState {
   removeDispositivo: (dispositivoId: number) => void;
   setDispositivi: (dispositivi: Dispositivo[]) => void;
   updatePowerState: (dispositivoId: number, powerState: boolean) => void;
+  // LED actions
+  updateLedState: (dispositivoId: number, ledState: Partial<Pick<Dispositivo, 'led_power' | 'led_r' | 'led_g' | 'led_b' | 'led_brightness' | 'led_effect'>>) => void;
+  // By MAC (for WebSocket updates)
+  updateByMac: (mac: string, updates: Partial<Dispositivo>) => void;
 }
 
 export const useDispositiviStore = create<DispositiviState>((set) => ({
@@ -76,6 +95,22 @@ export const useDispositiviStore = create<DispositiviState>((set) => ({
     set((state) => ({
       dispositivi: state.dispositivi.map((d) =>
         d.id === dispositivoId ? { ...d, power_state: powerState, stato: 'online' } : d
+      ),
+    }));
+  },
+
+  updateLedState: (dispositivoId: number, ledState) => {
+    set((state) => ({
+      dispositivi: state.dispositivi.map((d) =>
+        d.id === dispositivoId ? { ...d, ...ledState, stato: 'online' } : d
+      ),
+    }));
+  },
+
+  updateByMac: (mac: string, updates: Partial<Dispositivo>) => {
+    set((state) => ({
+      dispositivi: state.dispositivi.map((d) =>
+        d.mac_address === mac ? { ...d, ...updates } : d
       ),
     }));
   },

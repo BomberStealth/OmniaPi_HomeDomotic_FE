@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
-import { OmniapiGateway, OmniapiNode } from './omniapiApi';
+import { OmniapiGateway, OmniapiNode, LedDevice } from './omniapiApi';
+import type { DeviceUpdatePayload } from '@/types/device';
 
 // ============================================
 // WEBSOCKET SERVICE
@@ -117,6 +118,32 @@ class SocketService {
 
   offOmniapiNodesUpdate() {
     this.socket?.off('omniapi-nodes-update');
+  }
+
+  // LED Strip updates
+  onOmniapiLedUpdate(callback: (ledDevice: LedDevice) => void) {
+    this.socket?.on('omniapi-led-update', callback);
+  }
+
+  offOmniapiLedUpdate() {
+    this.socket?.off('omniapi-led-update');
+  }
+
+  // ============================================
+  // UNIFIED DEVICE UPDATE (NEW - Phase 3)
+  // Works alongside legacy events for backward compatibility
+  // ============================================
+
+  /**
+   * Listen for unified device updates
+   * This is the new event that will eventually replace legacy events
+   */
+  onDeviceUpdate(callback: (payload: DeviceUpdatePayload) => void) {
+    this.socket?.on('device-update', callback);
+  }
+
+  offDeviceUpdate() {
+    this.socket?.off('device-update');
   }
 
   // ============================================
