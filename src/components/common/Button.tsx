@@ -33,7 +33,7 @@ export const Button = ({
   disabled,
   ...props
 }: ButtonProps) => {
-  const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
+  const { colors: themeColors, modeColors, isDarkMode, useGradients } = useThemeColor();
 
   const sizeStyles = {
     sm: { padding: 'clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px)', fontSize: 'clamp(11px, 2.8vw, 13px)' },
@@ -46,7 +46,9 @@ export const Button = ({
     switch (variant) {
       case 'primary':
         return {
-          background: `linear-gradient(165deg, ${themeColors.accentDark}, ${themeColors.accent})`,
+          background: useGradients
+            ? themeColors.gradient
+            : themeColors.accent,
           color: isDarkMode ? '#0a0a0c' : '#ffffff',
           border: 'none',
           boxShadow: `0 4px 16px rgba(${accentRgb}, 0.3)`,
@@ -83,7 +85,7 @@ export const Button = ({
       default:
         return {};
     }
-  }, [variant, themeColors, modeColors, isDarkMode]);
+  }, [variant, themeColors, modeColors, isDarkMode, useGradients]);
 
   const accentRgb = hexToRgb(themeColors.accent);
 

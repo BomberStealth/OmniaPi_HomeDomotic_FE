@@ -29,7 +29,7 @@ const containerVariants = {
 
 export const Settings = () => {
   const { user, logout } = useAuthStore();
-  const { colorTheme, setColorTheme, colors: themeColors, setThemeMode, isDarkMode, modeColors } = useThemeColor();
+  const { colorTheme, setColorTheme, colors: themeColors, setThemeMode, isDarkMode, modeColors, useGradients, setUseGradients } = useThemeColor();
   const navigate = useNavigate();
   const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
   const { isStandalone } = usePWAInstall();
@@ -104,7 +104,7 @@ export const Settings = () => {
         height: '28px',
         borderRadius: '9999px',
         background: enabled
-          ? `linear-gradient(135deg, ${accentColor}, ${colors.accentDark})`
+          ? (useGradients ? themeColors.gradient : accentColor)
           : colors.toggleTrack,
         border: `1px solid ${enabled ? accentColor : colors.toggleTrackBorder}`,
         position: 'relative',
@@ -357,8 +357,13 @@ export const Settings = () => {
               </div>
             </div>
 
-            {/* Color Options Grid */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start' }}>
+            {/* Color Options Grid - Responsive */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(40px, 1fr))',
+              gap: '10px',
+              maxWidth: '100%',
+            }}>
               {(Object.keys(colorThemes) as ColorTheme[]).map((theme) => {
                 const themeConfig = colorThemes[theme];
                 const isSelected = colorTheme === theme;
@@ -380,7 +385,6 @@ export const Settings = () => {
                       boxShadow: isSelected
                         ? `0 0 12px ${themeConfig.accent}40`
                         : 'none',
-                      flexShrink: 0,
                     }}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -474,7 +478,7 @@ export const Settings = () => {
                   border: 'none',
                   cursor: 'pointer',
                   background: isDarkMode
-                    ? `linear-gradient(90deg, ${colors.accentDark}, ${colors.accent})`
+                    ? (useGradients ? themeColors.gradient : colors.accent)
                     : `linear-gradient(90deg, ${colors.warning}, #fbbf24)`,
                   boxShadow: `0 0 12px ${isDarkMode ? colors.accent : colors.warning}40`,
                 }}
@@ -501,6 +505,80 @@ export const Settings = () => {
                     <RiSunLine size={12} style={{ color: colors.warning }} />
                   )}
                 </motion.div>
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Gradient Toggle */}
+          <motion.div
+            style={{
+              ...cardStyle,
+              padding: '12px',
+            }}
+          >
+            <div style={topHighlight} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '12px',
+                    background: useGradients ? `${colors.accent}20` : `${colors.textMuted}20`,
+                  }}
+                >
+                  <RiFlashlightLine size={18} style={{ color: useGradients ? colors.accent : colors.textMuted }} />
+                </div>
+                <div>
+                  <h3 style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: colors.textPrimary,
+                    margin: 0,
+                  }}>
+                    Usa Gradienti
+                  </h3>
+                  <p style={{
+                    fontSize: '11px',
+                    color: colors.textMuted,
+                    margin: '2px 0 0 0',
+                  }}>
+                    Applica effetto gradiente ai controlli
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <motion.button
+                onClick={() => {
+                  setUseGradients(!useGradients);
+                  toast.success(useGradients ? 'Gradienti disattivati' : 'Gradienti attivati');
+                }}
+                style={{
+                  width: '52px',
+                  height: '28px',
+                  borderRadius: '14px',
+                  padding: '2px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: useGradients
+                    ? themeColors.gradient
+                    : colors.toggleTrack,
+                  boxShadow: useGradients ? `0 0 12px ${colors.accent}40` : 'none',
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.div
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: 'white',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                  animate={{ x: useGradients ? 24 : 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
               </motion.button>
             </div>
           </motion.div>

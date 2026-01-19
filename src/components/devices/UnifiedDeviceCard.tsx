@@ -224,15 +224,24 @@ const LedEffectIcon = ({
 const Toggle = ({
   isOn,
   accentColor,
+  gradient,
+  useGradients,
   size = 'normal'
 }: {
   isOn: boolean;
   accentColor: string;
+  gradient?: string;
+  useGradients?: boolean;
   size?: 'normal' | 'small';
 }) => {
   const dimensions = size === 'small'
     ? { width: 36, height: 20, thumb: 14, travel: 14 }
     : { width: 44, height: 24, thumb: 18, travel: 20 };
+
+  // Usa gradient se useGradients è true, altrimenti colore solido
+  const onBackground = useGradients && gradient
+    ? gradient
+    : accentColor;
 
   return (
     <div
@@ -243,7 +252,7 @@ const Toggle = ({
         padding: '3px',
         borderRadius: '9999px',
         background: isOn
-          ? `linear-gradient(90deg, ${accentColor}, ${accentColor})`
+          ? onBackground
           : 'rgba(60, 60, 60, 0.6)',
         boxShadow: isOn
           ? `0 0 12px ${accentColor}50`
@@ -1443,7 +1452,7 @@ const UnifiedDeviceCardComponent = ({
   showDelete = false,
   onDelete,
 }: UnifiedDeviceCardProps) => {
-  const { colors: themeColors, modeColors } = useThemeColor();
+  const { colors: themeColors, modeColors, useGradients } = useThemeColor();
   const [showModal, setShowModal] = useState(false);
 
   // Normalize device type
@@ -1688,6 +1697,8 @@ const UnifiedDeviceCardComponent = ({
           <Toggle
             isOn={isOn}
             accentColor={activeColor}
+            gradient={themeColors.gradient}
+            useGradients={useGradients}
             size={variant === 'mini' ? 'small' : 'normal'}
           />
         </div>
