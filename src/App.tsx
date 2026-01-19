@@ -16,6 +16,9 @@ import './i18n';
 // Lazy load delle pagine per code splitting
 const Login = lazy(() => import('@/pages/Auth/Login').then(m => ({ default: m.Login })));
 const Register = lazy(() => import('@/pages/Auth/Register').then(m => ({ default: m.Register })));
+const VerifyEmail = lazy(() => import('@/pages/Auth/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
+const ForgotPassword = lazy(() => import('@/pages/Auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import('@/pages/Auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
 const Impianti = lazy(() => import('@/pages/Impianti/Impianti').then(m => ({ default: m.Impianti })));
 const ImpiantoDettaglio = lazy(() => import('@/pages/Impianti/ImpiantoDettaglio').then(m => ({ default: m.ImpiantoDettaglio })));
@@ -139,6 +142,9 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/style-preview" element={<StylePreview />} />

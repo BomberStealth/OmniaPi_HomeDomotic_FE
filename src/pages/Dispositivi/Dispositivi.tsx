@@ -109,17 +109,52 @@ export const Dispositivi = () => {
     }
   };
 
-  // Handle LED brightness/color change
-  const handleLedChange = async (dispositivo: Dispositivo, color: { r: number; g: number; b: number }, brightness: number) => {
+  // Handle LED effect change
+  const handleLedEffectChange = async (dispositivo: Dispositivo, effect: number) => {
     if (!dispositivo.mac_address) return;
 
     try {
-      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
-        r: color.r,
-        g: color.g,
-        b: color.b,
-        brightness
-      });
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_effect', { effect });
+      updateLedState(dispositivo.id, { led_effect: effect });
+    } catch (error) {
+      console.error('Errore effetto LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED speed change
+  const handleLedSpeedChange = async (dispositivo: Dispositivo, speed: number) => {
+    if (!dispositivo.mac_address) return;
+
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_speed', { speed });
+      updateLedState(dispositivo.id, { led_speed: speed });
+    } catch (error) {
+      console.error('Errore speed LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED brightness/color change - sends SEPARATE commands
+  const handleLedChange = async (dispositivo: Dispositivo, color: { r: number; g: number; b: number }, brightness: number) => {
+    if (!dispositivo.mac_address) return;
+
+    // Determine what changed
+    const colorChanged = color.r !== dispositivo.led_r || color.g !== dispositivo.led_g || color.b !== dispositivo.led_b;
+    const brightnessChanged = brightness !== dispositivo.led_brightness;
+
+    try {
+      // Send separate commands for color and brightness
+      if (colorChanged) {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
+          r: color.r,
+          g: color.g,
+          b: color.b
+        });
+      }
+      if (brightnessChanged) {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_brightness', { brightness });
+      }
       updateLedState(dispositivo.id, {
         led_r: color.r,
         led_g: color.g,
@@ -128,6 +163,32 @@ export const Dispositivi = () => {
       });
     } catch (error) {
       console.error('Errore controllo LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED num_leds change
+  const handleLedNumLedsChange = async (dispositivo: Dispositivo, numLeds: number) => {
+    if (!dispositivo.mac_address) return;
+
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_num_leds', { num_leds: numLeds });
+      toast.success(`LED: ${numLeds}`);
+    } catch (error) {
+      console.error('Errore num_leds LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED custom effect (3 colors)
+  const handleLedCustomEffect = async (dispositivo: Dispositivo, colors: { r: number; g: number; b: number }[]) => {
+    if (!dispositivo.mac_address) return;
+
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_custom_effect', { colors });
+      toast.success('Custom Rainbow applicato');
+    } catch (error) {
+      console.error('Errore custom effect LED:', error);
       toast.error('Errore LED');
     }
   };
@@ -306,7 +367,7 @@ export const Dispositivi = () => {
                   variants={containerVariants}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                     gap: '12px',
                   }}
                 >
@@ -326,7 +387,13 @@ export const Dispositivi = () => {
                           b: dispositivo.led_b ?? 255
                         }}
                         ledBrightness={dispositivo.led_brightness ?? 255}
+                        ledEffect={dispositivo.led_effect ?? 0}
+                        ledSpeed={dispositivo.led_speed ?? 128}
                         onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
+                        onLedEffectChange={(effect) => handleLedEffectChange(dispositivo, effect)}
+                        onLedSpeedChange={(speed) => handleLedSpeedChange(dispositivo, speed)}
+                        onLedNumLedsChange={(numLeds) => handleLedNumLedsChange(dispositivo, numLeds)}
+                        onLedCustomEffect={(colors) => handleLedCustomEffect(dispositivo, colors)}
                       />
                     </motion.div>
                   ))}

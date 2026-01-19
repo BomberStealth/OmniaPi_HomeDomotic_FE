@@ -69,18 +69,15 @@ export const useNotificheStore = create<NotificheState>((set, get) => ({
   // INIT WebSocket listener - chiamare UNA SOLA VOLTA
   initWebSocketListener: () => {
     if (get().listenerRegistered || globalNotificationHandler) {
-      console.log('🔔 Notification listener già registrato, skip');
       return;
     }
 
     globalNotificationHandler = () => {
-      console.log('🔔 WebSocket notification ricevuta - incremento badge');
       set(state => ({ unreadCount: state.unreadCount + 1 }));
     };
 
     socketService.onNotification(globalNotificationHandler);
     set({ listenerRegistered: true });
-    console.log('🔔 Notification listener registrato (centralizzato)');
   },
 
   // Cleanup - chiamare al logout
@@ -89,7 +86,6 @@ export const useNotificheStore = create<NotificheState>((set, get) => ({
       socketService.offNotification();
       globalNotificationHandler = null;
       set({ listenerRegistered: false });
-      console.log('🔔 Notification listener rimosso');
     }
   },
 }));

@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthCard } from '@/components/common/AuthCard';
 import { AuthInput } from '@/components/common/AuthInput';
 import { AuthButton } from '@/components/common/AuthButton';
-import { RiShieldLine, RiAlertLine, RiCheckboxCircleLine, RiArrowLeftLine } from 'react-icons/ri';
+import { RiShieldLine, RiAlertLine, RiArrowLeftLine, RiMailSendLine } from 'react-icons/ri';
 import { authApi } from '@/services/api';
 
 // ============================================
@@ -68,8 +68,6 @@ const sanitizeInput = (input: string): string => {
 };
 
 export const Register = () => {
-  const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     nome: '',
     cognome: '',
@@ -78,6 +76,10 @@ export const Register = () => {
     confirmPassword: ''
   });
 
+  // Refs per i checkbox - evita problemi di closure
+  const gdprRef = useRef<HTMLInputElement>(null);
+  const ageRef = useRef<HTMLInputElement>(null);
+
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,8 +87,11 @@ export const Register = () => {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  // Validazione form completa
+  // Validazione form completa - usa refs per checkbox
   const validateForm = (): boolean => {
+    const gdprChecked = gdprRef.current?.checked ?? false;
+    const ageChecked = ageRef.current?.checked ?? false;
+    console.log('VALIDATE - gdprChecked:', gdprChecked, 'ageChecked:', ageChecked);
     const errors: string[] = [];
 
     if (!formData.nome || formData.nome.length < 2) {
@@ -113,15 +118,22 @@ export const Register = () => {
     } else if (formData.password !== formData.confirmPassword) {
       errors.push('Le password non corrispondono');
     }
+    if (!gdprChecked) {
+      errors.push('Devi accettare la Privacy Policy e i Termini di Servizio');
+    }
+    if (!ageChecked) {
+      errors.push('Devi confermare di avere almeno 16 anni');
+    }
 
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? checked : value
     }));
     if (validationErrors.length > 0) {
       setValidationErrors([]);
@@ -130,6 +142,9 @@ export const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const gdprChecked = gdprRef.current?.checked ?? false;
+    const ageChecked = ageRef.current?.checked ?? false;
+    console.log('SUBMIT - gdprChecked:', gdprChecked, 'ageChecked:', ageChecked);
     setError('');
     setValidationErrors([]);
 
@@ -142,15 +157,16 @@ export const Register = () => {
         nome: sanitizeInput(formData.nome),
         cognome: sanitizeInput(formData.cognome),
         email: sanitizeInput(formData.email).toLowerCase(),
-        password: formData.password
+        password: formData.password,
+        gdprAccepted: gdprChecked === true,
+        ageConfirmed: ageChecked === true
       };
+      console.log('[FE] Sending to backend:', JSON.stringify(sanitizedData));
 
       await authApi.register(sanitizedData);
       setSuccess(true);
 
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      // Non redirect automatico - l'utente deve verificare l'email
     } catch (err: any) {
       setIsLoading(false);
 
@@ -171,7 +187,7 @@ export const Register = () => {
     }
   };
 
-  // Mostra messaggio successo
+  // Mostra messaggio successo - Verifica Email
   if (success) {
     return (
       <div
@@ -189,7 +205,7 @@ export const Register = () => {
         />
 
         <AuthCard className="w-full max-w-md relative z-10">
-          <div className="text-center py-8">
+          <div className="text-center py-6">
             <div className="flex justify-center mb-4">
               <div
                 style={{
@@ -199,7 +215,7 @@ export const Register = () => {
                   boxShadow: '0 4px 20px rgba(16, 185, 129, 0.2)',
                 }}
               >
-                <RiCheckboxCircleLine
+                <RiMailSendLine
                   size={48}
                   style={{
                     color: '#10b981',
@@ -216,12 +232,38 @@ export const Register = () => {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              Registrazione Completata!
+              Controlla la tua Email!
             </h2>
-            <p style={{ color: colors.textMuted, fontSize: '14px', marginBottom: '16px' }}>
-              Account creato con successo. Verrai reindirizzato al login...
+            <p style={{ color: colors.textMuted, fontSize: '14px', marginBottom: '8px' }}>
+              Ti abbiamo inviato un link di verifica a:
             </p>
-            <div className="animate-spin mx-auto w-6 h-6">⚙️</div>
+            <p style={{ color: colors.accentLight, fontSize: '15px', fontWeight: 600, marginBottom: '16px' }}>
+              {formData.email}
+            </p>
+            <p style={{ color: colors.textMuted, fontSize: '13px', marginBottom: '20px', lineHeight: 1.5 }}>
+              Clicca sul link nell'email per attivare il tuo account.
+              <br />
+              Controlla anche la cartella spam.
+            </p>
+            <Link
+              to="/login"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#0a0a09',
+                background: `linear-gradient(135deg, ${colors.accentLight}, ${colors.accent})`,
+                borderRadius: '12px',
+                textDecoration: 'none',
+              }}
+            >
+              <RiArrowLeftLine size={16} />
+              Vai al Login
+            </Link>
           </div>
         </AuthCard>
       </div>
@@ -370,6 +412,88 @@ export const Register = () => {
             disabled={isLoading}
           />
 
+          {/* GDPR Checkboxes - Refs per evitare closure problems */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+            {/* Privacy Policy Checkbox */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="gdprAccepted"
+                ref={gdprRef}
+                onChange={() => {
+                  if (validationErrors.length > 0) setValidationErrors([]);
+                }}
+                disabled={isLoading}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  accentColor: colors.accent,
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  marginTop: '2px',
+                  flexShrink: 0,
+                }}
+              />
+              <label
+                htmlFor="gdprAccepted"
+                style={{
+                  fontSize: '13px',
+                  color: colors.textMuted,
+                  lineHeight: 1.4,
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Ho letto e accetto la{' '}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  style={{ color: colors.accentLight, textDecoration: 'underline' }}
+                >
+                  Privacy Policy
+                </Link>{' '}
+                e i{' '}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  style={{ color: colors.accentLight, textDecoration: 'underline' }}
+                >
+                  Termini di Servizio
+                </Link>
+              </label>
+            </div>
+
+            {/* Age Confirmation Checkbox */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <input
+                type="checkbox"
+                id="ageConfirmed"
+                ref={ageRef}
+                onChange={() => {
+                  if (validationErrors.length > 0) setValidationErrors([]);
+                }}
+                disabled={isLoading}
+                style={{
+                  width: '18px',
+                  height: '18px',
+                  accentColor: colors.accent,
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  marginTop: '2px',
+                  flexShrink: 0,
+                }}
+              />
+              <label
+                htmlFor="ageConfirmed"
+                style={{
+                  fontSize: '13px',
+                  color: colors.textMuted,
+                  lineHeight: 1.4,
+                  cursor: isLoading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Confermo di avere almeno 16 anni di eta
+              </label>
+            </div>
+          </div>
+
           {/* Errori di validazione */}
           {validationErrors.length > 0 && (
             <div
@@ -448,27 +572,6 @@ export const Register = () => {
           </p>
         </div>
 
-        <div className="mt-4 flex justify-center gap-4">
-          <Link
-            to="/privacy"
-            style={{ fontSize: '11px', color: colors.textMuted }}
-            className="hover:opacity-80 transition-opacity"
-          >
-            Privacy Policy
-          </Link>
-          <span style={{ color: colors.textMuted }}>|</span>
-          <Link
-            to="/terms"
-            style={{ fontSize: '11px', color: colors.textMuted }}
-            className="hover:opacity-80 transition-opacity"
-          >
-            Termini di Servizio
-          </Link>
-        </div>
-
-        <p style={{ marginTop: '8px', fontSize: '10px', color: colors.textMuted, textAlign: 'center' }}>
-          Registrandoti accetti i Termini di Servizio e la Privacy Policy
-        </p>
       </AuthCard>
     </div>
   );

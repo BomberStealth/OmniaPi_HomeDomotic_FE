@@ -21,11 +21,11 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('✅ WebSocket connesso');
+      // WebSocket connected
     });
 
     this.socket.on('disconnect', () => {
-      console.log('❌ WebSocket disconnesso');
+      // WebSocket disconnected
     });
 
     this.socket.on('error', (error) => {

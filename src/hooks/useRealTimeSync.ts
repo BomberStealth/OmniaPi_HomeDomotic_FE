@@ -53,7 +53,6 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // Stanze
     socketService.onStanzaUpdate(({ stanza, action }) => {
-      console.log('🏠 Real-time stanza:', action, stanza);
       switch (action) {
         case 'created':
           addStanza(stanza);
@@ -69,7 +68,6 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // Scene
     socketService.onScenaUpdate(({ scena, action }) => {
-      console.log('🎬 Real-time scena:', action, scena);
       switch (action) {
         case 'created':
           addScena(scena);
@@ -88,8 +86,6 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // Dispositivi (Tasmota + altri)
     socketService.onDispositivoUpdate(({ dispositivo, action }) => {
-      console.log('💡 [DEBUG] Real-time dispositivo:', action, JSON.stringify(dispositivo));
-      console.log(`   → ID=${dispositivo.id}, power_state=${dispositivo.power_state}`);
       switch (action) {
         case 'created':
           addDispositivo(dispositivo);
@@ -101,7 +97,6 @@ export const useRealTimeSync = (impiantoId: number | null) => {
           removeDispositivo(dispositivo.id);
           break;
         case 'state-changed':
-          console.log(`   → Updating power state: id=${dispositivo.id}, state=${dispositivo.power_state}`);
           updatePowerState(dispositivo.id, dispositivo.power_state);
           break;
       }
@@ -109,8 +104,6 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // OmniaPi Nodes
     socketService.onOmniapiNodeUpdate((node) => {
-      console.log('📡 [DEBUG] Real-time OmniaPi node update received:', JSON.stringify(node));
-      console.log(`   → MAC=${node.mac}, relay1=${node.relay1}, relay2=${node.relay2}, online=${node.online}`);
       updateNode(node);
 
       // SYNC: Aggiorna anche dispositiviStore per sincronizzare lo slider
@@ -120,14 +113,11 @@ export const useRealTimeSync = (impiantoId: number | null) => {
       );
       if (dispositivo) {
         const newPowerState = node.relay1 || node.relay2;
-        console.log(`   → Syncing to dispositiviStore: id=${dispositivo.id}, power_state=${newPowerState}`);
         updatePowerState(dispositivo.id, newPowerState);
       }
     });
 
     socketService.onOmniapiNodesUpdate((nodes) => {
-      console.log('📡 [DEBUG] Real-time OmniaPi nodes update received:', nodes.length, 'nodes');
-      nodes.forEach((n: any) => console.log(`   → ${n.mac}: relay1=${n.relay1}, relay2=${n.relay2}`));
       updateNodes(nodes);
 
       // SYNC: Aggiorna anche dispositiviStore per tutti i nodi
@@ -143,14 +133,30 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // OmniaPi LED Strip
     socketService.onOmniapiLedUpdate((ledDevice) => {
-      console.log('🌈 [DEBUG] Real-time LED update received:', JSON.stringify(ledDevice));
-      console.log(`   → MAC=${ledDevice.mac}, power=${ledDevice.power}, RGB=(${ledDevice.r},${ledDevice.g},${ledDevice.b}), brightness=${ledDevice.brightness}`);
       updateLedDevice(ledDevice);
+
+      // SYNC: Aggiorna anche dispositiviStore per sincronizzare UI
+      const dispositivo = useDispositiviStore.getState().dispositivi.find(
+        (d) => d.mac_address === ledDevice.mac
+      );
+      if (dispositivo) {
+        // Usa updateByMac per aggiornare tutti i campi LED
+        useDispositiviStore.getState().updateByMac(ledDevice.mac, {
+          led_power: ledDevice.power,
+          power_state: ledDevice.power,
+          led_r: ledDevice.r,
+          led_g: ledDevice.g,
+          led_b: ledDevice.b,
+          led_brightness: ledDevice.brightness,
+          led_effect: ledDevice.effect,
+          online: ledDevice.online,
+          stato: ledDevice.online !== false ? 'online' : 'offline'
+        });
+      }
     });
 
     // Full Sync (dopo riconnessione)
     socketService.onFullSync(({ stanze, scene, dispositivi }) => {
-      console.log('🔄 Full sync received');
       if (stanze) setStanze(stanze);
       if (scene) setScene(scene);
       if (dispositivi) setDispositivi(dispositivi);

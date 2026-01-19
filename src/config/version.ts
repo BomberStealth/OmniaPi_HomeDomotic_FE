@@ -2,7 +2,7 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v1.3.47';
+export const APP_VERSION = 'v1.3.81';
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)
@@ -27,7 +27,6 @@ export const clearAllCache = async (): Promise<void> => {
 export const checkVersion = (): void => {
   const storedVersion = localStorage.getItem('omniapi-version');
   if (storedVersion !== APP_VERSION) {
-    console.log(`🔄 Nuova versione: ${storedVersion} → ${APP_VERSION}`);
     localStorage.setItem('omniapi-version', APP_VERSION);
     // NO reload automatico - causa loop infiniti
   }

@@ -218,16 +218,62 @@ export const Dashboard = () => {
     }
   };
 
-  // Handle LED brightness/color change (for dashboard)
-  const handleLedChange = async (dispositivo: any, color: { r: number; g: number; b: number }, brightness: number) => {
+  // Handle LED effect change
+  const handleLedEffectChange = async (dispositivo: any, effect: number) => {
     if (!dispositivo.mac_address) return;
     try {
-      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
-        r: color.r,
-        g: color.g,
-        b: color.b,
-        brightness
-      });
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_effect', { effect });
+      updateLedState(dispositivo.id, { led_effect: effect });
+    } catch (error) {
+      console.error('Errore effetto LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED speed change
+  const handleLedSpeedChange = async (dispositivo: any, speed: number) => {
+    if (!dispositivo.mac_address) return;
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_speed', { speed });
+      updateLedState(dispositivo.id, { led_speed: speed });
+    } catch (error) {
+      console.error('Errore speed LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED num_leds change
+  const handleLedNumLedsChange = async (dispositivo: any, numLeds: number) => {
+    if (!dispositivo.mac_address) return;
+    try {
+      await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_num_leds', { num_leds: numLeds });
+      toast.success(`LED: ${numLeds}`);
+    } catch (error) {
+      console.error('Errore num_leds LED:', error);
+      toast.error('Errore LED');
+    }
+  };
+
+  // Handle LED brightness/color change - sends SEPARATE commands
+  const handleLedChange = async (dispositivo: any, color: { r: number; g: number; b: number }, brightness: number) => {
+    if (!dispositivo.mac_address) return;
+
+    // Determine what changed
+    const colorChanged = color.r !== dispositivo.led_r || color.g !== dispositivo.led_g || color.b !== dispositivo.led_b;
+    const brightnessChanged = brightness !== dispositivo.led_brightness;
+
+    try {
+      // Send separate commands for color and brightness
+      if (colorChanged) {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_color', {
+          r: color.r,
+          g: color.g,
+          b: color.b
+        });
+      }
+      if (brightnessChanged) {
+        await omniapiApi.sendLedCommand(dispositivo.mac_address, 'set_brightness', { brightness });
+      }
       updateLedState(dispositivo.id, {
         led_r: color.r,
         led_g: color.g,
@@ -782,15 +828,26 @@ export const Dashboard = () => {
                               bloccato={!!dispositivo.bloccato}
                               onToggle={() => toggleDevice(dispositivo)}
                               deviceType={dispositivo.device_type || 'relay'}
-                              variant="compact"
+                              variant="full"
                               ledColor={dispositivo.device_type === 'omniapi_led' ? {
                                 r: dispositivo.led_r ?? 255,
                                 g: dispositivo.led_g ?? 255,
                                 b: dispositivo.led_b ?? 255
                               } : undefined}
                               ledBrightness={dispositivo.led_brightness ?? 255}
+                              ledEffect={dispositivo.led_effect ?? 0}
+                              ledSpeed={dispositivo.led_speed ?? 128}
                               onLedChange={dispositivo.device_type === 'omniapi_led'
                                 ? (color, brightness) => handleLedChange(dispositivo, color, brightness)
+                                : undefined}
+                              onLedEffectChange={dispositivo.device_type === 'omniapi_led'
+                                ? (effect) => handleLedEffectChange(dispositivo, effect)
+                                : undefined}
+                              onLedSpeedChange={dispositivo.device_type === 'omniapi_led'
+                                ? (speed) => handleLedSpeedChange(dispositivo, speed)
+                                : undefined}
+                              onLedNumLedsChange={dispositivo.device_type === 'omniapi_led'
+                                ? (numLeds) => handleLedNumLedsChange(dispositivo, numLeds)
                                 : undefined}
                             />
                           ))}
@@ -872,15 +929,26 @@ export const Dashboard = () => {
                             bloccato={!!dispositivo.bloccato}
                             onToggle={() => toggleDevice(dispositivo)}
                             deviceType={dispositivo.device_type || 'relay'}
-                            variant="compact"
+                            variant="full"
                             ledColor={dispositivo.device_type === 'omniapi_led' ? {
                               r: dispositivo.led_r ?? 255,
                               g: dispositivo.led_g ?? 255,
                               b: dispositivo.led_b ?? 255
                             } : undefined}
                             ledBrightness={dispositivo.led_brightness ?? 255}
+                            ledEffect={dispositivo.led_effect ?? 0}
+                            ledSpeed={dispositivo.led_speed ?? 128}
                             onLedChange={dispositivo.device_type === 'omniapi_led'
                               ? (color, brightness) => handleLedChange(dispositivo, color, brightness)
+                              : undefined}
+                            onLedEffectChange={dispositivo.device_type === 'omniapi_led'
+                              ? (effect) => handleLedEffectChange(dispositivo, effect)
+                              : undefined}
+                            onLedSpeedChange={dispositivo.device_type === 'omniapi_led'
+                              ? (speed) => handleLedSpeedChange(dispositivo, speed)
+                              : undefined}
+                            onLedNumLedsChange={dispositivo.device_type === 'omniapi_led'
+                              ? (numLeds) => handleLedNumLedsChange(dispositivo, numLeds)
                               : undefined}
                           />
                         ))}

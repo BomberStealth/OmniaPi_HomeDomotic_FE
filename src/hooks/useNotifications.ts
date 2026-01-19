@@ -35,9 +35,6 @@ export function useNotifications() {
 
       // If app is focused, show custom notification
       if (document.hasFocus()) {
-        // You can integrate with a toast library here
-        console.log('Notification:', title, body);
-
         // Simple browser notification as fallback
         if (Notification.permission === 'granted') {
           new Notification(title, {

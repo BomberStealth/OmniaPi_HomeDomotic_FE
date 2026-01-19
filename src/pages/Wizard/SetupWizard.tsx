@@ -35,7 +35,9 @@ export interface WizardState {
   dispositivi: Array<{
     mac: string;
     nome: string;
+    device_type?: string;
     stanza_nome?: string;
+    stanza_icona?: string;
   }>;
 }
 
@@ -168,7 +170,9 @@ export const SetupWizard = () => {
   };
 
   const finishWizard = () => {
-    clearWizard();
+    // Rimuovi localStorage PRIMA di qualsiasi state change per evitare race condition
+    // (l'useEffect salva state in localStorage ad ogni cambiamento)
+    localStorage.removeItem(STORAGE_KEY);
     window.location.href = '/dashboard';
   };
 

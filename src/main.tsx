@@ -16,11 +16,10 @@ setInterval(checkVersionFromServer, 60 * 1000);
 const updateSW = registerSW({
   onNeedRefresh() {
     // Nuova versione disponibile - refresh automatico IMMEDIATO
-    console.log('🔄 Nuova versione disponibile, aggiornamento in corso...');
     updateSW(true);
   },
   onOfflineReady() {
-    console.log('✅ App pronta per uso offline');
+    // App ready for offline use
   },
   onRegisteredSW(_swUrl, registration) {
     // Controlla aggiornamenti ogni 30 secondi

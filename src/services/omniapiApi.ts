@@ -205,7 +205,7 @@ export const omniapiApi = {
   sendLedCommand: async (
     mac: string,
     action: string,
-    params?: { r?: number; g?: number; b?: number; brightness?: number; effect?: number; speed?: number }
+    params?: { r?: number; g?: number; b?: number; brightness?: number; effect?: number; speed?: number; num_leds?: number; colors?: { r: number; g: number; b: number }[] }
   ): Promise<{ success: boolean; payload: any }> => {
     const { data } = await api.post('/api/led/command', { mac, action, ...params });
     return data;

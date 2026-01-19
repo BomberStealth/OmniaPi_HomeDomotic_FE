@@ -25,6 +25,7 @@ export interface Dispositivo {
   led_b?: number;
   led_brightness?: number;
   led_effect?: number;
+  led_speed?: number;
   // Sensor properties
   temperature?: number;
   humidity?: number;
@@ -48,7 +49,7 @@ interface DispositiviState {
   setDispositivi: (dispositivi: Dispositivo[]) => void;
   updatePowerState: (dispositivoId: number, powerState: boolean) => void;
   // LED actions
-  updateLedState: (dispositivoId: number, ledState: Partial<Pick<Dispositivo, 'led_power' | 'led_r' | 'led_g' | 'led_b' | 'led_brightness' | 'led_effect'>>) => void;
+  updateLedState: (dispositivoId: number, ledState: Partial<Pick<Dispositivo, 'led_power' | 'led_r' | 'led_g' | 'led_b' | 'led_brightness' | 'led_effect' | 'led_speed'>>) => void;
   // By MAC (for WebSocket updates)
   updateByMac: (mac: string, updates: Partial<Dispositivo>) => void;
 }

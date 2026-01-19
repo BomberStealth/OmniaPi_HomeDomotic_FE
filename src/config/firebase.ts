@@ -39,7 +39,6 @@ export async function requestNotificationPermission(): Promise<string | null> {
     }
 
     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
-    console.log('FCM Token:', token);
     return token;
   } catch (error) {
     console.error('Error getting notification permission:', error);
@@ -52,7 +51,6 @@ export function onForegroundMessage(callback: (payload: any) => void): void {
   if (!messaging) return;
 
   onMessage(messaging, (payload) => {
-    console.log('Foreground message received:', payload);
     callback(payload);
   });
 }

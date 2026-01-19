@@ -485,7 +485,7 @@ export const Stanze = () => {
                 return (
                   <motion.button
                     key={opt.id}
-                    onClick={() => setNewStanza({ ...newStanza, icona: opt.id })}
+                    onClick={() => setNewStanza({ nome: newStanza.nome || opt.label, icona: opt.id })}
                     style={{
                       padding: '12px 8px',
                       display: 'flex',
@@ -722,7 +722,7 @@ export const Stanze = () => {
                 return (
                   <motion.button
                     key={opt.id}
-                    onClick={() => setEditStanza({ ...editStanza, icona: opt.id })}
+                    onClick={() => setEditStanza({ nome: editStanza.nome || opt.label, icona: opt.id })}
                     style={{
                       padding: '12px 8px',
                       display: 'flex',

@@ -12,6 +12,7 @@ import {
   RiCheckLine,
   RiRefreshLine,
 } from 'react-icons/ri';
+import { ROOM_ICON_OPTIONS, getRoomIcon } from '@/config/roomIcons';
 
 // ============================================
 // STEP 4: AGGIUNGI DISPOSITIVI
@@ -25,12 +26,14 @@ interface StepDispositiviProps {
     nome: string;
     device_type?: string;
     stanza_nome?: string;
+    stanza_icona?: string;
   }>;
   onAddDispositivo: (dispositivo: {
     mac: string;
     nome: string;
     device_type?: string;
     stanza_nome?: string;
+    stanza_icona?: string;
   }) => void;
   onNext: () => void;
   onSkip: () => void;
@@ -50,6 +53,7 @@ export const StepDispositivi = ({
   const [selectedDevice, setSelectedDevice] = useState<DiscoveredDevice | null>(null);
   const [deviceName, setDeviceName] = useState('');
   const [stanzaName, setStanzaName] = useState('');
+  const [stanzaIcona, setStanzaIcona] = useState('');
   const [error, setError] = useState('');
 
   // Ref per refresh esterno
@@ -70,6 +74,7 @@ export const StepDispositivi = ({
         : `Interruttore ${device.mac.slice(-5)}`
     );
     setStanzaName('');
+    setStanzaIcona('');
     setError('');
   };
 
@@ -88,18 +93,21 @@ export const StepDispositivi = ({
       nome: deviceName.trim(),
       device_type: selectedDevice.device_type,
       stanza_nome: stanzaName.trim() || undefined,
+      stanza_icona: stanzaIcona || undefined,
     });
 
     // Reset form
     setSelectedDevice(null);
     setDeviceName('');
     setStanzaName('');
+    setStanzaIcona('');
   };
 
   const handleCancelSelection = () => {
     setSelectedDevice(null);
     setDeviceName('');
     setStanzaName('');
+    setStanzaIcona('');
     setError('');
   };
 
@@ -244,7 +252,7 @@ export const StepDispositivi = ({
               placeholder="es. Luce Soggiorno"
             />
 
-            {/* Nome stanza */}
+            {/* Nome stanza con selezione icona */}
             <div>
               <label
                 style={{
@@ -254,8 +262,43 @@ export const StepDispositivi = ({
                   marginBottom: spacing.xs,
                 }}
               >
-                Stanza (opzionale)
+                Stanza (opzionale) - clicca un'icona o scrivi
               </label>
+              {/* Griglia icone stanze */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: '6px',
+                  marginBottom: spacing.sm,
+                }}
+              >
+                {ROOM_ICON_OPTIONS.slice(0, 8).map((opt) => {
+                  const Icon = getRoomIcon(opt.id);
+                  const isSelected = stanzaIcona === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => { setStanzaName(opt.label); setStanzaIcona(opt.id); }}
+                      style={{
+                        padding: '8px 4px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px',
+                        borderRadius: radius.sm,
+                        border: isSelected ? `2px solid ${colors.accent}` : `1px solid ${modeColors.border}`,
+                        background: isSelected ? `${colors.accent}20` : 'transparent',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Icon size={18} style={{ color: isSelected ? colors.accent : modeColors.textMuted }} />
+                      <span style={{ fontSize: '9px', color: isSelected ? colors.accent : modeColors.textMuted }}>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <input
                 type="text"
                 list="stanze-list"

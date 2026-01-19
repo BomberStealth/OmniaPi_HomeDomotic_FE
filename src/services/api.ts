@@ -8,7 +8,6 @@ import type { ApiResponse, AuthResponse, Impianto, Dispositivo } from '@/types';
 // Se VITE_API_URL è vuoto, usa URL relativi (same-origin tramite Nginx)
 // Altrimenti usa l'URL specificato
 const API_URL = import.meta.env.VITE_API_URL || '';
-console.log('🔗 API_URL:', API_URL || '(empty - using relative URLs)');
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -30,9 +29,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // 401 redirect solo se NON siamo già su login/register (evita reload loop)
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      const isAuthEndpoint = error.config?.url?.includes('/auth/login') ||
+                             error.config?.url?.includes('/auth/register');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -51,7 +55,7 @@ export const authApi = {
     return data;
   },
 
-  register: async (userData: { nome: string; cognome: string; email: string; password: string }) => {
+  register: async (userData: { nome: string; cognome: string; email: string; password: string; gdprAccepted?: boolean; ageConfirmed?: boolean }) => {
     const { data } = await api.post<ApiResponse>('/api/auth/register', userData);
     return data;
   },
