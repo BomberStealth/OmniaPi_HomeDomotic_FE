@@ -14,6 +14,7 @@ import {
   RiCloseLine
 } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { Toggle } from '@/components/common/Toggle';
 
 // ============================================
 // UNIFIED DEVICE CARD
@@ -215,69 +216,6 @@ const LedEffectIcon = ({
       size={size}
       style={getEffectStyle()}
     />
-  );
-};
-
-// ============================================
-// TOGGLE COMPONENT (shared)
-// ============================================
-const Toggle = ({
-  isOn,
-  accentColor,
-  gradient,
-  useGradients,
-  size = 'normal'
-}: {
-  isOn: boolean;
-  accentColor: string;
-  gradient?: string;
-  useGradients?: boolean;
-  size?: 'normal' | 'small';
-}) => {
-  const dimensions = size === 'small'
-    ? { width: 36, height: 20, thumb: 14, travel: 14 }
-    : { width: 44, height: 24, thumb: 18, travel: 20 };
-
-  // Usa gradient se useGradients è true, altrimenti colore solido
-  const onBackground = useGradients && gradient
-    ? gradient
-    : accentColor;
-
-  return (
-    <div
-      style={{
-        width: `${dimensions.width}px`,
-        minWidth: `${dimensions.width}px`,
-        height: `${dimensions.height}px`,
-        padding: '3px',
-        borderRadius: '9999px',
-        background: isOn
-          ? onBackground
-          : 'rgba(60, 60, 60, 0.6)',
-        boxShadow: isOn
-          ? `0 0 12px ${accentColor}50`
-          : 'inset 0 2px 4px rgba(0,0,0,0.3)',
-        position: 'relative',
-        flexShrink: 0,
-        transition: 'all 0.3s ease',
-      }}
-    >
-      <motion.div
-        style={{
-          width: `${dimensions.thumb}px`,
-          height: `${dimensions.thumb}px`,
-          borderRadius: '50%',
-          background: isOn
-            ? 'linear-gradient(145deg, #ffffff, #f0f0f0)'
-            : 'linear-gradient(145deg, #e0e0e0, #c8c8c8)',
-          boxShadow: isOn
-            ? '0 2px 4px rgba(0,0,0,0.2), 0 0 8px rgba(255,255,255,0.3)'
-            : '0 1px 3px rgba(0,0,0,0.3)',
-        }}
-        animate={{ x: isOn ? dimensions.travel : 0 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-      />
-    </div>
   );
 };
 
@@ -1452,7 +1390,7 @@ const UnifiedDeviceCardComponent = ({
   showDelete = false,
   onDelete,
 }: UnifiedDeviceCardProps) => {
-  const { colors: themeColors, modeColors, useGradients } = useThemeColor();
+  const { colors: themeColors, modeColors } = useThemeColor();
   const [showModal, setShowModal] = useState(false);
 
   // Normalize device type
@@ -1638,7 +1576,6 @@ const UnifiedDeviceCardComponent = ({
           cursor: bloccato ? 'not-allowed' : 'pointer',
           textAlign: 'left',
         }}
-        whileHover={bloccato ? undefined : { scale: 1.01 }}
         whileTap={bloccato ? undefined : { scale: 0.98 }}
       >
         {/* FIXED LAYOUT: Icon left, Toggle right - ALWAYS */}
@@ -1696,10 +1633,8 @@ const UnifiedDeviceCardComponent = ({
           {/* Toggle - fixed position right */}
           <Toggle
             isOn={isOn}
-            accentColor={activeColor}
-            gradient={themeColors.gradient}
-            useGradients={useGradients}
-            size={variant === 'mini' ? 'small' : 'normal'}
+            visualOnly={true}
+            size={variant === 'mini' ? 'sm' : 'md'}
           />
         </div>
 

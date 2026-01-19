@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
+import { Toggle } from '@/components/common/Toggle';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme, ThemeMode } from '@/contexts/ThemeColorContext';
 import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
@@ -86,52 +87,6 @@ export const Settings = () => {
     logout();
     navigate('/login');
   };
-
-  // Toggle Switch Component
-  const ToggleSwitch = ({
-    enabled,
-    onToggle,
-    accentColor = colors.accent
-  }: {
-    enabled: boolean;
-    onToggle: () => void;
-    accentColor?: string;
-  }) => (
-    <motion.button
-      onClick={onToggle}
-      style={{
-        width: '52px',
-        height: '28px',
-        borderRadius: '9999px',
-        background: enabled
-          ? (useGradients ? themeColors.gradient : accentColor)
-          : colors.toggleTrack,
-        border: `1px solid ${enabled ? accentColor : colors.toggleTrackBorder}`,
-        position: 'relative',
-        cursor: 'pointer',
-        boxShadow: enabled ? `0 0 16px ${accentColor}40` : 'none',
-      }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <motion.div
-        animate={{ x: enabled ? 24 : 2 }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-        style={{
-          position: 'absolute',
-          top: '2px',
-          width: '22px',
-          height: '22px',
-          borderRadius: '50%',
-          background: enabled
-            ? `linear-gradient(135deg, #fff 0%, ${colors.accentLight} 100%)`
-            : 'linear-gradient(135deg, #888 0%, #666 100%)',
-          boxShadow: enabled
-            ? `0 2px 8px rgba(0,0,0,0.3), 0 0 8px ${accentColor}40`
-            : '0 2px 6px rgba(0,0,0,0.4)',
-        }}
-      />
-    </motion.button>
-  );
 
   // Setting Row Component
   const SettingRow = ({
@@ -464,48 +419,15 @@ export const Settings = () => {
               </div>
 
               {/* Toggle Switch */}
-              <motion.button
-                onClick={() => {
+              <Toggle
+                isOn={isDarkMode}
+                onToggle={() => {
                   const newMode: ThemeMode = isDarkMode ? 'light' : 'dark';
                   setThemeMode(newMode);
                   toast.success(newMode === 'dark' ? 'Tema scuro' : 'Tema chiaro');
                 }}
-                style={{
-                  width: '52px',
-                  height: '28px',
-                  borderRadius: '14px',
-                  padding: '2px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: isDarkMode
-                    ? (useGradients ? themeColors.gradient : colors.accent)
-                    : `linear-gradient(90deg, ${colors.warning}, #fbbf24)`,
-                  boxShadow: `0 0 12px ${isDarkMode ? colors.accent : colors.warning}40`,
-                }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  animate={{ x: isDarkMode ? 24 : 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                >
-                  {isDarkMode ? (
-                    <RiMoonLine size={12} style={{ color: colors.accent }} />
-                  ) : (
-                    <RiSunLine size={12} style={{ color: colors.warning }} />
-                  )}
-                </motion.div>
-              </motion.button>
+                size="lg"
+              />
             </div>
           </motion.div>
 
@@ -548,38 +470,14 @@ export const Settings = () => {
               </div>
 
               {/* Toggle Switch */}
-              <motion.button
-                onClick={() => {
+              <Toggle
+                isOn={useGradients}
+                onToggle={() => {
                   setUseGradients(!useGradients);
                   toast.success(useGradients ? 'Gradienti disattivati' : 'Gradienti attivati');
                 }}
-                style={{
-                  width: '52px',
-                  height: '28px',
-                  borderRadius: '14px',
-                  padding: '2px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: useGradients
-                    ? themeColors.gradient
-                    : colors.toggleTrack,
-                  boxShadow: useGradients ? `0 0 12px ${colors.accent}40` : 'none',
-                }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <motion.div
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  }}
-                  animate={{ x: useGradients ? 24 : 0 }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              </motion.button>
+                size="lg"
+              />
             </div>
           </motion.div>
         </motion.div>
@@ -623,8 +521,8 @@ export const Settings = () => {
                       }}
                     />
                   ) : (
-                    <ToggleSwitch
-                      enabled={isEnabled}
+                    <Toggle
+                      isOn={isEnabled}
                       onToggle={async () => {
                         if (isEnabled) {
                           await disableNotifications();
@@ -632,6 +530,7 @@ export const Settings = () => {
                           await enableNotifications();
                         }
                       }}
+                      size="lg"
                     />
                   )
                 }
