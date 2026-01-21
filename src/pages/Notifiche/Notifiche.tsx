@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -80,44 +80,86 @@ export const Notifiche = () => {
 
   // Carica notifiche
   const loadNotifications = useCallback(async () => {
-    if (!impiantoCorrente?.id) return;
+    if (!impiantoCorrente?.id) {
+      setLoading(false);
+      setNotifications([]);
+      return;
+    }
 
     setLoading(true);
     try {
       const { data } = await api.get(`/api/notifications/history?impiantoId=${impiantoCorrente.id}&limit=100`);
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      // Gestisci sia risposta diretta che wrappata
+      const notifs = data?.notifications || [];
+      setNotifications(Array.isArray(notifs) ? notifs : []);
+      setUnreadCount(typeof data?.unreadCount === 'number' ? data.unreadCount : 0);
     } catch (error) {
       console.error('Error loading notifications:', error);
-      toast.error('Errore nel caricamento delle notifiche');
+      setNotifications([]);
+      setUnreadCount(0);
+      // Non mostrare toast per evitare spam di errori
     } finally {
       setLoading(false);
     }
   }, [impiantoCorrente?.id]);
 
+  // Ref per gestire listener senza conflitti con lo store
+  const notificationHandlerRef = useRef<((notification: any) => void) | null>(null);
+
   useEffect(() => {
-    loadNotifications();
+    // Carica notifiche e poi segna tutte come lette automaticamente
+    const loadAndMarkRead = async () => {
+      await loadNotifications();
+
+      // Segna tutte come lette quando si apre la pagina (senza toast)
+      if (impiantoCorrente?.id) {
+        try {
+          await api.post('/api/notifications/read-all', { impiantoId: impiantoCorrente.id });
+          setUnreadCount(0);
+          resetUnreadCount(); // Aggiorna store globale
+        } catch (error) {
+          console.error('Error auto-marking as read:', error);
+        }
+      }
+    };
+
+    loadAndMarkRead();
 
     if (impiantoCorrente?.id) {
       // Join impianto room per ricevere notifiche real-time
       socketService.joinImpianto(impiantoCorrente.id);
     }
 
+    // Listener per nuove notifiche real-time - usa socket direttamente
+    // per non interferire con lo store centralizzato
+    const handleNewNotification = (notification: any) => {
+      // Aggiungi la nuova notifica in cima alla lista
+      setNotifications(prev => {
+        // Evita duplicati
+        if (prev.some(n => n.id === notification.id)) {
+          return prev;
+        }
+        return [notification, ...prev];
+      });
+      // Incrementa conteggio locale (lo store lo incrementa già separatamente)
+      setUnreadCount(prev => prev + 1);
+    };
+
+    // Registra listener direttamente sul socket per evitare conflitti
+    notificationHandlerRef.current = handleNewNotification;
+    socketService.getSocket()?.on('notification', handleNewNotification);
+
     return () => {
       if (impiantoCorrente?.id) {
         socketService.leaveImpianto(impiantoCorrente.id);
       }
+      // Rimuovi SOLO il nostro listener specifico, non tutti
+      if (notificationHandlerRef.current) {
+        socketService.getSocket()?.off('notification', notificationHandlerRef.current);
+        notificationHandlerRef.current = null;
+      }
     };
-  }, [loadNotifications, impiantoCorrente?.id]);
-
-  // NON registrare listener qui - è centralizzato nello store
-  // Ricarica lista quando cambia unreadCount (notifica ricevuta via store)
-  useEffect(() => {
-    // Ricarica quando c'è una nuova notifica
-    if (impiantoCorrente?.id) {
-      loadNotifications();
-    }
-  }, [impiantoCorrente?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadNotifications, impiantoCorrente?.id, resetUnreadCount]);
 
   // Parse read_by - può arrivare come stringa JSON o array già parsato
   const parseReadBy = (readByField: string | number[] | null): number[] => {

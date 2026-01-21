@@ -3,7 +3,8 @@
 // ============================================
 
 export enum UserRole {
-  CLIENTE = 'cliente',
+  OSPITE = 'ospite',
+  PROPRIETARIO = 'proprietario',
   INSTALLATORE = 'installatore',
   ADMIN = 'admin'
 }

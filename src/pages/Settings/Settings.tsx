@@ -240,7 +240,7 @@ export const Settings = () => {
                   {user?.email || 'email@example.com'}
                 </span>
               </p>
-              {isAdmin && (
+              {user?.ruolo && (
                 <span
                   style={{
                     display: 'inline-block',
@@ -252,9 +252,10 @@ export const Settings = () => {
                     background: `${colors.accent}15`,
                     border: `1px solid ${colors.accent}30`,
                     borderRadius: '6px',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  ADMIN
+                  {user.ruolo}
                 </span>
               )}
             </div>

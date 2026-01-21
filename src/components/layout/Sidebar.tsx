@@ -18,6 +18,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useNotificheStore } from '@/store/notificheStore';
+import { useUserRole } from '@/components/auth';
 
 // ============================================
 // SIDEBAR NAVIGATION - Dark Luxury Style
@@ -36,7 +37,7 @@ const hexToRgb = (hex: string): string => {
 export const Sidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const { colors: themeColors, colorTheme, modeColors, isDarkMode } = useThemeColor();
   const { canInstall, promptInstall } = usePWAInstall();
   const { impiantoCorrente } = useImpiantoContext();
@@ -60,7 +61,10 @@ export const Sidebar = () => {
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
   }), [themeColors, modeColors]);
 
-  const menuItems = [
+  const { canAccessPath } = useUserRole();
+
+  // Menu items filtrati per ruolo
+  const allMenuItems = [
     { path: '/dashboard', icon: RiHome4Line, label: t('nav.dashboard') },
     { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
     { path: '/dispositivi', icon: RiLightbulbLine, label: t('nav.dispositivi') },
@@ -68,6 +72,9 @@ export const Sidebar = () => {
     { path: '/notifications', icon: RiNotification3Line, label: 'Notifiche' },
     { path: '/settings', icon: RiSettings4Line, label: t('nav.settings') }
   ];
+
+  // Filtra in base ai permessi del ruolo
+  const menuItems = allMenuItems.filter(item => canAccessPath(item.path));
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
@@ -112,52 +119,6 @@ export const Sidebar = () => {
           {t('app.title')}{' '}
           <span style={{ color: colors.accent, fontWeight: 600 }}>{APP_VERSION}</span>
         </p>
-      </div>
-
-      {/* User Info Card */}
-      <div
-        className="mb-6 p-4"
-        style={{
-          background: colors.bgCardLit,
-          border: `1px solid ${colors.border}`,
-          borderRadius: '20px',
-          boxShadow: colors.cardShadow,
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Card top edge highlight */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: '25%',
-            right: '25%',
-            height: '1px',
-            background: `linear-gradient(90deg, transparent, ${colors.accentLight}33, transparent)`,
-          }}
-        />
-        <p
-          className="font-medium truncate"
-          style={{ color: colors.textPrimary, fontSize: '14px' }}
-        >
-          {user?.nome} {user?.cognome}
-        </p>
-        <p className="truncate" style={{ color: colors.textMuted, fontSize: '12px' }}>
-          {user?.email}
-        </p>
-        <span
-          className="inline-block mt-2 px-2 py-1"
-          style={{
-            fontSize: '11px',
-            background: `${colors.accent}15`,
-            color: colors.accentLight,
-            border: `1px solid ${colors.accent}33`,
-            borderRadius: '12px',
-          }}
-        >
-          {user?.ruolo}
-        </span>
       </div>
 
       {/* Impianto Selector */}

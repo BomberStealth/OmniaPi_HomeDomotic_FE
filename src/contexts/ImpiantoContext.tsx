@@ -1,5 +1,7 @@
-import { createContext, useContext, useEffect, ReactNode, useMemo, useCallback } from 'react';
+import { createContext, useContext, useEffect, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { useImpiantiStore } from '@/store/impiantiStore';
+import { socketService } from '@/services/socket';
+import { toast } from '@/utils/toast';
 import type { Impianto } from '@/types';
 
 // ============================================
@@ -24,13 +26,53 @@ export const ImpiantoProvider = ({ children }: { children: ReactNode }) => {
     impiantoCorrente,
     isLoading,
     fetchImpianti,
-    setImpiantoCorrente: storeSetImpiantoCorrente
+    setImpiantoCorrente: storeSetImpiantoCorrente,
+    removeImpianto
   } = useImpiantiStore();
+
+  const listenerInitialized = useRef(false);
 
   // Carica impianti al mount
   useEffect(() => {
     fetchImpianti();
   }, [fetchImpianti]);
+
+  // Listener per condivisione rimossa (accesso revocato)
+  // Il backend emette tramite 'notification' con tipo='condivisione-rimossa'
+  // IMPORTANTE: usa listener diretto per non interferire con altri listener
+  const condivisioneHandlerRef = useRef<((data: any) => void) | null>(null);
+
+  useEffect(() => {
+    if (listenerInitialized.current) return;
+    listenerInitialized.current = true;
+
+    const handleCondivisioneRimossa = (data: any) => {
+      // Filtra solo eventi di tipo condivisione-rimossa
+      if (data.tipo === 'condivisione-rimossa') {
+        console.log('📡 Condivisione rimossa ricevuta via WS:', data);
+        // Rimuovi l'impianto dalla lista locale
+        removeImpianto(data.impianto_id);
+
+        // Se l'utente era su quell'impianto, mostra toast
+        if (impiantoCorrente?.id === data.impianto_id) {
+          toast.error('Accesso all\'impianto revocato');
+        }
+      }
+    };
+
+    // Registra listener direttamente sul socket per non interferire con altri
+    condivisioneHandlerRef.current = handleCondivisioneRimossa;
+    socketService.getSocket()?.on('notification', handleCondivisioneRimossa);
+
+    return () => {
+      // Rimuovi SOLO questo listener specifico
+      if (condivisioneHandlerRef.current) {
+        socketService.getSocket()?.off('notification', condivisioneHandlerRef.current);
+        condivisioneHandlerRef.current = null;
+      }
+      listenerInitialized.current = false;
+    };
+  }, [removeImpianto, impiantoCorrente?.id]);
 
   // Memoizza setImpiantoCorrente per stabilità referenziale
   const setImpiantoCorrente = useCallback((impianto: Impianto | null) => {

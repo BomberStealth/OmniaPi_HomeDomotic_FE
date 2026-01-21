@@ -21,7 +21,7 @@ interface NotificheState {
   cleanupWebSocketListener: () => void;
 }
 
-// Callback globale per evitare duplicati
+// Callback globale per evitare duplicati - usa listener diretto per non essere rimosso da altri
 let globalNotificationHandler: ((notification: NotificationEvent) => void) | null = null;
 
 export const useNotificheStore = create<NotificheState>((set, get) => ({
@@ -67,23 +67,28 @@ export const useNotificheStore = create<NotificheState>((set, get) => ({
   },
 
   // INIT WebSocket listener - chiamare UNA SOLA VOLTA
+  // Usa listener diretto sul socket per non essere rimosso da altri offNotification()
   initWebSocketListener: () => {
     if (get().listenerRegistered || globalNotificationHandler) {
       return;
     }
 
-    globalNotificationHandler = () => {
+    globalNotificationHandler = (notification: NotificationEvent) => {
+      // Ignora eventi di tipo condivisione-rimossa (gestiti da ImpiantoContext)
+      if ((notification as any).tipo === 'condivisione-rimossa') return;
       set(state => ({ unreadCount: state.unreadCount + 1 }));
     };
 
-    socketService.onNotification(globalNotificationHandler);
+    // Usa getSocket() per listener diretto - non viene rimosso da offNotification()
+    socketService.getSocket()?.on('notification', globalNotificationHandler);
     set({ listenerRegistered: true });
   },
 
   // Cleanup - chiamare al logout
   cleanupWebSocketListener: () => {
     if (globalNotificationHandler) {
-      socketService.offNotification();
+      // Rimuovi SOLO il nostro listener specifico
+      socketService.getSocket()?.off('notification', globalNotificationHandler);
       globalNotificationHandler = null;
       set({ listenerRegistered: false });
     }

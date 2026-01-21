@@ -9,6 +9,7 @@ import {
 } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { spacing, radius, fontSize, getIconSizeNum } from '@/styles/responsive';
+import { useUserRole } from '@/components/auth';
 
 // ============================================
 // BOTTOM NAVIGATION - Dark Luxury Style
@@ -36,13 +37,19 @@ export const BottomNav = () => {
     border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
   }), [themeColors, modeColors]);
 
-  const menuItems = [
+  const { canAccessPath } = useUserRole();
+
+  // Menu items filtrati per ruolo
+  const allMenuItems = [
     { path: '/dashboard', icon: RiHome4Line, label: 'Home' },
     { path: '/stanze', icon: RiDoorOpenLine, label: 'Stanze' },
     { path: '/dispositivi', icon: RiLightbulbLine, label: 'Dispositivi' },
     { path: '/scene', icon: RiSparklingLine, label: 'Scene' },
     { path: '/settings', icon: RiSettings4Line, label: 'Altro' }
   ];
+
+  // Filtra in base ai permessi del ruolo
+  const menuItems = allMenuItems.filter(item => canAccessPath(item.path));
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 

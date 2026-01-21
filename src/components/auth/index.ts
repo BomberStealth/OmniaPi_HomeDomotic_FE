@@ -1,1 +1,1 @@
-export { RoleProtectedRoute, useUserRole } from './RoleProtectedRoute';
+export { RoleProtectedRoute, useUserRole, isPathAllowed, rolePermissions } from './RoleProtectedRoute';

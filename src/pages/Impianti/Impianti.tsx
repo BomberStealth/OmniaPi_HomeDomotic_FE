@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
-import { WizardNuovoImpianto } from '@/components/impianti/WizardNuovoImpianto';
 import { useImpiantiStore } from '@/store/impiantiStore';
+import { useAuthStore } from '@/store/authStore';
 import { RiBuilding2Line, RiHome4Line, RiMapPinLine, RiAddLine, RiArrowRightSLine } from 'react-icons/ri';
 
 // ============================================
@@ -15,7 +15,10 @@ export const Impianti = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { impianti, fetchImpianti, setImpiantoCorrente } = useImpiantiStore();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user } = useAuthStore();
+
+  // Solo admin e installatore possono creare impianti
+  const canCreateImpianto = user?.ruolo === 'admin' || user?.ruolo === 'installatore';
 
   useEffect(() => {
     fetchImpianti();
@@ -26,8 +29,8 @@ export const Impianti = () => {
     navigate(`/impianti/${impianto.id}`);
   };
 
-  const handleSuccess = () => {
-    fetchImpianti();
+  const handleCreateNew = () => {
+    navigate('/setup');
   };
 
   return (
@@ -44,13 +47,16 @@ export const Impianti = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors"
-            title="Nuovo Impianto"
-          >
-            <RiAddLine size={20} className="text-white" />
-          </button>
+          {/* Bottone + solo per admin/installatore */}
+          {canCreateImpianto && (
+            <button
+              onClick={handleCreateNew}
+              className="p-2 rounded-xl bg-primary hover:bg-primary-dark transition-colors"
+              title="Nuovo Impianto"
+            >
+              <RiAddLine size={20} className="text-white" />
+            </button>
+          )}
         </div>
 
         {/* Lista Impianti Compatta */}
@@ -97,23 +103,21 @@ export const Impianti = () => {
               Nessun impianto
             </h3>
             <p className="text-xs dark:text-copy-lighter light:text-copy-lighter mb-4">
-              Aggiungi il tuo primo impianto
+              {canCreateImpianto
+                ? 'Aggiungi il tuo primo impianto'
+                : 'Attendi un invito da un installatore'}
             </p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors"
-            >
-              <RiAddLine size={16} className="inline mr-1" />
-              Nuovo Impianto
-            </button>
+            {canCreateImpianto && (
+              <button
+                onClick={handleCreateNew}
+                className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white text-sm font-medium transition-colors"
+              >
+                <RiAddLine size={16} className="inline mr-1" />
+                Nuovo Impianto
+              </button>
+            )}
           </Card>
         )}
-
-        <WizardNuovoImpianto
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={handleSuccess}
-        />
       </div>
     </Layout>
   );

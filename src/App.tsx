@@ -5,6 +5,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ThemeColorProvider } from '@/contexts/ThemeColorContext';
 import { ImpiantoProvider } from '@/contexts/ImpiantoContext';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { RoleProtectedRoute } from '@/components/auth';
+import { UserRole } from '@/types';
 import { Toaster } from 'sonner';
 import './i18n';
 
@@ -23,13 +25,15 @@ const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard').then(m => ({ 
 const Impianti = lazy(() => import('@/pages/Impianti/Impianti').then(m => ({ default: m.Impianti })));
 const ImpiantoDettaglio = lazy(() => import('@/pages/Impianti/ImpiantoDettaglio').then(m => ({ default: m.ImpiantoDettaglio })));
 const ImpiantoSettings = lazy(() => import('@/pages/Impianti/ImpiantoSettings').then(m => ({ default: m.ImpiantoSettings })));
-const NuovoImpianto = lazy(() => import('@/pages/Impianti/NuovoImpianto').then(m => ({ default: m.NuovoImpianto })));
 const Stanze = lazy(() => import('@/pages/Stanze/Stanze').then(m => ({ default: m.Stanze })));
 const Dispositivi = lazy(() => import('@/pages/Dispositivi/Dispositivi').then(m => ({ default: m.Dispositivi })));
 const Scene = lazy(() => import('@/pages/Scene/Scene').then(m => ({ default: m.Scene })));
 const Settings = lazy(() => import('@/pages/Settings/Settings').then(m => ({ default: m.Settings })));
 const Profilo = lazy(() => import('@/pages/Settings/Profilo').then(m => ({ default: m.Profilo })));
 const DispositiviConnessi = lazy(() => import('@/pages/Settings/DispositiviConnessi').then(m => ({ default: m.DispositiviConnessi })));
+const PermessiImpianto = lazy(() => import('@/pages/Settings/PermessiImpianto').then(m => ({ default: m.PermessiImpianto })));
+const ImpiantoSettingsPage = lazy(() => import('@/pages/Settings/ImpiantoSettings').then(m => ({ default: m.ImpiantoSettings })));
+const GestioneCondivisioni = lazy(() => import('@/pages/Settings/GestioneCondivisioni').then(m => ({ default: m.GestioneCondivisioni })));
 const CambiaPassword = lazy(() => import('@/pages/Settings/CambiaPassword').then(m => ({ default: m.CambiaPassword })));
 const Guida = lazy(() => import('@/pages/Settings/Guida').then(m => ({ default: m.Guida })));
 const InfoApp = lazy(() => import('@/pages/Settings/InfoApp').then(m => ({ default: m.InfoApp })));
@@ -61,11 +65,28 @@ const PageLoader = () => (
   </div>
 );
 
+// Route protetta - richiede solo autenticazione
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token } = useAuthStore();
   return token ? (
     <ImpiantoProvider>
-      {children}
+      <RoleProtectedRoute>
+        {children}
+      </RoleProtectedRoute>
+    </ImpiantoProvider>
+  ) : (
+    <Navigate to="/login" />
+  );
+};
+
+// Route protetta con ruoli specifici
+const RoleRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: UserRole[] }) => {
+  const { token } = useAuthStore();
+  return token ? (
+    <ImpiantoProvider>
+      <RoleProtectedRoute allowedRoles={allowedRoles}>
+        {children}
+      </RoleProtectedRoute>
     </ImpiantoProvider>
   ) : (
     <Navigate to="/login" />
@@ -150,7 +171,6 @@ function App() {
                 <Route path="/style-preview" element={<StylePreview />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/impianti" element={<ProtectedRoute><Impianti /></ProtectedRoute>} />
-                <Route path="/impianti/nuovo" element={<ProtectedRoute><NuovoImpianto /></ProtectedRoute>} />
                 <Route path="/impianti/:id" element={<ProtectedRoute><ImpiantoDettaglio /></ProtectedRoute>} />
                 <Route path="/impianti/:id/settings" element={<ProtectedRoute><ImpiantoSettings /></ProtectedRoute>} />
                 <Route path="/stanze" element={<ProtectedRoute><Stanze /></ProtectedRoute>} />
@@ -159,12 +179,15 @@ function App() {
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/settings/profilo" element={<ProtectedRoute><Profilo /></ProtectedRoute>} />
                 <Route path="/settings/dispositivi-connessi" element={<ProtectedRoute><DispositiviConnessi /></ProtectedRoute>} />
+                <Route path="/settings/permessi-impianto" element={<ProtectedRoute><PermessiImpianto /></ProtectedRoute>} />
+                <Route path="/impianto/settings" element={<ProtectedRoute><ImpiantoSettingsPage /></ProtectedRoute>} />
+                <Route path="/impianto/condivisioni" element={<ProtectedRoute><GestioneCondivisioni /></ProtectedRoute>} />
                 <Route path="/settings/password" element={<ProtectedRoute><CambiaPassword /></ProtectedRoute>} />
                 <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
                 <Route path="/settings/test-animation" element={<ProtectedRoute><TestAnimation /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
-                <Route path="/setup" element={<ProtectedRoute><SetupWizard /></ProtectedRoute>} />
+                <Route path="/setup" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><SetupWizard /></RoleRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />
               </Routes>

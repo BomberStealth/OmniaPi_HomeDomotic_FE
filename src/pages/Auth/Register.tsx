@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { AuthCard } from '@/components/common/AuthCard';
 import { AuthInput } from '@/components/common/AuthInput';
 import { AuthButton } from '@/components/common/AuthButton';
-import { RiShieldLine, RiAlertLine, RiArrowLeftLine, RiMailSendLine } from 'react-icons/ri';
+import { RiShieldLine, RiAlertLine, RiArrowLeftLine, RiMailSendLine, RiHome4Line, RiToolsLine } from 'react-icons/ri';
 import { authApi } from '@/services/api';
 
 // ============================================
@@ -73,7 +73,8 @@ export const Register = () => {
     cognome: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    ruolo: 'proprietario' as 'proprietario' | 'installatore'
   });
 
   // Refs per i checkbox - evita problemi di closure
@@ -158,6 +159,7 @@ export const Register = () => {
         cognome: sanitizeInput(formData.cognome),
         email: sanitizeInput(formData.email).toLowerCase(),
         password: formData.password,
+        ruolo: formData.ruolo,
         gdprAccepted: gdprChecked === true,
         ageConfirmed: ageChecked === true
       };
@@ -411,6 +413,110 @@ export const Register = () => {
             placeholder="••••••••"
             disabled={isLoading}
           />
+
+          {/* Selezione Ruolo */}
+          <div style={{ marginTop: '8px' }}>
+            <label style={{
+              display: 'block',
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'rgba(255, 255, 255, 0.7)',
+              marginBottom: '10px'
+            }}>
+              Registrati come
+            </label>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {/* Opzione Proprietario */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, ruolo: 'proprietario' }))}
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '14px 12px',
+                  borderRadius: '14px',
+                  background: formData.ruolo === 'proprietario'
+                    ? `linear-gradient(145deg, ${colors.accent}25, ${colors.accent}15)`
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: formData.ruolo === 'proprietario'
+                    ? `2px solid ${colors.accent}`
+                    : '2px solid rgba(255, 255, 255, 0.1)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: isLoading ? 0.5 : 1,
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <RiHome4Line
+                    size={24}
+                    style={{
+                      color: formData.ruolo === 'proprietario' ? colors.accent : 'rgba(255, 255, 255, 0.5)'
+                    }}
+                  />
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: formData.ruolo === 'proprietario' ? colors.accentLight : 'rgba(255, 255, 255, 0.7)'
+                  }}>
+                    Proprietario
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    color: 'rgba(255, 255, 255, 0.45)',
+                    textAlign: 'center',
+                    lineHeight: 1.3
+                  }}>
+                    Per gestire la tua casa
+                  </span>
+                </div>
+              </button>
+
+              {/* Opzione Installatore */}
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, ruolo: 'installatore' }))}
+                disabled={isLoading}
+                style={{
+                  flex: 1,
+                  padding: '14px 12px',
+                  borderRadius: '14px',
+                  background: formData.ruolo === 'installatore'
+                    ? `linear-gradient(145deg, ${colors.accent}25, ${colors.accent}15)`
+                    : 'rgba(255, 255, 255, 0.03)',
+                  border: formData.ruolo === 'installatore'
+                    ? `2px solid ${colors.accent}`
+                    : '2px solid rgba(255, 255, 255, 0.1)',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: isLoading ? 0.5 : 1,
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <RiToolsLine
+                    size={24}
+                    style={{
+                      color: formData.ruolo === 'installatore' ? colors.accent : 'rgba(255, 255, 255, 0.5)'
+                    }}
+                  />
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: formData.ruolo === 'installatore' ? colors.accentLight : 'rgba(255, 255, 255, 0.7)'
+                  }}>
+                    Installatore
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    color: 'rgba(255, 255, 255, 0.45)',
+                    textAlign: 'center',
+                    lineHeight: 1.3
+                  }}>
+                    Per gestire impianti clienti
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
 
           {/* GDPR Checkboxes - Refs per evitare closure problems */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>

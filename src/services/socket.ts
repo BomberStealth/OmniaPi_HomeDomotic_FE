@@ -44,6 +44,11 @@ class SocketService {
     return this.socket?.connected ?? false;
   }
 
+  // Espone socket per listener diretti (evita conflitti con off() generico)
+  getSocket(): Socket | null {
+    return this.socket;
+  }
+
   joinImpianto(impiantoId: number) {
     this.socket?.emit('join-impianto', impiantoId);
   }
@@ -157,6 +162,30 @@ class SocketService {
   offNotification() {
     this.socket?.off('notification');
   }
+
+  // ============================================
+  // PERMESSI WEBSOCKET EVENTS
+  // ============================================
+
+  onPermessiAggiornati(callback: (data: PermessiAggiornatoEvent) => void) {
+    this.socket?.on('permessi-aggiornati', callback);
+  }
+
+  offPermessiAggiornati() {
+    this.socket?.off('permessi-aggiornati');
+  }
+
+  // ============================================
+  // CONDIVISIONE RIMOSSA WEBSOCKET EVENT
+  // ============================================
+
+  onCondivisioneRimossa(callback: (data: CondivisioneRimossaEvent) => void) {
+    this.socket?.on('condivisione-rimossa', callback);
+  }
+
+  offCondivisioneRimossa() {
+    this.socket?.off('condivisione-rimossa');
+  }
 }
 
 // Notification event type
@@ -168,6 +197,21 @@ export interface NotificationEvent {
   body: string;
   data?: any;
   created_at: string;
+}
+
+// Permessi aggiornati event type
+export interface PermessiAggiornatoEvent {
+  tipo: 'permessi-aggiornati';
+  impianto_id: number;
+  puo_controllare_dispositivi: boolean;
+  puo_vedere_stato: boolean;
+  stanze_abilitate: number[] | null;
+}
+
+// Condivisione rimossa event type
+export interface CondivisioneRimossaEvent {
+  tipo: 'condivisione-rimossa';
+  impianto_id: number;
 }
 
 export const socketService = new SocketService();

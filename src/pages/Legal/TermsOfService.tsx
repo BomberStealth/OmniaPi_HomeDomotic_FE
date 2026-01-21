@@ -85,7 +85,7 @@ export const TermsOfService = () => {
               <h2 className="text-lg font-semibold text-copy mb-3">5. Ruoli Utente</h2>
               <p className="text-sm leading-relaxed mb-2">Il sistema prevede tre ruoli:</p>
               <ul className="list-disc list-inside text-sm space-y-1 ml-4">
-                <li><strong>Cliente:</strong> Pu&ograve; controllare dispositivi e scene dell'impianto assegnato</li>
+                <li><strong>Proprietario:</strong> Pu&ograve; controllare dispositivi e scene dell'impianto assegnato</li>
                 <li><strong>Installatore:</strong> Pu&ograve; creare e configurare impianti per i propri clienti</li>
                 <li><strong>Admin:</strong> Accesso completo a tutte le funzionalit&agrave; del sistema</li>
               </ul>

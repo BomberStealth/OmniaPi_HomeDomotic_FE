@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { RiArrowLeftLine, RiFileCopyLine, RiRefreshLine, RiDeleteBinLine, RiSaveLine, RiGroupLine, RiMapPinLine, RiFlashlightLine } from 'react-icons/ri';
+import { RiArrowLeftLine, RiFileCopyLine, RiRefreshLine, RiDeleteBinLine, RiSaveLine, RiGroupLine, RiMapPinLine } from 'react-icons/ri';
 import { Layout } from '@/components/layout/Layout';
 import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
@@ -12,15 +12,9 @@ import { Impianto } from '@/types';
 import { toast } from '@/utils/toast';
 
 // ============================================
-// IMPIANTO SETTINGS PAGE
+// IMPIANTO SETTINGS PAGE (Avanzate)
+// Senza fotovoltaico, senza lat/long, senza condivisioni
 // ============================================
-
-interface CondivisioneUtente {
-  id: number;
-  email: string;
-  ruolo: string;
-  creato_il: string;
-}
 
 export const ImpiantoSettings = () => {
   const { id } = useParams();
@@ -33,32 +27,25 @@ export const ImpiantoSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Form state
+  // Form state (senza fotovoltaico e lat/long)
   const [formData, setFormData] = useState({
     nome: '',
     indirizzo: '',
     citta: '',
     cap: '',
-    latitudine: 0,
-    longitudine: 0,
-    ha_fotovoltaico: false,
-    fotovoltaico_potenza: undefined as number | undefined,
   });
 
   // Codice condivisione
   const [codiceCondivisione, setCodiceCondivisione] = useState('');
   const [showRegenModal, setShowRegenModal] = useState(false);
 
-  // Condivisioni attive
-  const [condivisioni, setCondivisioni] = useState<CondivisioneUtente[]>([]);
-
-  // Delete modal
+  // Delete modal con conferma "ELIMINA"
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   useEffect(() => {
     if (id) {
       loadImpianto();
-      loadCondivisioni();
     }
   }, [id]);
 
@@ -72,10 +59,6 @@ export const ImpiantoSettings = () => {
           indirizzo: response.data.indirizzo || '',
           citta: response.data.citta || '',
           cap: response.data.cap || '',
-          latitudine: response.data.latitudine || 0,
-          longitudine: response.data.longitudine || 0,
-          ha_fotovoltaico: response.data.ha_fotovoltaico || false,
-          fotovoltaico_potenza: response.data.fotovoltaico_potenza,
         });
         setCodiceCondivisione(response.data.codice_condivisione || '');
       }
@@ -83,23 +66,6 @@ export const ImpiantoSettings = () => {
       console.error('Errore caricamento impianto:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCondivisioni = async () => {
-    try {
-      const response = await fetch(`/api/impianti/${id}/condivisioni`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setCondivisioni(data.data || []);
-      }
-    } catch (error) {
-      console.error('Errore caricamento condivisioni:', error);
     }
   };
 
@@ -145,6 +111,11 @@ export const ImpiantoSettings = () => {
   };
 
   const handleDelete = async () => {
+    if (deleteConfirmText !== 'ELIMINA') {
+      toast.error('Scrivi ELIMINA per confermare');
+      return;
+    }
+
     try {
       const impiantoId = parseInt(id!);
 
@@ -171,25 +142,9 @@ export const ImpiantoSettings = () => {
     }
   };
 
-  const handleRevokeAccess = async (condivisioneId: number) => {
-    try {
-      const response = await fetch(`/api/condivisioni/${condivisioneId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-
-      if (response.ok) {
-        loadCondivisioni();
-        toast.success('Accesso revocato con successo!');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Errore durante la revoca dell\'accesso');
-      }
-    } catch (error) {
-      toast.error('Errore durante la revoca dell\'accesso');
-    }
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteConfirmText('');
   };
 
   if (loading) {
@@ -218,14 +173,14 @@ export const ImpiantoSettings = () => {
         {/* Header */}
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(`/impianti/${id}`)}
+            onClick={() => navigate(-1)}
             className="p-3 glass rounded-xl hover:bg-opacity-20 transition-colors"
           >
             <RiArrowLeftLine size={24} />
           </button>
           <div>
             <h1 className="text-3xl font-bold dark:text-copy light:text-copy-light">
-              Impostazioni Impianto
+              Impostazioni Avanzate
             </h1>
             <p className="dark:text-copy-lighter light:text-copy-lighter">{impianto.nome}</p>
           </div>
@@ -274,77 +229,18 @@ export const ImpiantoSettings = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    label="Latitudine"
-                    type="number"
-                    value={formData.latitudine}
-                    onChange={(e) => setFormData({ ...formData, latitudine: parseFloat(e.target.value) })}
-                    step="0.000001"
-                  />
-                  <Input
-                    label="Longitudine"
-                    type="number"
-                    value={formData.longitudine}
-                    onChange={(e) => setFormData({ ...formData, longitudine: parseFloat(e.target.value) })}
-                    step="0.000001"
-                  />
+                {/* Placeholder Mappa */}
+                <div className="mt-4 p-4 glass rounded-lg text-center">
+                  <p className="text-2xl mb-2">🗺️</p>
+                  <p className="dark:text-copy-lighter light:text-copy-lighter text-sm">
+                    Mappa in arrivo
+                  </p>
                 </div>
-              </div>
-            </Card>
-
-            {/* Fotovoltaico */}
-            <Card variant="glass-solid">
-              <div className="flex items-center gap-3 mb-6">
-                <RiFlashlightLine className="text-warning" size={24} />
-                <h2 className="text-xl font-bold dark:text-copy light:text-copy-light">
-                  Fotovoltaico
-                </h2>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <Card
-                    variant={formData.ha_fotovoltaico ? 'glass' : 'glass-dark'}
-                    hover
-                    className={`cursor-pointer p-4 text-center border-2 ${
-                      formData.ha_fotovoltaico ? 'border-success' : 'border-transparent'
-                    }`}
-                    onClick={() => setFormData({ ...formData, ha_fotovoltaico: true })}
-                  >
-                    <p className="font-semibold dark:text-copy light:text-copy-light">Presente</p>
-                  </Card>
-                  <Card
-                    variant={!formData.ha_fotovoltaico ? 'glass' : 'glass-dark'}
-                    hover
-                    className={`cursor-pointer p-4 text-center border-2 ${
-                      !formData.ha_fotovoltaico ? 'border-success' : 'border-transparent'
-                    }`}
-                    onClick={() =>
-                      setFormData({ ...formData, ha_fotovoltaico: false, fotovoltaico_potenza: undefined })
-                    }
-                  >
-                    <p className="font-semibold dark:text-copy light:text-copy-light">Non presente</p>
-                  </Card>
-                </div>
-
-                {formData.ha_fotovoltaico && (
-                  <Input
-                    label="Potenza Fotovoltaico (kW)"
-                    type="number"
-                    value={formData.fotovoltaico_potenza || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fotovoltaico_potenza: parseFloat(e.target.value) || undefined })
-                    }
-                    placeholder="es. 6.0"
-                    step="0.1"
-                  />
-                )}
               </div>
             </Card>
           </div>
 
-          {/* Colonna Destra - Codice e Condivisioni */}
+          {/* Colonna Destra - Codice Condivisione */}
           <div className="space-y-6">
             {/* Codice Condivisione */}
             <Card variant="glass-solid">
@@ -377,43 +273,6 @@ export const ImpiantoSettings = () => {
                   Condividi questo codice per dare accesso ad altri utenti
                 </p>
               </div>
-            </Card>
-
-            {/* Condivisioni Attive */}
-            <Card variant="glass-solid">
-              <h3 className="font-bold dark:text-copy light:text-copy-light mb-4">
-                Condivisioni Attive ({condivisioni.length})
-              </h3>
-
-              {condivisioni.length === 0 ? (
-                <p className="text-sm dark:text-copy-lighter light:text-copy-lighter text-center py-4">
-                  Nessuna condivisione attiva
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {condivisioni.filter(c => c !== null && c !== undefined).map((cond) => (
-                    <div
-                      key={cond.id}
-                      className="flex items-center justify-between p-3 glass rounded-lg"
-                    >
-                      <div>
-                        <p className="text-sm font-medium dark:text-copy light:text-copy-light">
-                          {cond.email}
-                        </p>
-                        <p className="text-xs dark:text-copy-lighter light:text-copy-lighter">
-                          {cond.ruolo}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRevokeAccess(cond.id)}
-                        className="p-2 rounded-lg hover:bg-error hover:bg-opacity-20 transition-colors"
-                      >
-                        <RiDeleteBinLine size={16} className="text-error" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </Card>
           </div>
         </div>
@@ -454,10 +313,10 @@ export const ImpiantoSettings = () => {
         </div>
       </Modal>
 
-      {/* Modal Eliminazione */}
+      {/* Modal Eliminazione con conferma "ELIMINA" */}
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={handleCloseDeleteModal}
         title="Elimina Impianto"
         size="sm"
       >
@@ -466,11 +325,29 @@ export const ImpiantoSettings = () => {
             Sei sicuro di voler eliminare questo impianto? Questa azione è irreversibile e
             cancellerà anche tutti i dispositivi, scene e dati associati.
           </p>
+
+          <div>
+            <label className="block text-sm font-medium dark:text-copy-lighter light:text-copy-lighter mb-2">
+              Scrivi <span className="font-bold text-error">ELIMINA</span> per confermare:
+            </label>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+              placeholder="ELIMINA"
+              className="text-center font-bold"
+            />
+          </div>
+
           <div className="flex gap-3">
-            <Button variant="glass" onClick={() => setShowDeleteModal(false)} fullWidth>
+            <Button variant="glass" onClick={handleCloseDeleteModal} fullWidth>
               Annulla
             </Button>
-            <Button variant="danger" onClick={handleDelete} fullWidth>
+            <Button
+              variant="danger"
+              onClick={handleDelete}
+              fullWidth
+              disabled={deleteConfirmText !== 'ELIMINA'}
+            >
               Elimina Definitivamente
             </Button>
           </div>

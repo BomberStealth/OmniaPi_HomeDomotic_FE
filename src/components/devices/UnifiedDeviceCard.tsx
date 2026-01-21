@@ -49,6 +49,10 @@ export interface UnifiedDeviceCardProps {
   isLoading?: boolean;
   bloccato?: boolean;
 
+  // Permission props (from usePermessiImpianto)
+  canControl?: boolean; // false = toggle disabled
+  canViewState?: boolean; // false = show '---' instead of ON/OFF
+
   // LED specific
   ledColor?: { r: number; g: number; b: number };
   ledBrightness?: number;
@@ -1375,6 +1379,8 @@ const UnifiedDeviceCardComponent = ({
   deviceType = 'relay',
   isLoading = false,
   bloccato = false,
+  canControl = true, // default: può controllare
+  canViewState = true, // default: può vedere stato
   ledColor = { r: 255, g: 255, b: 255 },
   ledBrightness = 255,
   ledEffect = 0,
@@ -1403,7 +1409,7 @@ const UnifiedDeviceCardComponent = ({
 
   const isLed = normalizedType === 'led';
   const isSensor = normalizedType === 'sensor';
-  const isDisabled = bloccato || isLoading;
+  const isDisabled = bloccato || isLoading || !canControl;
 
   // Dynamic colors based on theme
   const colors = useMemo(() => ({
@@ -1631,11 +1637,22 @@ const UnifiedDeviceCardComponent = ({
           </div>
 
           {/* Toggle - fixed position right */}
-          <Toggle
-            isOn={isOn}
-            visualOnly={true}
-            size={variant === 'mini' ? 'sm' : 'md'}
-          />
+          {/* Se non può vedere stato, mostra un toggle grigio disabilitato */}
+          {canViewState ? (
+            <Toggle
+              isOn={isOn}
+              visualOnly={true}
+              size={variant === 'mini' ? 'sm' : 'md'}
+            />
+          ) : (
+            <div style={{
+              width: variant === 'mini' ? '32px' : '40px',
+              height: variant === 'mini' ? '18px' : '22px',
+              borderRadius: '12px',
+              background: 'rgba(100, 100, 100, 0.3)',
+              opacity: 0.5,
+            }} />
+          )}
         </div>
 
         {/* Name - truncated if too long */}
@@ -1656,19 +1673,23 @@ const UnifiedDeviceCardComponent = ({
         <p style={{
           fontSize: statusSize,
           fontWeight: 500,
-          color: bloccato ? 'rgba(239, 68, 68, 0.7)' : colors.textMuted,
+          color: bloccato || !canControl ? 'rgba(239, 68, 68, 0.7)' : colors.textMuted,
           margin: '2px 0 0 0',
         }}>
           {bloccato
             ? 'Bloccato'
-            : isLed && isOn
-              ? `${Math.round((ledBrightness / 255) * 100)}% luminosità`
-              : isOn ? 'Acceso' : 'Spento'}
+            : !canControl
+              ? 'Non autorizzato'
+              : !canViewState
+                ? '---'
+                : isLed && isOn
+                  ? `${Math.round((ledBrightness / 255) * 100)}% luminosità`
+                  : isOn ? 'Acceso' : 'Spento'}
         </p>
       </motion.button>
 
-      {/* LED Controls: Settings button + Modal (only in full/compact variants) */}
-      {isLed && isOn && !bloccato && variant !== 'mini' && (
+      {/* LED Controls: Settings button + Modal (only in full/compact variants, and only if can control) */}
+      {isLed && isOn && !bloccato && canControl && variant !== 'mini' && (
         <>
           {/* Settings button - small icon in corner */}
           <button

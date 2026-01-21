@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useStanzeStore } from '@/store/stanzeStore';
 import { useSceneStore } from '@/store/sceneStore';
 import { useDispositiviStore } from '@/store/dispositiviStore';
+import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { sceneApi, tasmotaApi } from '@/services/api';
 import { omniapiApi } from '@/services/omniapiApi';
 import { UnifiedDeviceCard } from '@/components/devices';
@@ -79,6 +80,9 @@ export const Dashboard = () => {
   const { stanze } = useStanzeStore();
   const { scene } = useSceneStore();
   const { dispositivi, updatePowerState, updateLedState } = useDispositiviStore();
+
+  // Permessi utente sull'impianto corrente
+  const { canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
 
   const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -826,6 +830,8 @@ export const Dashboard = () => {
                               isOn={!!dispositivo.power_state || !!dispositivo.led_power}
                               isLoading={togglingDevice === dispositivo.id}
                               bloccato={!!dispositivo.bloccato}
+                              canControl={canControl}
+                              canViewState={canViewState}
                               onToggle={() => toggleDevice(dispositivo)}
                               deviceType={dispositivo.device_type || 'relay'}
                               variant="full"
@@ -927,6 +933,8 @@ export const Dashboard = () => {
                             isOn={!!dispositivo.power_state || !!dispositivo.led_power}
                             isLoading={togglingDevice === dispositivo.id}
                             bloccato={!!dispositivo.bloccato}
+                            canControl={canControl}
+                            canViewState={canViewState}
                             onToggle={() => toggleDevice(dispositivo)}
                             deviceType={dispositivo.device_type || 'relay'}
                             variant="full"

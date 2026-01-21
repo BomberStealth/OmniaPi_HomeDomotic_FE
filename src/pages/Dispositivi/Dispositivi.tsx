@@ -5,6 +5,7 @@ import { UnifiedDeviceCard } from '@/components/devices';
 import { AddDeviceModal } from '@/components/dispositivi';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useDispositiviStore, Dispositivo } from '@/store/dispositiviStore';
+import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { omniapiApi } from '@/services/omniapiApi';
 import { tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
@@ -47,6 +48,9 @@ export const Dispositivi = () => {
 
   // Use the SAME store as Dashboard
   const { dispositivi, loading, updatePowerState, updateLedState, fetchDispositivi } = useDispositiviStore();
+
+  // Permessi utente sull'impianto corrente
+  const { canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
 
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -378,6 +382,8 @@ export const Dispositivi = () => {
                         isOn={!!dispositivo.led_power || !!dispositivo.power_state}
                         isLoading={togglingDevice === dispositivo.id}
                         bloccato={!!dispositivo.bloccato}
+                        canControl={canControl}
+                        canViewState={canViewState}
                         onToggle={() => toggleDevice(dispositivo)}
                         deviceType="omniapi_led"
                         variant="full"
@@ -431,6 +437,8 @@ export const Dispositivi = () => {
                         isOn={!!dispositivo.power_state}
                         isLoading={togglingDevice === dispositivo.id}
                         bloccato={!!dispositivo.bloccato}
+                        canControl={canControl}
+                        canViewState={canViewState}
                         onToggle={() => toggleDevice(dispositivo)}
                         deviceType={dispositivo.device_type || 'relay'}
                         variant="full"
@@ -472,6 +480,7 @@ export const Dispositivi = () => {
                         onToggle={() => {}}
                         deviceType="sensor"
                         variant="full"
+                        canViewState={canViewState}
                         temperature={dispositivo.temperature}
                         humidity={dispositivo.humidity}
                       />

@@ -29,10 +29,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 401 redirect solo se NON siamo già su login/register (evita reload loop)
+    // 401 redirect solo se NON siamo su endpoint che gestiscono 401 come errore utente
     if (error.response?.status === 401) {
-      const isAuthEndpoint = error.config?.url?.includes('/auth/login') ||
-                             error.config?.url?.includes('/auth/register');
+      const url = error.config?.url || '';
+      // Escludi endpoint dove 401 significa "password sbagliata" e non "sessione scaduta"
+      const isAuthEndpoint = url.includes('/auth/login') ||
+                             url.includes('/auth/register') ||
+                             url.includes('/auth/delete-account') ||
+                             url.includes('/auth/change-password');
       if (!isAuthEndpoint) {
         localStorage.removeItem('token');
         window.location.href = '/login';
@@ -260,6 +264,64 @@ export const stanzeApi = {
 // ============================================
 // ADMIN API
 // ============================================
+
+// ============================================
+// CONDIVISIONI API
+// ============================================
+
+export const condivisioniApi = {
+  // Lista condivisioni di un impianto
+  getCondivisioni: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/condivisioni`);
+    return data;
+  },
+
+  // Invita utente
+  invita: async (impiantoId: number, payload: {
+    email: string;
+    ruolo_condivisione: 'installatore' | 'ospite';
+    puo_controllare_dispositivi?: boolean;
+    puo_vedere_stato?: boolean;
+    stanze_abilitate?: number[] | null;
+  }) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/condivisioni`, payload);
+    return data;
+  },
+
+  // Modifica permessi
+  modificaPermessi: async (condivisioneId: number, permessi: {
+    puo_controllare_dispositivi?: boolean;
+    puo_vedere_stato?: boolean;
+    stanze_abilitate?: number[] | null;
+  }) => {
+    const { data } = await api.put(`/api/condivisioni/${condivisioneId}`, permessi);
+    return data;
+  },
+
+  // Rimuovi condivisione
+  rimuovi: async (condivisioneId: number) => {
+    const { data } = await api.delete(`/api/condivisioni/${condivisioneId}`);
+    return data;
+  },
+
+  // Accetta invito
+  accettaInvito: async (condivisioneId: number) => {
+    const { data } = await api.post(`/api/condivisioni/${condivisioneId}/accetta`);
+    return data;
+  },
+
+  // Rifiuta invito
+  rifiutaInvito: async (condivisioneId: number) => {
+    const { data } = await api.post(`/api/condivisioni/${condivisioneId}/rifiuta`);
+    return data;
+  },
+
+  // Lista inviti pendenti per l'utente corrente
+  getInvitiPendenti: async () => {
+    const { data } = await api.get('/api/inviti/pendenti');
+    return data;
+  },
+};
 
 export const adminApi = {
   getAllUsers: async () => {
