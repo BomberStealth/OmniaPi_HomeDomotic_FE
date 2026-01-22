@@ -5,7 +5,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificheStore } from '@/store/notificheStore';
-import { api } from '@/services/api';
+import { notificationsApi } from '@/services/api';
 import { socketService } from '@/services/socket';
 import { toast } from '@/utils/toast';
 import {
@@ -88,7 +88,7 @@ export const Notifiche = () => {
 
     setLoading(true);
     try {
-      const { data } = await api.get(`/api/notifications/history?impiantoId=${impiantoCorrente.id}&limit=100`);
+      const data = await notificationsApi.getHistory(impiantoCorrente.id, 100);
       // Gestisci sia risposta diretta che wrappata
       const notifs = data?.notifications || [];
       setNotifications(Array.isArray(notifs) ? notifs : []);
@@ -114,7 +114,7 @@ export const Notifiche = () => {
       // Segna tutte come lette quando si apre la pagina (senza toast)
       if (impiantoCorrente?.id) {
         try {
-          await api.post('/api/notifications/read-all', { impiantoId: impiantoCorrente.id });
+          await notificationsApi.markAllAsRead(impiantoCorrente.id);
           setUnreadCount(0);
           resetUnreadCount(); // Aggiorna store globale
         } catch (error) {
@@ -186,7 +186,7 @@ export const Notifiche = () => {
   // Segna come letta
   const markAsRead = async (notificationId: number) => {
     try {
-      await api.post(`/api/notifications/${notificationId}/read`);
+      await notificationsApi.markAsRead(notificationId);
       setNotifications(prev => prev.map(n => {
         if (n.id === notificationId && user?.id) {
           const readBy = parseReadBy(n.read_by);
@@ -208,7 +208,7 @@ export const Notifiche = () => {
     if (!impiantoCorrente?.id) return;
 
     try {
-      await api.post('/api/notifications/read-all', { impiantoId: impiantoCorrente.id });
+      await notificationsApi.markAllAsRead(impiantoCorrente.id);
       setNotifications(prev => prev.map(n => {
         if (user?.id) {
           const readBy = parseReadBy(n.read_by);

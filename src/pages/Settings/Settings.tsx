@@ -3,10 +3,8 @@ import { Layout } from '@/components/layout/Layout';
 import { Toggle } from '@/components/common/Toggle';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme, ThemeMode } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiShieldLine, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
-import { UserRole } from '@/types';
-import { APP_VERSION, clearAllCache } from '@/config/version';
-import { RiRefreshLine } from 'react-icons/ri';
+import { RiUserLine, RiNotification3Line, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
+import { APP_VERSION } from '@/config/version';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/utils/toast';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -34,8 +32,6 @@ export const Settings = () => {
   const navigate = useNavigate();
   const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
   const { isStandalone } = usePWAInstall();
-
-  const isAdmin = user?.ruolo === UserRole.ADMIN;
 
   // Colori dinamici basati sul tema (usa modeColors per dark/light)
   const colors = {
@@ -591,31 +587,6 @@ export const Settings = () => {
           </div>
         </motion.div>
 
-        {/* Admin Panel */}
-        {isAdmin && (
-          <motion.div variants={cardVariants}>
-            <h2 style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: colors.textMuted,
-              margin: '0 0 10px 4px',
-            }}>
-              Amministrazione
-            </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <SettingRow
-                icon={RiShieldLine}
-                iconBg={`${colors.error}20`}
-                title="Gestione Utenti"
-                subtitle="Amministra account utenti"
-                onClick={() => navigate('/settings/admin/utenti')}
-              />
-            </div>
-          </motion.div>
-        )}
-
         {/* Info Section */}
         <motion.div variants={cardVariants}>
           <h2 style={{
@@ -642,23 +613,6 @@ export const Settings = () => {
               title="Informazioni"
               subtitle={`OmniaPi ${APP_VERSION}`}
               onClick={() => navigate('/settings/info')}
-            />
-            <SettingRow
-              icon={RiFlashlightLine}
-              iconBg={`${colors.accent}20`}
-              title="Test Animazione"
-              subtitle="Prova effetto WOW"
-              onClick={() => navigate('/settings/test-animation')}
-            />
-            <SettingRow
-              icon={RiRefreshLine}
-              iconBg={`${colors.warning}20`}
-              title="Svuota Cache"
-              subtitle="Forza aggiornamento app"
-              onClick={() => {
-                toast.info('Svuoto cache e ricarico...');
-                clearAllCache();
-              }}
             />
           </div>
         </motion.div>

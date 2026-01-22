@@ -279,7 +279,7 @@ export const condivisioniApi = {
   // Invita utente
   invita: async (impiantoId: number, payload: {
     email: string;
-    ruolo_condivisione: 'installatore' | 'ospite';
+    ruolo_condivisione: 'installatore' | 'ospite' | 'proprietario';
     puo_controllare_dispositivi?: boolean;
     puo_vedere_stato?: boolean;
     stanze_abilitate?: number[] | null;
@@ -321,7 +321,71 @@ export const condivisioniApi = {
     const { data } = await api.get('/api/inviti/pendenti');
     return data;
   },
+
+  // Ottieni i miei permessi per un impianto (utente corrente)
+  getMieiPermessi: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/impianti/${impiantoId}/miei-permessi`);
+    return data;
+  },
 };
+
+// ============================================
+// NOTIFICATIONS API
+// ============================================
+
+export const notificationsApi = {
+  // Storico notifiche
+  getHistory: async (impiantoId: number, limit = 100) => {
+    const { data } = await api.get(`/api/notifications/history?impiantoId=${impiantoId}&limit=${limit}`);
+    return data;
+  },
+
+  // Segna singola notifica come letta
+  markAsRead: async (notificationId: number) => {
+    const { data } = await api.post(`/api/notifications/${notificationId}/read`);
+    return data;
+  },
+
+  // Segna tutte come lette
+  markAllAsRead: async (impiantoId: number) => {
+    const { data } = await api.post('/api/notifications/read-all', { impiantoId });
+    return data;
+  },
+
+  // Conteggio non lette (usato da notificheStore)
+  getUnreadCount: async (impiantoId: number) => {
+    const { data } = await api.get(`/api/notifications/history?impiantoId=${impiantoId}&limit=1`);
+    return data;
+  },
+};
+
+// ============================================
+// SESSIONS API
+// ============================================
+
+export const sessionsApi = {
+  // Lista sessioni attive
+  getAll: async () => {
+    const { data } = await api.get('/api/sessions');
+    return data;
+  },
+
+  // Revoca singola sessione
+  delete: async (sessionId: string) => {
+    const { data } = await api.delete(`/api/sessions/${sessionId}`);
+    return data;
+  },
+
+  // Revoca tutte le sessioni (logout ovunque)
+  deleteAll: async () => {
+    const { data } = await api.delete('/api/sessions/all');
+    return data;
+  },
+};
+
+// ============================================
+// ADMIN API
+// ============================================
 
 export const adminApi = {
   getAllUsers: async () => {

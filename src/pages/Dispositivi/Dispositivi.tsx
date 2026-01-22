@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { SkeletonList } from '@/components/common/Skeleton';
-import { UnifiedDeviceCard } from '@/components/devices';
+import { UnifiedDeviceCard, GatewayCard } from '@/components/devices';
 import { AddDeviceModal } from '@/components/dispositivi';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useDispositiviStore, Dispositivo } from '@/store/dispositiviStore';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { omniapiApi } from '@/services/omniapiApi';
 import { tasmotaApi } from '@/services/api';
+import { gatewayApi, Gateway } from '@/services/gatewayApi';
 import { motion } from 'framer-motion';
 import {
   RiLightbulbLine,
@@ -55,6 +56,31 @@ export const Dispositivi = () => {
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [gateway, setGateway] = useState<Gateway | null>(null);
+  const [gatewayLoading, setGatewayLoading] = useState(true);
+
+  // Fetch gateway info
+  useEffect(() => {
+    const fetchGateway = async () => {
+      if (!impiantoCorrente?.id) {
+        setGateway(null);
+        setGatewayLoading(false);
+        return;
+      }
+
+      try {
+        const response = await gatewayApi.getImpiantoGateway(impiantoCorrente.id);
+        setGateway(response.gateway);
+      } catch (error) {
+        console.error('Error fetching gateway:', error);
+        setGateway(null);
+      } finally {
+        setGatewayLoading(false);
+      }
+    };
+
+    fetchGateway();
+  }, [impiantoCorrente?.id]);
 
   // Colori dinamici basati sul tema
   const colors = useMemo(() => ({
@@ -79,6 +105,11 @@ export const Dispositivi = () => {
 
   // Toggle device (same logic as Dashboard)
   const toggleDevice = async (dispositivo: Dispositivo) => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (togglingDevice === dispositivo.id) return;
     setTogglingDevice(dispositivo.id);
 
@@ -115,6 +146,10 @@ export const Dispositivi = () => {
 
   // Handle LED effect change
   const handleLedEffectChange = async (dispositivo: Dispositivo, effect: number) => {
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (!dispositivo.mac_address) return;
 
     try {
@@ -128,6 +163,10 @@ export const Dispositivi = () => {
 
   // Handle LED speed change
   const handleLedSpeedChange = async (dispositivo: Dispositivo, speed: number) => {
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (!dispositivo.mac_address) return;
 
     try {
@@ -141,6 +180,10 @@ export const Dispositivi = () => {
 
   // Handle LED brightness/color change - sends SEPARATE commands
   const handleLedChange = async (dispositivo: Dispositivo, color: { r: number; g: number; b: number }, brightness: number) => {
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (!dispositivo.mac_address) return;
 
     // Determine what changed
@@ -297,9 +340,9 @@ export const Dispositivi = () => {
         </div>
 
         {/* Content */}
-        {loading ? (
+        {loading || gatewayLoading ? (
           <SkeletonList count={6} />
-        ) : validDevices.length === 0 ? (
+        ) : validDevices.length === 0 && !gateway ? (
           /* Empty State */
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -352,6 +395,31 @@ export const Dispositivi = () => {
           </motion.div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Gateway Section */}
+            {!gatewayLoading && gateway && (
+              <div>
+                <h2 style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: colors.textMuted,
+                  marginBottom: '12px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                }}>
+                  Gateway
+                </h2>
+                <GatewayCard
+                  nome={gateway.nome}
+                  mac={gateway.mac}
+                  ip={gateway.ip}
+                  version={gateway.version}
+                  status={gateway.status}
+                  nodeCount={gateway.nodeCount}
+                  lastSeen={gateway.lastSeen}
+                />
+              </div>
+            )}
+
             {/* LED Strip Section */}
             {ledDevices.length > 0 && (
               <div>

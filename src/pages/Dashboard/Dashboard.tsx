@@ -189,6 +189,11 @@ export const Dashboard = () => {
   };
 
   const toggleDevice = async (dispositivo: any) => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (togglingDevice === dispositivo.id) return;
     setTogglingDevice(dispositivo.id);
     try {
@@ -297,6 +302,11 @@ export const Dashboard = () => {
   const unassignedDevices = dispositivi.filter(d => d && !d.stanza_id);
 
   const executeScene = async (scenaId: number) => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per eseguire le scene');
+      return;
+    }
     setExecuting(scenaId);
     try {
       const result = await sceneApi.executeScena(scenaId);
@@ -343,6 +353,11 @@ export const Dashboard = () => {
   const termostati = termostatiList.length;
 
   const toggleAllLights = async () => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (togglingAll || totLuci === 0) return;
     setTogglingAll('luci');
     const turnOn = luciOn < totLuci;
@@ -393,6 +408,11 @@ export const Dashboard = () => {
   };
 
   const toggleAllTermostati = async () => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per controllare i dispositivi');
+      return;
+    }
     if (togglingAll || termostati === 0) return;
     toast.info('Funzione termostati in arrivo!');
   };
@@ -469,7 +489,7 @@ export const Dashboard = () => {
             {/* Luci con Progress Bar */}
             <motion.button
               onClick={toggleAllLights}
-              disabled={togglingAll === 'luci' || totLuci === 0}
+              disabled={togglingAll === 'luci' || totLuci === 0 || !canControl}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -479,11 +499,11 @@ export const Dashboard = () => {
                 borderRadius: radius.md,
                 background: 'transparent',
                 border: 'none',
-                cursor: totLuci === 0 ? 'not-allowed' : 'pointer',
-                opacity: totLuci === 0 ? 0.5 : 1,
+                cursor: (totLuci === 0 || !canControl) ? 'not-allowed' : 'pointer',
+                opacity: (totLuci === 0 || !canControl) ? 0.5 : 1,
                 minWidth: 'clamp(60px, 20vw, 100px)',
               }}
-              whileHover={totLuci > 0 ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
+              whileHover={(totLuci > 0 && canControl) ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
               whileTap={totLuci > 0 ? { scale: 0.98 } : undefined}
             >
               <div
@@ -531,7 +551,7 @@ export const Dashboard = () => {
             {/* Termostati/Clima */}
             <motion.button
               onClick={toggleAllTermostati}
-              disabled={termostati === 0}
+              disabled={termostati === 0 || !canControl}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -541,11 +561,11 @@ export const Dashboard = () => {
                 borderRadius: radius.md,
                 background: 'transparent',
                 border: 'none',
-                cursor: termostati === 0 ? 'not-allowed' : 'pointer',
-                opacity: termostati === 0 ? 0.5 : 1,
+                cursor: (termostati === 0 || !canControl) ? 'not-allowed' : 'pointer',
+                opacity: (termostati === 0 || !canControl) ? 0.5 : 1,
                 minWidth: 'clamp(60px, 20vw, 100px)',
               }}
-              whileHover={termostati > 0 ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
+              whileHover={(termostati > 0 && canControl) ? { scale: 1.02, background: `${colors.accent}10` } : undefined}
               whileTap={termostati > 0 ? { scale: 0.98 } : undefined}
             >
               <div style={{
@@ -627,7 +647,7 @@ export const Dashboard = () => {
                 <ContextMenu key={scena.id} items={getContextMenuItems(scena.id)}>
                   <motion.button
                     onClick={() => executeScene(scena.id)}
-                    disabled={executing === scena.id}
+                    disabled={executing === scena.id || !canControl}
                     style={{
                       width: '52px',
                       display: 'flex',
@@ -640,7 +660,8 @@ export const Dashboard = () => {
                       border: executing === scena.id ? `1px solid ${colors.accent}` : `1px solid ${colors.border}`,
                       borderRadius: '14px',
                       boxShadow: executing === scena.id ? `0 0 12px ${colors.accent}30` : colors.cardShadowLit,
-                      cursor: 'pointer',
+                      cursor: !canControl ? 'not-allowed' : 'pointer',
+                      opacity: !canControl ? 0.5 : 1,
                       position: 'relative',
                       overflow: 'hidden',
                     }}

@@ -6,7 +6,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/services/api';
+import { condivisioniApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { UserRole } from '@/types';
 import {
@@ -129,8 +129,8 @@ export const GestioneCondivisioni = () => {
     }
 
     try {
-      const { data } = await api.get(`/api/impianti/${impiantoCorrente.id}/condivisioni`);
-      setCondivisioni(data.data || []);
+      const response = await condivisioniApi.getCondivisioni(impiantoCorrente.id);
+      setCondivisioni(response.data || []);
     } catch (error: any) {
       if (error.response?.status !== 403) {
         console.error('Error loading condivisioni:', error);
@@ -190,11 +190,11 @@ export const GestioneCondivisioni = () => {
 
     setSendingInvite(true);
     try {
-      await api.post('/api/condivisioni/invita', {
-        impiantoId: impiantoCorrente.id,
+      await condivisioniApi.invita(impiantoCorrente.id, {
         email: inviteEmail.trim(),
-        ruolo: inviteRuolo,
-        permessi: invitePermessi
+        ruolo_condivisione: inviteRuolo,
+        puo_controllare_dispositivi: invitePermessi.puo_controllare_dispositivi,
+        puo_vedere_stato: invitePermessi.puo_vedere_stato
       });
       toast.success('Invito inviato!');
       setShowInviteModal(false);
@@ -213,7 +213,7 @@ export const GestioneCondivisioni = () => {
 
     setDeleting(id);
     try {
-      await api.delete(`/api/condivisioni/${id}`);
+      await condivisioniApi.rimuovi(id);
       toast.success('Accesso rimosso');
       loadCondivisioni();
     } catch (error: any) {
@@ -581,25 +581,32 @@ export const GestioneCondivisioni = () => {
               }}
               onClick={() => setShowInviteModal(false)}
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              style={{
-                position: 'fixed',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 'calc(100% - 32px)',
-                maxWidth: '400px',
-                background: colors.bgCardLit,
-                borderRadius: '20px',
-                padding: '20px',
-                zIndex: 101,
-                border: `1px solid ${colors.border}`,
-                boxShadow: colors.cardShadowLit
-              }}
-            >
+            <div style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 101,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              pointerEvents: 'none'
+            }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '400px',
+                  background: colors.bgCardLit,
+                  borderRadius: '20px',
+                  padding: '20px',
+                  border: `1px solid ${colors.border}`,
+                  boxShadow: colors.cardShadowLit,
+                  pointerEvents: 'auto'
+                }}
+              >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
                   Invita Utente
@@ -747,6 +754,7 @@ export const GestioneCondivisioni = () => {
                 </motion.button>
               </div>
             </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

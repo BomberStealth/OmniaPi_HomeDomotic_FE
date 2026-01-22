@@ -20,7 +20,7 @@ import {
   RiCloseCircleLine
 } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/services/api';
+import { condivisioniApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { useInvitiPendenti } from '@/hooks/useInvitiPendenti';
 import { useAuthStore } from '@/store/authStore';
@@ -135,9 +135,9 @@ export const PermessiImpianto = () => {
 
     try {
       setLoading(true);
-      const response = await api.get(`/api/impianti/${impiantoCorrente.id}/condivisioni`);
-      if (response.data.success) {
-        setCondivisioni(response.data.data);
+      const response = await condivisioniApi.getCondivisioni(impiantoCorrente.id);
+      if (response.success) {
+        setCondivisioni(response.data);
       }
     } catch (error) {
       console.error('Errore caricamento condivisioni:', error);
@@ -160,13 +160,13 @@ export const PermessiImpianto = () => {
 
     try {
       setInviting(true);
-      const response = await api.post(`/api/impianti/${impiantoCorrente.id}/condivisioni`, {
+      const response = await condivisioniApi.invita(impiantoCorrente.id, {
         email: inviteEmail.trim(),
         ruolo_condivisione: inviteRuolo,
         ...invitePermessi,
       });
 
-      if (response.data.success) {
+      if (response.success) {
         toast.success('Invito inviato!');
         setShowInviteModal(false);
         setInviteEmail('');
@@ -190,8 +190,8 @@ export const PermessiImpianto = () => {
   const handleRemove = async (id: number) => {
     try {
       setDeleting(id);
-      const response = await api.delete(`/api/condivisioni/${id}`);
-      if (response.data.success) {
+      const response = await condivisioniApi.rimuovi(id);
+      if (response.success) {
         toast.success('Accesso rimosso');
         setCondivisioni(prev => prev.filter(c => c.id !== id));
       }
@@ -214,8 +214,8 @@ export const PermessiImpianto = () => {
         payload = { puo_controllare_dispositivi: true, puo_vedere_stato: true };
       }
 
-      const response = await api.put(`/api/condivisioni/${id}`, payload);
-      if (response.data.success) {
+      const response = await condivisioniApi.modificaPermessi(id, payload);
+      if (response.success) {
         setCondivisioni(prev =>
           prev.map(c => (c.id === id ? { ...c, ...payload } : c))
         );

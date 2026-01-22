@@ -1,7 +1,6 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ThemeColorProvider } from '@/contexts/ThemeColorContext';
 import { ImpiantoProvider } from '@/contexts/ImpiantoContext';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -24,7 +23,6 @@ const ResetPassword = lazy(() => import('@/pages/Auth/ResetPassword').then(m => 
 const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
 const Impianti = lazy(() => import('@/pages/Impianti/Impianti').then(m => ({ default: m.Impianti })));
 const ImpiantoDettaglio = lazy(() => import('@/pages/Impianti/ImpiantoDettaglio').then(m => ({ default: m.ImpiantoDettaglio })));
-const ImpiantoSettings = lazy(() => import('@/pages/Impianti/ImpiantoSettings').then(m => ({ default: m.ImpiantoSettings })));
 const Stanze = lazy(() => import('@/pages/Stanze/Stanze').then(m => ({ default: m.Stanze })));
 const Dispositivi = lazy(() => import('@/pages/Dispositivi/Dispositivi').then(m => ({ default: m.Dispositivi })));
 const Scene = lazy(() => import('@/pages/Scene/Scene').then(m => ({ default: m.Scene })));
@@ -37,7 +35,6 @@ const GestioneCondivisioni = lazy(() => import('@/pages/Settings/GestioneCondivi
 const CambiaPassword = lazy(() => import('@/pages/Settings/CambiaPassword').then(m => ({ default: m.CambiaPassword })));
 const Guida = lazy(() => import('@/pages/Settings/Guida').then(m => ({ default: m.Guida })));
 const InfoApp = lazy(() => import('@/pages/Settings/InfoApp').then(m => ({ default: m.InfoApp })));
-const TestAnimation = lazy(() => import('@/pages/Settings/TestAnimation').then(m => ({ default: m.TestAnimation })));
 const SetupWizard = lazy(() => import('@/pages/Wizard/SetupWizard').then(m => ({ default: m.SetupWizard })));
 const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then(m => ({ default: m.StylePreview })));
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
@@ -139,8 +136,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <ThemeColorProvider>
+      <ThemeColorProvider>
           <Toaster
             position="top-center"
             expand={false}
@@ -172,7 +168,6 @@ function App() {
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/impianti" element={<ProtectedRoute><Impianti /></ProtectedRoute>} />
                 <Route path="/impianti/:id" element={<ProtectedRoute><ImpiantoDettaglio /></ProtectedRoute>} />
-                <Route path="/impianti/:id/settings" element={<ProtectedRoute><ImpiantoSettings /></ProtectedRoute>} />
                 <Route path="/stanze" element={<ProtectedRoute><Stanze /></ProtectedRoute>} />
                 <Route path="/dispositivi" element={<ProtectedRoute><Dispositivi /></ProtectedRoute>} />
                 <Route path="/scene" element={<ProtectedRoute><Scene /></ProtectedRoute>} />
@@ -185,7 +180,6 @@ function App() {
                 <Route path="/settings/password" element={<ProtectedRoute><CambiaPassword /></ProtectedRoute>} />
                 <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
-                <Route path="/settings/test-animation" element={<ProtectedRoute><TestAnimation /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
                 <Route path="/setup" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><SetupWizard /></RoleRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -193,8 +187,7 @@ function App() {
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </ThemeColorProvider>
-      </ThemeProvider>
+      </ThemeColorProvider>
     </ErrorBoundary>
   );
 }

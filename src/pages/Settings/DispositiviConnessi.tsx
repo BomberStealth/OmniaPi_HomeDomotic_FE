@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { RiArrowLeftLine, RiSmartphoneLine, RiComputerLine, RiMacLine, RiLoader4Line, RiCheckLine, RiDeleteBinLine, RiLogoutBoxRLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/services/api';
+import { sessionsApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 
 // ============================================
@@ -101,9 +101,9 @@ export const DispositiviConnessi = () => {
   const loadSessions = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/sessions');
-      if (response.data.success) {
-        setSessions(response.data.data);
+      const response = await sessionsApi.getAll();
+      if (response.success) {
+        setSessions(response.data);
       }
     } catch (error) {
       console.error('Errore caricamento sessioni:', error);
@@ -121,8 +121,8 @@ export const DispositiviConnessi = () => {
   const handleDeleteSession = async (sessionId: number) => {
     try {
       setDeleting(sessionId);
-      const response = await api.delete(`/api/sessions/${sessionId}`);
-      if (response.data.success) {
+      const response = await sessionsApi.delete(String(sessionId));
+      if (response.success) {
         toast.success('Sessione terminata');
         setSessions(prev => prev.filter(s => s.id !== sessionId));
       }
@@ -138,9 +138,9 @@ export const DispositiviConnessi = () => {
   const handleDeleteAllSessions = async () => {
     try {
       setDeletingAll(true);
-      const response = await api.delete('/api/sessions/all');
-      if (response.data.success) {
-        toast.success(response.data.message || 'Tutte le sessioni terminate');
+      const response = await sessionsApi.deleteAll();
+      if (response.success) {
+        toast.success(response.message || 'Tutte le sessioni terminate');
         // Ricarica per mostrare solo la sessione corrente
         await loadSessions();
       }

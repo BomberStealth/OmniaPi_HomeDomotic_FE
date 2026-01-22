@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { SceneList } from '@/components/scene/SceneList';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { useSceneStore } from '@/store/sceneStore';
 import { useDispositiviStore } from '@/store/dispositiviStore';
 import { sceneApi } from '@/services/api';
@@ -99,6 +100,9 @@ export const Scene = () => {
   const { impiantoCorrente } = useImpiantoContext();
   const { colors: themeColors, modeColors } = useThemeColor();
 
+  // Permessi utente sull'impianto corrente
+  const { canControl } = usePermessiImpianto(impiantoCorrente?.id || null);
+
   // Store data (real-time via useRealTimeSync nel Layout)
   const { scene, loading: sceneLoading } = useSceneStore();
   const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
@@ -149,6 +153,11 @@ export const Scene = () => {
   }, [scene]);
 
   const executeScene = async (scenaId: number) => {
+    // Blocca se non ha permessi di controllo
+    if (!canControl) {
+      toast.error('Non hai i permessi per eseguire le scene');
+      return;
+    }
     setExecuting(scenaId);
     try {
       const result = await sceneApi.executeScena(scenaId);

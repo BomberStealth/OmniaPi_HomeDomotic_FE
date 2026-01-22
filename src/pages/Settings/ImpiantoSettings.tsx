@@ -4,10 +4,12 @@ import { Layout } from '@/components/layout/Layout';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
+import { useImpiantiStore } from '@/store/impiantiStore';
 import { useNavigate } from 'react-router-dom';
 import { impiantiApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { UserRole } from '@/types';
+import { Input } from '@/components/common/Input';
 import {
   RiArrowLeftLine,
   RiArrowRightSLine,
@@ -15,24 +17,26 @@ import {
   RiMapPinLine,
   RiGroupLine,
   RiNotification3Line,
-  RiSettings4Line,
   RiFileCopyLine,
   RiShareLine,
   RiPencilLine,
   RiCloseLine,
   RiLoader4Line,
-  RiSaveLine
+  RiSaveLine,
+  RiDeleteBinLine,
+  RiAlertLine
 } from 'react-icons/ri';
 
 // ============================================
-// IMPIANTO SETTINGS PAGE - v1.4.14
-// Layout ristrutturato:
+// IMPIANTO SETTINGS PAGE - v1.4.15
+// Layout:
 // - Header con nome + tasto modifica
 // - Città/posizione
-// - Codice impianto con copia e share
+// - Codice impianto con copia e share (NON rigenerabile)
 // - Card Preferenze Notifiche (placeholder)
 // - Card Gestione Condivisioni → /impianto/condivisioni
 // - Mappa placeholder
+// - Zona Pericolosa: Elimina impianto
 // ============================================
 
 function hexToRgb(hex: string): string {
@@ -57,6 +61,7 @@ const containerVariants = {
 export const ImpiantoSettings = () => {
   const { colors: themeColors, modeColors } = useThemeColor();
   const { impiantoCorrente, setImpiantoCorrente } = useImpiantoContext();
+  const { impianti, removeImpianto, fetchImpianti } = useImpiantiStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
@@ -74,6 +79,11 @@ export const ImpiantoSettings = () => {
     citta: '',
     cap: ''
   });
+
+  // Delete modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Colori dinamici basati sul tema
   const colors = {
@@ -219,6 +229,41 @@ export const ImpiantoSettings = () => {
     }
   };
 
+  // Elimina impianto
+  const handleDelete = async () => {
+    if (deleteConfirmText !== 'ELIMINA') {
+      toast.error('Scrivi ELIMINA per confermare');
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const impiantoId = impiantoCorrente.id;
+      const isLastImpianto = impianti.length <= 1;
+
+      await impiantiApi.delete(impiantoId);
+      removeImpianto(impiantoId);
+
+      toast.success('Impianto eliminato con successo');
+
+      if (isLastImpianto) {
+        navigate('/', { replace: true });
+      } else {
+        await fetchImpianti();
+        navigate('/impianti', { replace: true });
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteConfirmText('');
+  };
+
   // Setting Row Component
   const SettingRow = ({
     icon: Icon,
@@ -356,7 +401,7 @@ export const ImpiantoSettings = () => {
             )}
           </div>
 
-          {/* Codice Impianto */}
+          {/* Codice Impianto - NON rigenerabile */}
           <div style={{
             padding: '12px',
             borderRadius: '12px',
@@ -452,14 +497,6 @@ export const ImpiantoSettings = () => {
             subtitle="Gestisci accessi e inviti"
             onClick={() => navigate('/impianto/condivisioni')}
           />
-
-          <SettingRow
-            icon={RiSettings4Line}
-            iconBg={`${colors.warning}20`}
-            title="Impostazioni Avanzate"
-            subtitle="Elimina impianto, rigenera codice"
-            onClick={() => navigate(`/impianti/${impiantoCorrente.id}/settings`)}
-          />
         </motion.div>
 
         {/* Mappa Placeholder */}
@@ -484,39 +521,103 @@ export const ImpiantoSettings = () => {
             Visualizza la posizione del tuo impianto
           </p>
         </motion.div>
+
+        {/* Zona Pericolosa - solo se può modificare */}
+        {canEditImpianto && (
+          <motion.div variants={cardVariants} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            <h2 style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: colors.error,
+              margin: '0 4px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}>
+              <RiAlertLine size={14} />
+              Zona Pericolosa
+            </h2>
+
+            <motion.div
+              style={{
+                ...cardStyle,
+                padding: '16px',
+                border: `1px solid ${colors.error}30`,
+                background: `${colors.error}08`,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
+                    Elimina Impianto
+                  </h3>
+                  <p style={{ fontSize: '12px', color: colors.textMuted, margin: '4px 0 0 0' }}>
+                    Questa azione è irreversibile
+                  </p>
+                </div>
+                <motion.button
+                  onClick={() => setShowDeleteModal(true)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    background: colors.error,
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <RiDeleteBinLine size={16} />
+                  Elimina
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </motion.div>
 
-      {/* Modal Modifica Impianto */}
+      {/* Modal Modifica Impianto - CENTRATO */}
       <AnimatePresence>
         {showEditModal && (
-          <>
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               style={{
-                position: 'fixed',
+                position: 'absolute',
                 inset: 0,
                 background: 'rgba(0,0,0,0.6)',
-                zIndex: 100
               }}
               onClick={() => setShowEditModal(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               style={{
-                position: 'fixed',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 'calc(100% - 32px)',
+                position: 'relative',
+                width: '100%',
                 maxWidth: '400px',
                 background: colors.bgCardLit,
                 borderRadius: '20px',
                 padding: '20px',
-                zIndex: 101,
                 border: `1px solid ${colors.border}`,
                 boxShadow: colors.cardShadowLit
               }}
@@ -537,99 +638,36 @@ export const ImpiantoSettings = () => {
 
               {/* Form */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {/* Nome Impianto */}
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, display: 'block', marginBottom: '6px' }}>
-                    Nome Impianto *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nome}
-                    onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    placeholder="es. Casa Principale"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: colors.bgCard,
-                      border: `1px solid ${colors.border}`,
-                      color: colors.textPrimary,
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
+                <Input
+                  label="Nome Impianto *"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  placeholder="es. Casa Principale"
+                />
 
-                {/* Indirizzo */}
-                <div>
-                  <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, display: 'block', marginBottom: '6px' }}>
-                    Indirizzo
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.indirizzo}
-                    onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })}
-                    placeholder="es. Via Roma 123"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: colors.bgCard,
-                      border: `1px solid ${colors.border}`,
-                      color: colors.textPrimary,
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
+                <Input
+                  label="Indirizzo"
+                  value={formData.indirizzo}
+                  onChange={(e) => setFormData({ ...formData, indirizzo: e.target.value })}
+                  placeholder="es. Via Roma 123"
+                />
 
-                {/* Città e CAP */}
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <div style={{ flex: 2 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, display: 'block', marginBottom: '6px' }}>
-                      Città
-                    </label>
-                    <input
-                      type="text"
+                    <Input
+                      label="Città"
                       value={formData.citta}
                       onChange={(e) => setFormData({ ...formData, citta: e.target.value })}
                       placeholder="es. Milano"
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '12px',
-                        background: colors.bgCard,
-                        border: `1px solid ${colors.border}`,
-                        color: colors.textPrimary,
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, display: 'block', marginBottom: '6px' }}>
-                      CAP
-                    </label>
-                    <input
-                      type="text"
+                    <Input
+                      label="CAP"
                       value={formData.cap}
                       onChange={(e) => setFormData({ ...formData, cap: e.target.value })}
                       placeholder="20100"
                       maxLength={5}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        borderRadius: '12px',
-                        background: colors.bgCard,
-                        border: `1px solid ${colors.border}`,
-                        color: colors.textPrimary,
-                        fontSize: '14px',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
                     />
                   </div>
                 </div>
@@ -688,7 +726,134 @@ export const ImpiantoSettings = () => {
                 </div>
               </div>
             </motion.div>
-          </>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Elimina Impianto */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+              }}
+              onClick={handleCloseDeleteModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '400px',
+                background: colors.bgCardLit,
+                borderRadius: '20px',
+                padding: '20px',
+                border: `1px solid ${colors.error}30`,
+                boxShadow: colors.cardShadowLit
+              }}
+            >
+              {/* Header Modal */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.error, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <RiDeleteBinLine size={20} />
+                  Elimina Impianto
+                </h3>
+                <motion.button
+                  onClick={handleCloseDeleteModal}
+                  style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  whileHover={{ background: `${colors.textMuted}20` }}
+                >
+                  <RiCloseLine size={20} color={colors.textMuted} />
+                </motion.button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>
+                  Sei sicuro di voler eliminare <strong>{impiantoCorrente.nome}</strong>?
+                  Questa azione è irreversibile e cancellerà tutti i dispositivi, scene e dati associati.
+                </p>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textMuted, display: 'block', marginBottom: '6px' }}>
+                    Scrivi <span style={{ color: colors.error, fontWeight: 700 }}>ELIMINA</span> per confermare:
+                  </label>
+                  <Input
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                    placeholder="ELIMINA"
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <motion.button
+                    onClick={handleCloseDeleteModal}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: colors.bgCard,
+                      border: `1px solid ${colors.border}`,
+                      color: colors.textSecondary,
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Annulla
+                  </motion.button>
+                  <motion.button
+                    onClick={handleDelete}
+                    disabled={deleting || deleteConfirmText !== 'ELIMINA'}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: colors.error,
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: deleting || deleteConfirmText !== 'ELIMINA' ? 'not-allowed' : 'pointer',
+                      opacity: deleting || deleteConfirmText !== 'ELIMINA' ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                    whileHover={!deleting && deleteConfirmText === 'ELIMINA' ? { scale: 1.02 } : {}}
+                    whileTap={!deleting && deleteConfirmText === 'ELIMINA' ? { scale: 0.98 } : {}}
+                  >
+                    {deleting ? (
+                      <RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <>
+                        <RiDeleteBinLine size={18} />
+                        Elimina
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
