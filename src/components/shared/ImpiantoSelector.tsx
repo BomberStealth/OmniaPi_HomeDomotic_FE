@@ -1,10 +1,9 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
-import { useImpiantiStore } from '@/store/impiantiStore';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
-import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiDeleteBinLine, RiMailLine, RiCheckLine, RiCloseLine, RiSettings4Line } from 'react-icons/ri';
-import { impiantiApi, condivisioniApi } from '@/services/api';
+import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiMailLine, RiCheckLine, RiCloseLine, RiSettings4Line } from 'react-icons/ri';
+import { condivisioniApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -40,7 +39,6 @@ interface InvitoPendente {
 export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) => {
   const navigate = useNavigate();
   const { impiantoCorrente, setImpiantoCorrente, impianti, loading, refresh } = useImpiantoContext();
-  const { removeImpianto } = useImpiantiStore();
   const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [inviti, setInviti] = useState<InvitoPendente[]>([]);
@@ -123,38 +121,6 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
   const handleCreateNew = () => {
     setIsOpen(false);
     navigate('/setup');
-  };
-
-  const handleDelete = async (e: React.MouseEvent, impiantoId: number, impiantoNome: string) => {
-    e.stopPropagation();
-
-    if (!confirm(`Sei sicuro di voler eliminare l'impianto "${impiantoNome}"? Questa azione è irreversibile.`)) {
-      return;
-    }
-
-    try {
-      // Chiudi dropdown prima per UX migliore
-      setIsOpen(false);
-
-      // Elimina dal backend
-      await impiantiApi.delete(impiantoId);
-
-      // Aggiorna lo store locale (auto-seleziona il prossimo impianto)
-      removeImpianto(impiantoId);
-
-      toast.success('Impianto eliminato con successo!');
-
-      // Se non ci sono più impianti, vai alla home
-      if (impianti.length <= 1) {
-        navigate('/', { replace: true });
-      } else {
-        // Forza refresh per sincronizzare con backend
-        await refresh();
-      }
-    } catch (error: any) {
-      console.error('Errore eliminazione impianto:', error);
-      toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
-    }
   };
 
   if (loading) {
@@ -599,82 +565,56 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
 
               {/* Lista Impianti */}
               {impianti.map((impianto) => (
-                <div
+                <button
                   key={impianto.id}
+                  onClick={() => {
+                    setImpiantoCorrente(impianto);
+                    setIsOpen(false);
+                  }}
                   style={{
+                    width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    transition: 'all 0.2s',
+                    gap: '8px',
+                    padding: '12px',
+                    textAlign: 'left',
                     background: impianto.id === impiantoCorrente.id
                       ? `${colors.accent}15`
                       : 'transparent',
+                    border: 'none',
                     borderLeft: impianto.id === impiantoCorrente.id
                       ? `2px solid ${colors.accent}`
                       : '2px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  <button
-                    onClick={() => {
-                      setImpiantoCorrente(impianto);
-                      setIsOpen(false);
-                    }}
+                  <RiBuilding2Line
+                    size={16}
                     style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '12px',
-                      textAlign: 'left',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
+                      color: impianto.id === impiantoCorrente.id
+                        ? colors.accent
+                        : colors.textMuted
                     }}
-                  >
-                    <RiBuilding2Line
-                      size={16}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <p
                       style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
                         color: impianto.id === impiantoCorrente.id
                           ? colors.accent
-                          : colors.textMuted
+                          : colors.textPrimary,
+                        margin: 0,
                       }}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <p
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          color: impianto.id === impiantoCorrente.id
-                            ? colors.accent
-                            : colors.textPrimary,
-                          margin: 0,
-                        }}
-                      >
-                        {impianto.nome}
-                      </p>
-                      <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
-                        {impianto.citta}
-                      </p>
-                    </div>
-                  </button>
-                  <motion.button
-                    onClick={(e) => handleDelete(e, impianto.id, impianto.nome)}
-                    style={{
-                      padding: '8px',
-                      marginRight: '8px',
-                      background: 'transparent',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    whileHover={{ background: `${colors.error}20` }}
-                    title="Elimina impianto"
-                  >
-                    <RiDeleteBinLine size={14} style={{ color: `${colors.error}aa` }} />
-                  </motion.button>
-                </div>
+                    >
+                      {impianto.nome}
+                    </p>
+                    <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
+                      {impianto.citta}
+                    </p>
+                  </div>
+                </button>
               ))}
 
               {/* Separatore + Crea Nuovo (solo per Admin/Installatore) */}
