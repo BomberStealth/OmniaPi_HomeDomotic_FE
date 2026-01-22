@@ -24,7 +24,6 @@ import { condivisioniApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { useInvitiPendenti } from '@/hooks/useInvitiPendenti';
 import { useAuthStore } from '@/store/authStore';
-import { UserRole } from '@/types';
 
 // ============================================
 // PERMESSI IMPIANTO PAGE
@@ -36,7 +35,8 @@ interface Condivisione {
   impianto_id: number;
   utente_id: number | null;
   email_invitato: string;
-  ruolo_condivisione: 'installatore' | 'ospite' | 'proprietario';
+  accesso_completo: boolean;
+  ruolo_visualizzato: 'installatore_secondario' | 'co_proprietario' | 'ospite';
   stato: 'pendente' | 'accettato' | 'rifiutato';
   puo_controllare_dispositivi: boolean;
   puo_vedere_stato: boolean;
@@ -83,8 +83,7 @@ export const PermessiImpianto = () => {
   const { impiantoCorrente, refresh: refreshImpianti } = useImpiantoContext();
   const navigate = useNavigate();
   const { inviti, accettaInvito, rifiutaInvito } = useInvitiPendenti();
-  const { user } = useAuthStore();
-  const isAdmin = user?.ruolo === UserRole.ADMIN;
+  const { user: _user } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
   const [processingInvito, setProcessingInvito] = useState<number | null>(null);
@@ -94,12 +93,7 @@ export const PermessiImpianto = () => {
   // Modal state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRuolo, setInviteRuolo] = useState<'installatore' | 'ospite' | 'proprietario'>('ospite');
-  const [invitePermessi, setInvitePermessi] = useState({
-    puo_controllare_dispositivi: true,
-    puo_vedere_stato: true,
-    stanze_abilitate: null as number[] | null, // null = tutte
-  });
+  const [inviteAccessoCompleto, setInviteAccessoCompleto] = useState(false);
   const [inviting, setInviting] = useState(false);
 
   const colors = {
@@ -162,20 +156,14 @@ export const PermessiImpianto = () => {
       setInviting(true);
       const response = await condivisioniApi.invita(impiantoCorrente.id, {
         email: inviteEmail.trim(),
-        ruolo_condivisione: inviteRuolo,
-        ...invitePermessi,
+        accesso_completo: inviteAccessoCompleto,
       });
 
       if (response.success) {
         toast.success('Invito inviato!');
         setShowInviteModal(false);
         setInviteEmail('');
-        setInviteRuolo('ospite');
-        setInvitePermessi({
-          puo_controllare_dispositivi: true,
-          puo_vedere_stato: true,
-          stanze_abilitate: null,
-        });
+        setInviteAccessoCompleto(false);
         loadCondivisioni();
       }
     } catch (error: any) {
@@ -229,17 +217,17 @@ export const PermessiImpianto = () => {
     }
   };
 
-  // Filtra per ruolo
-  const proprietari = condivisioni.filter(c => c.ruolo_condivisione === 'proprietario');
-  const installatori = condivisioni.filter(c => c.ruolo_condivisione === 'installatore');
-  const ospiti = condivisioni.filter(c => c.ruolo_condivisione === 'ospite');
+  // Filtra per ruolo visualizzato
+  const installatori = condivisioni.filter(c => c.ruolo_visualizzato === 'installatore_secondario');
+  const proprietari = condivisioni.filter(c => c.ruolo_visualizzato === 'co_proprietario');
+  const ospiti = condivisioni.filter(c => c.ruolo_visualizzato === 'ospite');
 
   // Card per un utente condiviso
   const UserCard = ({ cond }: { cond: Condivisione }) => {
     const isDeleting = deleting === cond.id;
     const isPending = cond.stato === 'pendente';
-    const isInstallatore = cond.ruolo_condivisione === 'installatore';
-    const isProprietario = cond.ruolo_condivisione === 'proprietario';
+    const isInstallatore = cond.ruolo_visualizzato === 'installatore_secondario';
+    const isProprietario = cond.ruolo_visualizzato === 'co_proprietario';
 
     return (
       <motion.div
@@ -907,122 +895,38 @@ export const PermessiImpianto = () => {
               </div>
 
               {/* Ruolo */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: modeColors.textSecondary,
-                  marginBottom: '8px',
-                }}>
-                  Ruolo
-                </label>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {(isAdmin
-                    ? (['ospite', 'installatore', 'proprietario'] as const)
-                    : (['ospite', 'installatore'] as const)
-                  ).map((ruolo) => {
-                    const getRuoloColor = () => {
-                      if (ruolo === 'installatore') return colors.warning;
-                      if (ruolo === 'proprietario') return colors.success;
-                      return colors.accent;
-                    };
-                    const ruoloColor = getRuoloColor();
-                    return (
-                      <motion.button
-                        key={ruolo}
-                        onClick={() => setInviteRuolo(ruolo)}
-                        style={{
-                          flex: 1,
-                          minWidth: isAdmin ? '90px' : undefined,
-                          padding: '12px',
-                          borderRadius: '12px',
-                          border: `1px solid ${inviteRuolo === ruolo ? ruoloColor : colors.border}`,
-                          background: inviteRuolo === ruolo ? `${ruoloColor}20` : 'transparent',
-                          color: inviteRuolo === ruolo ? ruoloColor : modeColors.textSecondary,
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {ruolo === 'installatore' ? <RiToolsLine size={16} /> :
-                         ruolo === 'proprietario' ? <RiHome4Line size={16} /> :
-                         <RiUserLine size={16} />}
-                        {ruolo.charAt(0).toUpperCase() + ruolo.slice(1)}
-                      </motion.button>
-                    );
-                  })}
+              {/* Accesso Completo Toggle */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 16px',
+                borderRadius: '12px',
+                background: 'rgba(0,0,0,0.15)',
+                border: `1px solid ${inviteAccessoCompleto ? colors.accent : colors.border}`,
+                marginBottom: '16px',
+              }}>
+                <div>
+                  <p style={{ fontSize: '14px', fontWeight: 500, color: modeColors.textPrimary, margin: 0 }}>
+                    Accesso completo
+                  </p>
+                  <p style={{ fontSize: '11px', color: modeColors.textMuted, margin: '4px 0 0 0' }}>
+                    {inviteAccessoCompleto
+                      ? 'Può gestire tutti i dispositivi e le stanze'
+                      : 'Accesso limitato come ospite'}
+                  </p>
                 </div>
+                <Toggle
+                  isOn={inviteAccessoCompleto}
+                  onToggle={() => setInviteAccessoCompleto(!inviteAccessoCompleto)}
+                  size="md"
+                />
               </div>
 
-              {/* Permessi (solo per ospiti) */}
-              {inviteRuolo === 'ospite' && (
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    color: modeColors.textSecondary,
-                    marginBottom: '12px',
-                  }}>
-                    Permessi
-                  </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: 'rgba(0,0,0,0.15)',
-                      borderRadius: '10px',
-                    }}>
-                      <span style={{ fontSize: '13px', color: modeColors.textSecondary }}>
-                        Può controllare dispositivi
-                      </span>
-                      <Toggle
-                        isOn={invitePermessi.puo_controllare_dispositivi}
-                        onToggle={() => setInvitePermessi(p => ({
-                          ...p,
-                          puo_controllare_dispositivi: !p.puo_controllare_dispositivi
-                        }))}
-                        size="sm"
-                      />
-                    </div>
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: 'rgba(0,0,0,0.15)',
-                      borderRadius: '10px',
-                    }}>
-                      <span style={{ fontSize: '13px', color: modeColors.textSecondary }}>
-                        Può vedere stato dispositivi
-                      </span>
-                      <Toggle
-                        isOn={invitePermessi.puo_vedere_stato}
-                        onToggle={() => setInvitePermessi(p => ({
-                          ...p,
-                          puo_vedere_stato: !p.puo_vedere_stato
-                        }))}
-                        size="sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Info ruolo */}
+              {/* Info ruolo risultante */}
               <div style={{
                 padding: '12px',
-                background: inviteRuolo === 'installatore' ? `${colors.warning}10` :
-                           inviteRuolo === 'proprietario' ? `${colors.success}10` :
-                           `${colors.accent}10`,
+                background: `${colors.accent}10`,
                 borderRadius: '10px',
                 marginBottom: '20px',
               }}>
@@ -1032,12 +936,18 @@ export const PermessiImpianto = () => {
                   margin: 0,
                   lineHeight: 1.5,
                 }}>
-                  {inviteRuolo === 'installatore'
-                    ? 'Gli installatori hanno accesso completo all\'impianto per configurazione e manutenzione.'
-                    : inviteRuolo === 'proprietario'
-                    ? 'I proprietari hanno pieno controllo sull\'impianto, come il proprietario originale.'
-                    : 'Gli ospiti possono controllare i dispositivi in base ai permessi assegnati.'}
+                  Il ruolo visualizzato dipenderà dal tipo di account dell'invitato:
                 </p>
+                <ul style={{ margin: '8px 0 0 0', paddingLeft: '16px', fontSize: '11px', color: modeColors.textMuted }}>
+                  {inviteAccessoCompleto ? (
+                    <>
+                      <li>Account Installatore → Installatore Secondario</li>
+                      <li>Account Proprietario → Co-Proprietario</li>
+                    </>
+                  ) : (
+                    <li>Qualsiasi account → Ospite</li>
+                  )}
+                </ul>
               </div>
 
               {/* Bottoni */}

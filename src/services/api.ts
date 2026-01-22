@@ -279,9 +279,7 @@ export const condivisioniApi = {
   // Invita utente
   invita: async (impiantoId: number, payload: {
     email: string;
-    ruolo_condivisione: 'installatore' | 'ospite' | 'proprietario';
-    puo_controllare_dispositivi?: boolean;
-    puo_vedere_stato?: boolean;
+    accesso_completo?: boolean;
     stanze_abilitate?: number[] | null;
   }) => {
     const { data } = await api.post(`/api/impianti/${impiantoId}/condivisioni`, payload);
@@ -290,11 +288,20 @@ export const condivisioniApi = {
 
   // Modifica permessi
   modificaPermessi: async (condivisioneId: number, permessi: {
+    accesso_completo?: boolean;
     puo_controllare_dispositivi?: boolean;
     puo_vedere_stato?: boolean;
     stanze_abilitate?: number[] | null;
   }) => {
     const { data } = await api.put(`/api/condivisioni/${condivisioneId}`, permessi);
+    return data;
+  },
+
+  // Cedi ruolo installatore primario
+  cediPrimario: async (impiantoId: number, nuovoInstallatoreId: number) => {
+    const { data } = await api.post(`/api/impianti/${impiantoId}/cedi-primario`, {
+      nuovo_installatore_id: nuovoInstallatoreId
+    });
     return data;
   },
 
