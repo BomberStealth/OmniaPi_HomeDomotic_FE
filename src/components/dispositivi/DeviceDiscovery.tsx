@@ -148,7 +148,7 @@ export const DeviceDiscovery = ({
     } catch {
       toast.error('Errore test');
     } finally {
-      setTimeout(() => setTestingMac(null), 2000);
+      setTimeout(() => setTestingMac(null), 500);
     }
   };
 

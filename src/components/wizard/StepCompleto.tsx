@@ -276,9 +276,7 @@ export const StepCompleto = ({
         style={{
           padding: spacing.lg,
           borderRadius: radius.xl,
-          background: isDarkMode ? 'rgba(20, 18, 15, 0.6)' : 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(20px)',
-          border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+          background: 'transparent',
         }}
       >
         <RiLoader4Line
@@ -349,8 +347,7 @@ export const StepCompleto = ({
       style={{
         minHeight: 'calc(100vh - 180px)',  // Altezza dinamica, meno spazio vuoto
         maxHeight: 600,
-        background: isDarkMode ? 'rgba(10, 10, 12, 0.9)' : 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(20px)',
+        background: 'transparent',
       }}
     >
       {/* Container animazione centrato */}

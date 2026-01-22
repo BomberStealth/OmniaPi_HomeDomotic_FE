@@ -73,6 +73,8 @@ export const Toggle = ({
         flexShrink: 0,
         transition: 'background 0.3s ease, box-shadow 0.3s ease',
         pointerEvents: visualOnly ? 'none' : 'auto',
+        display: 'flex',
+        alignItems: 'center',
       }}
       whileTap={isInteractive ? { scale: 0.95 } : undefined}
     >
