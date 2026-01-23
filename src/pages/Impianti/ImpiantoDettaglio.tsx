@@ -64,7 +64,7 @@ export const ImpiantoDettaglio = () => {
   if (!impiantoCorrente) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex items-center justify-center h-64" style={{ viewTransitionName: 'page-content' } as React.CSSProperties}>
           <p className="dark:text-copy-lighter light:text-copy-lighter">Caricamento...</p>
         </div>
       </Layout>
@@ -88,7 +88,7 @@ export const ImpiantoDettaglio = () => {
 
   return (
     <Layout>
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4" style={{ viewTransitionName: 'page-content' } as React.CSSProperties}>
         {/* Header Compatto */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">

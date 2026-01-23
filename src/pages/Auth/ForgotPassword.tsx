@@ -126,7 +126,8 @@ export const ForgotPassword = () => {
         padding: isMobile ? '12px' : '16px',
         overflow: 'hidden',
         fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
-      }}
+        viewTransitionName: 'page-content',
+      } as React.CSSProperties}
     >
       {/* Animated Gradient Background */}
       <motion.div

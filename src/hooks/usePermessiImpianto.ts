@@ -24,7 +24,9 @@ const DEFAULT_FULL_PERMISSIONS: PermessiImpianto = {
 
 export const usePermessiImpianto = (impiantoId: number | null) => {
   const [permessi, setPermessi] = useState<PermessiImpianto>(DEFAULT_FULL_PERMISSIONS);
-  const [loading, setLoading] = useState(false);
+  // IMPORTANTE: loading deve partire da TRUE se c'è un impiantoId
+  // Questo evita che il componente mostri tutte le stanze prima che i permessi siano caricati
+  const [loading, setLoading] = useState(!!impiantoId);
   const [error, setError] = useState<string | null>(null);
   const fetchedRef = useRef<number | null>(null);
 
@@ -69,9 +71,13 @@ export const usePermessiImpianto = (impiantoId: number | null) => {
       // Reset quando cambia impianto
       if (fetchedRef.current !== impiantoId) {
         fetchedRef.current = null;
+        setLoading(true);  // IMPORTANTE: setta loading PRIMA di fetchare
         setPermessi(DEFAULT_FULL_PERMISSIONS);
       }
       fetchPermessi();
+    } else {
+      // Se non c'è impianto, non siamo in loading
+      setLoading(false);
     }
   }, [impiantoId, fetchPermessi]);
 

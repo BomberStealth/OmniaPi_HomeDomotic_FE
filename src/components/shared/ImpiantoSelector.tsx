@@ -1,9 +1,10 @@
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiMailLine, RiCheckLine, RiCloseLine, RiSettings4Line } from 'react-icons/ri';
 import { condivisioniApi } from '@/services/api';
+import { socketService } from '@/services/socket';
 import { toast } from '@/utils/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -71,6 +72,32 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
       loadInviti();
     }
   }, [isOpen, loadInviti]);
+
+  // Listener WebSocket per nuovi inviti real-time
+  const invitoListenerRef = useRef<((data: any) => void) | null>(null);
+
+  useEffect(() => {
+    const handleInvitoRicevuto = (data: any) => {
+      // Filtra solo eventi di tipo invito
+      if (data.tipo === 'invito') {
+        console.log('📬 Nuovo invito ricevuto via WS:', data);
+        // Mostra toast
+        toast.success(data.messaggio || 'Hai ricevuto un nuovo invito!');
+        // Refresh lista inviti
+        loadInviti();
+      }
+    };
+
+    invitoListenerRef.current = handleInvitoRicevuto;
+    socketService.getSocket()?.on('notification', handleInvitoRicevuto);
+
+    return () => {
+      if (invitoListenerRef.current) {
+        socketService.getSocket()?.off('notification', invitoListenerRef.current);
+        invitoListenerRef.current = null;
+      }
+    };
+  }, [loadInviti]);
 
   // Accetta invito
   const handleAccettaInvito = async (e: React.MouseEvent, invitoId: number) => {

@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { SkeletonList } from '@/components/common/Skeleton';
 import { UnifiedDeviceCard, GatewayCard } from '@/components/devices';
 import { AddDeviceModal } from '@/components/dispositivi';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
@@ -32,16 +31,6 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
-// Variants per animazioni card
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
-};
-
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08 } }
-};
 
 export const Dispositivi = () => {
   const { impiantoCorrente } = useImpiantoContext();
@@ -51,7 +40,17 @@ export const Dispositivi = () => {
   const { dispositivi, loading, updatePowerState, updateLedState, fetchDispositivi } = useDispositiviStore();
 
   // Permessi utente sull'impianto corrente
-  const { canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
+  const { permessi, canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
+
+  // Filtra dispositivi in base ai permessi stanze
+  const dispositiviFiltrati = useMemo(() => {
+    if (!dispositivi || dispositivi.length === 0) return [];
+    if (permessi.stanze_abilitate === null) return dispositivi; // Accesso completo
+    // Mostra solo dispositivi delle stanze abilitate + quelli non assegnati
+    return dispositivi.filter((d: Dispositivo) =>
+      !d.stanza_id || permessi.stanze_abilitate!.includes(d.stanza_id)
+    );
+  }, [dispositivi, permessi.stanze_abilitate]);
 
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -254,8 +253,8 @@ export const Dispositivi = () => {
     }
   };
 
-  // Filter valid devices
-  const validDevices = dispositivi.filter(d => d !== null && d !== undefined);
+  // Filter valid devices (usa dispositiviFiltrati per rispettare permessi)
+  const validDevices = dispositiviFiltrati.filter(d => d !== null && d !== undefined);
 
   // Group devices by type for display
   const relayDevices = validDevices.filter(d => d.device_type === 'omniapi_node' || d.device_type === 'tasmota' || !d.device_type);
@@ -264,7 +263,7 @@ export const Dispositivi = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', viewTransitionName: 'page-content' as any }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -340,13 +339,9 @@ export const Dispositivi = () => {
         </div>
 
         {/* Content */}
-        {loading || gatewayLoading ? (
-          <SkeletonList count={6} />
-        ) : validDevices.length === 0 && !gateway ? (
+        {validDevices.length === 0 && !gateway && !loading && !gatewayLoading ? (
           /* Empty State */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             style={{
               background: colors.bgCardLit,
               border: `1px solid ${colors.border}`,
@@ -359,10 +354,7 @@ export const Dispositivi = () => {
             }}
           >
             <div style={topHighlight} />
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring' }}
+            <div
               style={{
                 display: 'inline-flex',
                 padding: '20px',
@@ -373,7 +365,7 @@ export const Dispositivi = () => {
               }}
             >
               <RiLightbulbLine size={48} style={{ color: colors.textMuted }} />
-            </motion.div>
+            </div>
             <h3 style={{
               fontSize: '22px',
               fontWeight: 600,
@@ -392,7 +384,7 @@ export const Dispositivi = () => {
             }}>
               Usa il Wizard nelle Impostazioni per aggiungere nuovi dispositivi
             </p>
-          </motion.div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Gateway Section */}
@@ -433,45 +425,40 @@ export const Dispositivi = () => {
                 }}>
                   LED Strip ({ledDevices.length})
                 </h2>
-                <motion.div
-                  initial="hidden"
-                  animate="show"
-                  variants={containerVariants}
-                  style={{
+                <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                     gap: '12px',
                   }}
                 >
                   {ledDevices.map((dispositivo) => (
-                    <motion.div key={dispositivo.id} variants={cardVariants}>
-                      <UnifiedDeviceCard
-                        nome={dispositivo.nome}
-                        isOn={!!dispositivo.led_power || !!dispositivo.power_state}
-                        isLoading={togglingDevice === dispositivo.id}
-                        bloccato={!!dispositivo.bloccato}
-                        canControl={canControl}
-                        canViewState={canViewState}
-                        onToggle={() => toggleDevice(dispositivo)}
-                        deviceType="omniapi_led"
-                        variant="full"
-                        ledColor={{
-                          r: dispositivo.led_r ?? 255,
-                          g: dispositivo.led_g ?? 255,
-                          b: dispositivo.led_b ?? 255
-                        }}
-                        ledBrightness={dispositivo.led_brightness ?? 255}
-                        ledEffect={dispositivo.led_effect ?? 0}
-                        ledSpeed={dispositivo.led_speed ?? 128}
-                        onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
-                        onLedEffectChange={(effect) => handleLedEffectChange(dispositivo, effect)}
-                        onLedSpeedChange={(speed) => handleLedSpeedChange(dispositivo, speed)}
-                        onLedNumLedsChange={(numLeds) => handleLedNumLedsChange(dispositivo, numLeds)}
-                        onLedCustomEffect={(colors) => handleLedCustomEffect(dispositivo, colors)}
-                      />
-                    </motion.div>
+                    <UnifiedDeviceCard
+                      key={dispositivo.id}
+                      nome={dispositivo.nome}
+                      isOn={!!dispositivo.led_power || !!dispositivo.power_state}
+                      isLoading={togglingDevice === dispositivo.id}
+                      bloccato={!!dispositivo.bloccato}
+                      canControl={canControl}
+                      canViewState={canViewState}
+                      onToggle={() => toggleDevice(dispositivo)}
+                      deviceType="omniapi_led"
+                      variant="full"
+                      ledColor={{
+                        r: dispositivo.led_r ?? 255,
+                        g: dispositivo.led_g ?? 255,
+                        b: dispositivo.led_b ?? 255
+                      }}
+                      ledBrightness={dispositivo.led_brightness ?? 255}
+                      ledEffect={dispositivo.led_effect ?? 0}
+                      ledSpeed={dispositivo.led_speed ?? 128}
+                      onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
+                      onLedEffectChange={(effect) => handleLedEffectChange(dispositivo, effect)}
+                      onLedSpeedChange={(speed) => handleLedSpeedChange(dispositivo, speed)}
+                      onLedNumLedsChange={(numLeds) => handleLedNumLedsChange(dispositivo, numLeds)}
+                      onLedCustomEffect={(colors) => handleLedCustomEffect(dispositivo, colors)}
+                    />
                   ))}
-                </motion.div>
+                </div>
               </div>
             )}
 
@@ -488,32 +475,27 @@ export const Dispositivi = () => {
                 }}>
                   Interruttori ({relayDevices.length})
                 </h2>
-                <motion.div
-                  initial="hidden"
-                  animate="show"
-                  variants={containerVariants}
-                  style={{
+                <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
                     gap: '12px',
                   }}
                 >
                   {relayDevices.map((dispositivo) => (
-                    <motion.div key={dispositivo.id} variants={cardVariants}>
-                      <UnifiedDeviceCard
-                        nome={dispositivo.nome}
-                        isOn={!!dispositivo.power_state}
-                        isLoading={togglingDevice === dispositivo.id}
-                        bloccato={!!dispositivo.bloccato}
-                        canControl={canControl}
-                        canViewState={canViewState}
-                        onToggle={() => toggleDevice(dispositivo)}
-                        deviceType={dispositivo.device_type || 'relay'}
-                        variant="full"
-                      />
-                    </motion.div>
+                    <UnifiedDeviceCard
+                      key={dispositivo.id}
+                      nome={dispositivo.nome}
+                      isOn={!!dispositivo.power_state}
+                      isLoading={togglingDevice === dispositivo.id}
+                      bloccato={!!dispositivo.bloccato}
+                      canControl={canControl}
+                      canViewState={canViewState}
+                      onToggle={() => toggleDevice(dispositivo)}
+                      deviceType={dispositivo.device_type || 'relay'}
+                      variant="full"
+                    />
                   ))}
-                </motion.div>
+                </div>
               </div>
             )}
 
@@ -530,31 +512,26 @@ export const Dispositivi = () => {
                 }}>
                   Sensori ({sensorDevices.length})
                 </h2>
-                <motion.div
-                  initial="hidden"
-                  animate="show"
-                  variants={containerVariants}
-                  style={{
+                <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
                     gap: '12px',
                   }}
                 >
                   {sensorDevices.map((dispositivo) => (
-                    <motion.div key={dispositivo.id} variants={cardVariants}>
-                      <UnifiedDeviceCard
-                        nome={dispositivo.nome}
-                        isOn={false}
-                        onToggle={() => {}}
-                        deviceType="sensor"
-                        variant="full"
-                        canViewState={canViewState}
-                        temperature={dispositivo.temperature}
-                        humidity={dispositivo.humidity}
-                      />
-                    </motion.div>
+                    <UnifiedDeviceCard
+                      key={dispositivo.id}
+                      nome={dispositivo.nome}
+                      isOn={false}
+                      onToggle={() => {}}
+                      deviceType="sensor"
+                      variant="full"
+                      canViewState={canViewState}
+                      temperature={dispositivo.temperature}
+                      humidity={dispositivo.humidity}
+                    />
                   ))}
-                </motion.div>
+                </div>
               </div>
             )}
           </div>

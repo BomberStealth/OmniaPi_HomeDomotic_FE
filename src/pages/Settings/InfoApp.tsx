@@ -71,7 +71,7 @@ export const InfoApp = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -109,11 +109,7 @@ export const InfoApp = () => {
         </div>
 
         {/* Logo Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '32px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <div style={{ ...cardStyle, padding: '32px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
             {/* Logo OmniaPi */}
@@ -151,15 +147,10 @@ export const InfoApp = () => {
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Info Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '0' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div style={{ ...cardStyle, padding: '0' }}>
           <div style={topHighlight} />
           {infoItems.map((item, index) => (
             <div
@@ -180,15 +171,10 @@ export const InfoApp = () => {
               </span>
             </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Tech Stack Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '16px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
+        <div style={{ ...cardStyle, padding: '16px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
             <div
@@ -231,15 +217,10 @@ export const InfoApp = () => {
               </span>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Links Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '16px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <div style={{ ...cardStyle, padding: '16px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <motion.a
@@ -264,18 +245,15 @@ export const InfoApp = () => {
               </span>
             </motion.a>
           </div>
-        </motion.div>
+        </div>
 
         {/* Credits Card */}
-        <motion.div
+        <div
           style={{
             ...cardStyle,
             padding: '20px',
             background: `${colors.accent}05`,
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.25 }}
         >
           <div style={topHighlight} />
           <div style={{
@@ -297,7 +275,7 @@ export const InfoApp = () => {
               </span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </Layout>
   );

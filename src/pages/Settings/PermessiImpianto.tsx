@@ -20,7 +20,7 @@ import {
   RiCloseCircleLine
 } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
-import { condivisioniApi } from '@/services/api';
+import { condivisioniApi, stanzeApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { useInvitiPendenti } from '@/hooks/useInvitiPendenti';
 import { useAuthStore } from '@/store/authStore';
@@ -47,6 +47,12 @@ interface Condivisione {
   // Campi join
   utente_nome?: string;
   utente_cognome?: string;
+}
+
+interface Stanza {
+  id: number;
+  nome: string;
+  icona?: string;
 }
 
 const baseColors = {
@@ -94,7 +100,11 @@ export const PermessiImpianto = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteAccessoCompleto, setInviteAccessoCompleto] = useState(false);
+  const [inviteStanzeSelezionate, setInviteStanzeSelezionate] = useState<number[]>([]);
   const [inviting, setInviting] = useState(false);
+
+  // Stanze disponibili
+  const [stanze, setStanze] = useState<Stanza[]>([]);
 
   const colors = {
     ...baseColors,
@@ -145,10 +155,39 @@ export const PermessiImpianto = () => {
     loadCondivisioni();
   }, [loadCondivisioni]);
 
+  // Carica stanze disponibili
+  useEffect(() => {
+    const loadStanze = async () => {
+      if (!impiantoCorrente?.id) return;
+      try {
+        const data = await stanzeApi.getStanze(impiantoCorrente.id);
+        setStanze(data || []);
+      } catch (error) {
+        console.error('Error loading stanze:', error);
+      }
+    };
+    loadStanze();
+  }, [impiantoCorrente?.id]);
+
+  // Toggle selezione stanza
+  const toggleStanzaSelection = (stanzaId: number) => {
+    setInviteStanzeSelezionate(prev =>
+      prev.includes(stanzaId)
+        ? prev.filter(id => id !== stanzaId)
+        : [...prev, stanzaId]
+    );
+  };
+
   // Invita utente
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !impiantoCorrente?.id) {
       toast.error('Inserisci un\'email valida');
+      return;
+    }
+
+    // Se non ha accesso completo, deve selezionare almeno una stanza
+    if (!inviteAccessoCompleto && inviteStanzeSelezionate.length === 0) {
+      toast.error('Seleziona almeno una stanza per l\'accesso ospite');
       return;
     }
 
@@ -157,6 +196,7 @@ export const PermessiImpianto = () => {
       const response = await condivisioniApi.invita(impiantoCorrente.id, {
         email: inviteEmail.trim(),
         accesso_completo: inviteAccessoCompleto,
+        stanze_abilitate: inviteAccessoCompleto ? null : inviteStanzeSelezionate
       });
 
       if (response.success) {
@@ -164,6 +204,7 @@ export const PermessiImpianto = () => {
         setShowInviteModal(false);
         setInviteEmail('');
         setInviteAccessoCompleto(false);
+        setInviteStanzeSelezionate([]);
         loadCondivisioni();
       }
     } catch (error: any) {
@@ -551,7 +592,7 @@ export const PermessiImpianto = () => {
   if (!impiantoCorrente) {
     return (
       <Layout>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <motion.button
@@ -620,7 +661,7 @@ export const PermessiImpianto = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -923,6 +964,63 @@ export const PermessiImpianto = () => {
                 />
               </div>
 
+              {/* Selezione Stanze - solo se accesso NON completo */}
+              {!inviteAccessoCompleto && (
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 500, color: modeColors.textSecondary, display: 'block', marginBottom: '8px' }}>
+                    Stanze abilitate
+                  </label>
+                  {stanze.length === 0 ? (
+                    <div style={{
+                      padding: '12px',
+                      borderRadius: '10px',
+                      background: `${baseColors.warning}10`,
+                      border: `1px solid ${baseColors.warning}30`
+                    }}>
+                      <p style={{ fontSize: '12px', color: modeColors.textMuted, margin: 0 }}>
+                        Nessuna stanza disponibile. Crea prima delle stanze nell'impianto.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      {stanze.map((stanza) => {
+                        const isSelected = inviteStanzeSelezionate.includes(stanza.id);
+                        return (
+                          <motion.button
+                            key={stanza.id}
+                            type="button"
+                            onClick={() => toggleStanzaSelection(stanza.id)}
+                            style={{
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              background: isSelected ? `${colors.accent}20` : 'rgba(0,0,0,0.15)',
+                              border: `1px solid ${isSelected ? colors.accent : colors.border}`,
+                              color: isSelected ? colors.accent : modeColors.textSecondary,
+                              fontSize: '13px',
+                              fontWeight: isSelected ? 600 : 400,
+                              cursor: 'pointer'
+                            }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            {stanza.nome}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {inviteStanzeSelezionate.length > 0 && (
+                    <p style={{ fontSize: '11px', color: modeColors.textMuted, margin: '8px 0 0 0' }}>
+                      {inviteStanzeSelezionate.length} stanza/e selezionata/e
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Info ruolo risultante */}
               <div style={{
                 padding: '12px',
@@ -953,6 +1051,7 @@ export const PermessiImpianto = () => {
               {/* Bottoni */}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <motion.button
+                  type="button"
                   onClick={() => setShowInviteModal(false)}
                   style={{
                     flex: 1,
@@ -970,6 +1069,7 @@ export const PermessiImpianto = () => {
                   Annulla
                 </motion.button>
                 <motion.button
+                  type="button"
                   onClick={handleInvite}
                   disabled={inviting || !inviteEmail.trim()}
                   style={{

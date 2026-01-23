@@ -105,7 +105,7 @@ export const Guida = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -143,11 +143,7 @@ export const Guida = () => {
         </div>
 
         {/* Icon Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '24px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <div style={{ ...cardStyle, padding: '24px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <div
@@ -168,7 +164,7 @@ export const Guida = () => {
               Trova risposte alle domande piu comuni su OmniaPi
             </p>
           </div>
-        </motion.div>
+        </div>
 
         {/* FAQ Accordion */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -177,12 +173,9 @@ export const Guida = () => {
             const isExpanded = expandedIndex === index;
 
             return (
-              <motion.div
+              <div
                 key={index}
                 style={{ ...cardStyle, padding: '0', cursor: 'pointer' }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
                 onClick={() => toggleExpand(index)}
               >
                 <div style={topHighlight} />
@@ -250,21 +243,18 @@ export const Guida = () => {
                     )}
                   </AnimatePresence>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
         {/* Contact Card */}
-        <motion.div
+        <div
           style={{
             ...cardStyle,
             padding: '16px',
             background: `${colors.accent}08`,
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
         >
           <div style={topHighlight} />
           <p style={{
@@ -277,7 +267,7 @@ export const Guida = () => {
             Non hai trovato quello che cerchi?{' '}
             <span style={{ color: colors.accent }}>Contattaci</span> per supporto.
           </p>
-        </motion.div>
+        </div>
       </div>
     </Layout>
   );

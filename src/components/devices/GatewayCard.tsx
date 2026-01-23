@@ -1,5 +1,4 @@
 import { memo, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   RiRouterLine,
   RiWifiLine,
@@ -90,12 +89,7 @@ export const GatewayCard = memo(({
   };
 
   return (
-    <motion.div
-      style={cardStyle}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div style={cardStyle}>
       <div style={topHighlight} />
 
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
@@ -241,7 +235,7 @@ export const GatewayCard = memo(({
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 

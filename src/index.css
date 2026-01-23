@@ -376,3 +376,54 @@ body {
 [data-sonner-toast][data-type="error"] {
   --toast-duration: 2000ms !important;
 }
+
+/* ============================================ */
+/* VIEW TRANSITIONS API - Uniform Slide */
+/* ============================================ */
+
+@view-transition {
+  navigation: auto;
+}
+
+/* Slide transition per tutte le pagine */
+::view-transition-old(page-content) {
+  animation: slide-out 0.25s ease-out forwards;
+}
+
+::view-transition-new(page-content) {
+  animation: slide-in 0.25s ease-out forwards;
+}
+
+@keyframes slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fallback per browser senza View Transitions */
+@supports not (view-transition-name: page-content) {
+  .page-content {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}

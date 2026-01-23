@@ -197,7 +197,7 @@ export const SetupWizard = () => {
   return (
     <div
       className="min-h-screen flex flex-col relative overflow-hidden"
-      style={{ background: isDarkMode ? '#0a0a0c' : modeColors.bg }}
+      style={{ background: isDarkMode ? '#0a0a0c' : modeColors.bg, viewTransitionName: 'page-content' } as React.CSSProperties}
     >
       {/* Particelle di sfondo */}
       {particlesInit && (

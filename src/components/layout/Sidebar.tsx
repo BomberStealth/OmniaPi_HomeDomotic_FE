@@ -1,6 +1,7 @@
 import { useMemo, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import {
   RiHome4Line,
   RiLightbulbLine,
@@ -37,6 +38,7 @@ const hexToRgb = (hex: string): string => {
 export const Sidebar = () => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useViewTransitionNavigate();
   const { logout } = useAuthStore();
   const { colors: themeColors, colorTheme, modeColors, isDarkMode } = useThemeColor();
   const { canInstall, promptInstall } = usePWAInstall();
@@ -132,49 +134,49 @@ export const Sidebar = () => {
           const active = isActive(item.path);
           const isNotifiche = item.path === '/notifications';
           return (
-            <Link key={item.path} to={item.path}>
-              <div
-                className="flex items-center gap-3 px-4 py-3 transition-all"
+            <div
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
+              style={{
+                borderRadius: '20px',
+                background: active
+                  ? `linear-gradient(165deg, ${colors.accentDark}, ${colors.accent})`
+                  : 'transparent',
+                color: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.textSecondary,
+                boxShadow: active ? `0 4px 16px ${colors.accent}30` : 'none',
+                fontWeight: active ? 600 : 500,
+              }}
+            >
+              <item.icon
+                size={20}
+                className="flex-shrink-0"
                 style={{
-                  borderRadius: '20px',
-                  background: active
-                    ? `linear-gradient(165deg, ${colors.accentDark}, ${colors.accent})`
-                    : 'transparent',
-                  color: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.textSecondary,
-                  boxShadow: active ? `0 4px 16px ${colors.accent}30` : 'none',
-                  fontWeight: active ? 600 : 500,
+                  filter: active ? 'none' : 'none',
                 }}
-              >
-                <item.icon
-                  size={20}
-                  className="flex-shrink-0"
+              />
+              <span style={{ fontSize: '14px', flex: 1 }}>{item.label}</span>
+              {/* Badge notifiche non lette */}
+              {isNotifiche && unreadCount > 0 && (
+                <span
                   style={{
-                    filter: active ? 'none' : 'none',
+                    minWidth: '20px',
+                    height: '20px',
+                    padding: '0 6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: active ? colors.accent : '#fff',
+                    backgroundColor: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.accent,
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                />
-                <span style={{ fontSize: '14px', flex: 1 }}>{item.label}</span>
-                {/* Badge notifiche non lette */}
-                {isNotifiche && unreadCount > 0 && (
-                  <span
-                    style={{
-                      minWidth: '20px',
-                      height: '20px',
-                      padding: '0 6px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      color: active ? colors.accent : '#fff',
-                      backgroundColor: active ? (isDarkMode ? '#0a0a0c' : '#ffffff') : colors.accent,
-                      borderRadius: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </div>
-            </Link>
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
           );
         })}
       </nav>

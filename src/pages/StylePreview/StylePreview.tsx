@@ -444,8 +444,9 @@ const DarkLuxuryGold = () => {
       className="min-h-screen p-4 sm:p-6 relative"
       style={{
         background: colors.bgGradient,
-        fontFamily: currentFont.family
-      }}
+        fontFamily: currentFont.family,
+        viewTransitionName: 'page-content',
+      } as React.CSSProperties}
     >
       {/* Google Fonts Import */}
       <link

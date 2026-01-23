@@ -127,7 +127,7 @@ export const CambiaPassword = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -165,11 +165,7 @@ export const CambiaPassword = () => {
         </div>
 
         {/* Icon Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '24px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+        <div style={{ ...cardStyle, padding: '24px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
             <div
@@ -190,15 +186,10 @@ export const CambiaPassword = () => {
               Scegli una password sicura per proteggere il tuo account
             </p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Form Card */}
-        <motion.div
-          style={{ ...cardStyle, padding: '20px' }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <div style={{ ...cardStyle, padding: '20px' }}>
           <div style={topHighlight} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Password attuale */}
@@ -297,7 +288,7 @@ export const CambiaPassword = () => {
               {loading ? 'Aggiornamento...' : 'Aggiorna Password'}
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </Layout>
   );

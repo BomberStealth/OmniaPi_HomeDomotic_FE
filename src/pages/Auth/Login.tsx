@@ -93,21 +93,16 @@ interface AnimatedInputProps {
   disabled?: boolean;
   icon: React.ReactNode;
   autoComplete?: string;
-  delay: number;
   isMobile: boolean;
 }
 
 const AnimatedInput = ({
-  type, label, value, onChange, placeholder, disabled, icon, autoComplete, delay, isMobile
-}: AnimatedInputProps) => {
+  type, label, value, onChange, placeholder, disabled, icon, autoComplete, isMobile
+}: Omit<AnimatedInputProps, 'delay'>) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-    >
+    <div>
       <label
         style={{
           display: 'block',
@@ -159,7 +154,7 @@ const AnimatedInput = ({
           }}
         />
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -259,7 +254,8 @@ export const Login = () => {
         padding: isMobile ? '12px' : '16px',
         overflow: 'hidden',
         fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
-      }}
+        viewTransitionName: 'page-content',
+      } as React.CSSProperties}
     >
       {/* ============================================ */}
       {/* ANIMATED GRADIENT BACKGROUND */}
@@ -303,15 +299,12 @@ export const Login = () => {
       {/* ============================================ */}
       {/* MAIN CARD - RESPONSIVE */}
       {/* ============================================ */}
-      <motion.div
+      <div
         className="w-full relative"
         style={{
           maxWidth: isMobile ? '100%' : '400px',
           zIndex: 10,
         }}
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         {/* Glassmorphism Card */}
         <div
@@ -344,12 +337,9 @@ export const Login = () => {
           {/* ============================================ */}
           <div className="text-center" style={{ marginBottom: isSmallMobile ? '16px' : isMobile ? '20px' : '28px' }}>
             {/* Logo */}
-            <motion.div
+            <div
               className="flex justify-center"
               style={{ marginBottom: isSmallMobile ? '10px' : isMobile ? '12px' : '16px' }}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, delay: 0.4, type: 'spring', stiffness: 200 }}
             >
               <motion.div
                 style={{
@@ -375,10 +365,10 @@ export const Login = () => {
                   }}
                 />
               </motion.div>
-            </motion.div>
+            </div>
 
             {/* Title */}
-            <motion.h1
+            <h1
               style={{
                 fontSize: isSmallMobile ? '22px' : isMobile ? '26px' : '32px',
                 fontWeight: 700,
@@ -388,25 +378,19 @@ export const Login = () => {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
               }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.55 }}
             >
               {t('app.name')}
-            </motion.h1>
+            </h1>
 
             {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
+            <p
               style={{
                 color: colors.textMuted,
                 fontSize: isSmallMobile ? '12px' : isMobile ? '13px' : '14px',
               }}
             >
               {t('auth.loginTitle')}
-            </motion.p>
+            </p>
           </div>
 
           {/* ============================================ */}
@@ -423,7 +407,6 @@ export const Login = () => {
                 disabled={isLoading}
                 icon={<RiMailLine size={isMobile ? 16 : 18} />}
                 autoComplete="email"
-                delay={0.85}
                 isMobile={isMobile}
               />
 
@@ -436,7 +419,6 @@ export const Login = () => {
                 disabled={isLoading}
                 icon={<RiLockLine size={isMobile ? 16 : 18} />}
                 autoComplete="current-password"
-                delay={0.95}
                 isMobile={isMobile}
               />
 
@@ -484,11 +466,7 @@ export const Login = () => {
               )}
 
               {/* Submit Button */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 1.05 }}
-              >
+              <div>
                 <motion.button
                   type="submit"
                   disabled={isLoading || attempts >= 5}
@@ -539,17 +517,14 @@ export const Login = () => {
                     t('auth.login')
                   )}
                 </motion.button>
-              </motion.div>
+              </div>
             </div>
           </form>
 
           {/* ============================================ */}
           {/* FORGOT PASSWORD LINK */}
           {/* ============================================ */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 1.1 }}
+          <div
             className="text-center"
             style={{ marginTop: isSmallMobile ? '10px' : isMobile ? '12px' : '14px' }}
           >
@@ -563,15 +538,12 @@ export const Login = () => {
             >
               Password dimenticata?
             </Link>
-          </motion.div>
+          </div>
 
           {/* ============================================ */}
           {/* REGISTER LINK */}
           {/* ============================================ */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 1.15 }}
+          <div
             className="text-center"
             style={{ marginTop: isSmallMobile ? '10px' : isMobile ? '12px' : '14px' }}
           >
@@ -586,13 +558,10 @@ export const Login = () => {
               <RiUserAddLine size={isMobile ? 14 : 16} />
               <span>Non hai un account? <strong>Registrati</strong></span>
             </Link>
-          </motion.div>
+          </div>
 
           {/* Security + Legal */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 1.25 }}
+          <div
             style={{
               marginTop: isSmallMobile ? '12px' : isMobile ? '14px' : '18px',
               paddingTop: isSmallMobile ? '10px' : isMobile ? '12px' : '16px',
@@ -622,15 +591,12 @@ export const Login = () => {
                 Termini
               </Link>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Version */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
+      <p
         style={{
           position: 'fixed',
           bottom: '8px',
@@ -642,7 +608,7 @@ export const Login = () => {
         }}
       >
         {APP_VERSION}
-      </motion.p>
+      </p>
     </div>
   );
 };

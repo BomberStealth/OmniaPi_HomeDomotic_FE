@@ -6,6 +6,7 @@ import { Input } from '@/components/common/Input';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useStanzeStore } from '@/store/stanzeStore';
 import { useDispositiviStore } from '@/store/dispositiviStore';
+import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { stanzeApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
@@ -27,16 +28,6 @@ const hexToRgb = (hex: string): string => {
   return '106, 212, 160';
 };
 
-// Variants per animazioni card (uniformi come Dashboard)
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
-};
-
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
 
 export const Stanze = () => {
   const { impiantoCorrente } = useImpiantoContext();
@@ -45,6 +36,9 @@ export const Stanze = () => {
   // Store data (real-time via useRealTimeSync nel Layout)
   const { stanze, loading: stanzeLoading } = useStanzeStore();
   const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
+
+  // Permessi utente - filtra stanze in base a stanze_abilitate
+  const { permessi, loading: permessiLoading } = usePermessiImpianto(impiantoCorrente?.id || null);
 
   // Colori dinamici basati sul tema (usa modeColors per dark/light)
   const colors = useMemo(() => ({
@@ -71,7 +65,8 @@ export const Stanze = () => {
   const [editStanza, setEditStanza] = useState({ nome: '', icona: '' });
 
   const impiantoId = impiantoCorrente?.id || 0;
-  const loading = stanzeLoading || dispositiviLoading;
+  // IMPORTANTE: include permessiLoading per evitare race condition (mostrare tutte le stanze prima che i permessi siano caricati)
+  const loading = stanzeLoading || dispositiviLoading || permessiLoading;
 
   const handleCreateStanza = async () => {
     if (!newStanza.nome) {
@@ -233,7 +228,16 @@ export const Stanze = () => {
     setRenameModalOpen(true);
   };
 
-  const stanzeValide = stanze.filter(s => s !== null && s !== undefined);
+  // Filtra stanze: solo quelle a cui l'utente ha accesso
+  // stanze_abilitate = null significa accesso a TUTTE le stanze
+  // stanze_abilitate = [1,2,3] significa accesso solo a quelle specifiche
+  const stanzeValide = stanze.filter(s => {
+    if (!s) return false;
+    // Se stanze_abilitate è null, l'utente ha accesso a tutte le stanze
+    if (permessi.stanze_abilitate === null) return true;
+    // Altrimenti, mostra solo le stanze a cui ha accesso
+    return permessi.stanze_abilitate.includes(s.id);
+  });
   const dispositiviValidi = dispositivi.filter(d => d !== null && d !== undefined);
   const getDispositiviByStanza = (stanzaId: number) => dispositiviValidi.filter(d => d.stanza_id === stanzaId);
   const dispositiviNonAssegnati = dispositiviValidi.filter(d => !d.stanza_id);
@@ -245,7 +249,7 @@ export const Stanze = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -299,17 +303,10 @@ export const Stanze = () => {
             </p>
           </div>
         ) : (
-          <motion.div
-            initial="hidden"
-            animate="show"
-            variants={containerVariants}
-            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
-          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* Dispositivi Non Assegnati */}
             {dispositiviNonAssegnati.length > 0 && (
-              <motion.div
-                variants={cardVariants}
-                whileTap={{ scale: 0.98 }}
+              <div
                 style={{
                   background: colors.bgCardLit,
                   border: `1px solid ${colors.border}`,
@@ -370,7 +367,7 @@ export const Stanze = () => {
                     <span style={{ fontSize: '11px', color: colors.textMuted, alignSelf: 'center' }}>+{dispositiviNonAssegnati.length - 6} altri</span>
                   )}
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Lista Stanze */}
@@ -397,10 +394,8 @@ export const Stanze = () => {
               stanzeValide.map((stanza) => {
                 const dispositiviStanza = getDispositiviByStanza(stanza.id);
                 return (
-                  <motion.div
+                  <div
                     key={stanza.id}
-                    variants={cardVariants}
-                    whileTap={{ scale: 0.98 }}
                     style={{
                       background: colors.bgCardLit,
                       border: `1px solid ${colors.border}`,
@@ -465,11 +460,11 @@ export const Stanze = () => {
                     ) : (
                       <p style={{ fontSize: '12px', color: colors.textMuted, fontStyle: 'italic', margin: 0 }}>Nessun dispositivo</p>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })
             )}
-          </motion.div>
+          </div>
         )}
       </div>
 

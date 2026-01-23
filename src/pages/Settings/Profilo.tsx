@@ -144,7 +144,7 @@ export const Profilo = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button

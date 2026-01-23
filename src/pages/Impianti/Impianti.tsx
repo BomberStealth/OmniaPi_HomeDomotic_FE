@@ -35,7 +35,7 @@ export const Impianti = () => {
 
   return (
     <Layout>
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4" style={{ viewTransitionName: 'page-content' } as React.CSSProperties}>
         {/* Header Compatto */}
         <div className="flex items-center justify-between">
           <div>

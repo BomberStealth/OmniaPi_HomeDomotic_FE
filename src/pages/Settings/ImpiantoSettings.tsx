@@ -5,7 +5,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useImpiantiStore } from '@/store/impiantiStore';
-import { useNavigate } from 'react-router-dom';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { impiantiApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { UserRole } from '@/types';
@@ -47,23 +47,14 @@ function hexToRgb(hex: string): string {
   return '106, 212, 160';
 }
 
-// Variants per animazioni
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
-};
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
 
 export const ImpiantoSettings = () => {
   const { colors: themeColors, modeColors } = useThemeColor();
   const { impiantoCorrente, setImpiantoCorrente } = useImpiantoContext();
   const { impianti, removeImpianto, fetchImpianti } = useImpiantiStore();
   const { user } = useAuthStore();
-  const navigate = useNavigate();
+  const navigate = useViewTransitionNavigate();
 
   // Verifica se l'utente può modificare l'impianto (admin, proprietario originale, installatore originale)
   const canEditImpianto = user?.ruolo === UserRole.ADMIN ||
@@ -316,12 +307,7 @@ export const ImpiantoSettings = () => {
 
   return (
     <Layout>
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={containerVariants}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con back button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -349,7 +335,7 @@ export const ImpiantoSettings = () => {
         </div>
 
         {/* Card principale impianto */}
-        <motion.div variants={cardVariants} style={{ ...cardStyle, padding: '16px' }}>
+        <div style={{ ...cardStyle, padding: '16px' }}>
           <div style={topHighlight} />
 
           {/* Nome impianto + tasto modifica */}
@@ -467,10 +453,10 @@ export const ImpiantoSettings = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Sezione Impostazioni */}
-        <motion.div variants={cardVariants} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <h2 style={{
             fontSize: '12px',
             fontWeight: 600,
@@ -497,11 +483,10 @@ export const ImpiantoSettings = () => {
             subtitle="Gestisci accessi e inviti"
             onClick={() => navigate('/impianto/condivisioni')}
           />
-        </motion.div>
+        </div>
 
         {/* Mappa Placeholder */}
-        <motion.div
-          variants={cardVariants}
+        <div
           style={{
             ...cardStyle,
             padding: '24px',
@@ -520,11 +505,11 @@ export const ImpiantoSettings = () => {
           <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
             Visualizza la posizione del tuo impianto
           </p>
-        </motion.div>
+        </div>
 
         {/* Zona Pericolosa - solo se può modificare */}
         {canEditImpianto && (
-          <motion.div variants={cardVariants} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
             <h2 style={{
               fontSize: '12px',
               fontWeight: 600,
@@ -580,9 +565,9 @@ export const ImpiantoSettings = () => {
                 </motion.button>
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Modal Modifica Impianto - CENTRATO */}
       <AnimatePresence>

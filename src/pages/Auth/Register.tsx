@@ -278,7 +278,8 @@ export const Register = () => {
       style={{
         background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(106, 212, 160, 0.08) 0%, transparent 60%), linear-gradient(to bottom, #12110f 0%, #0a0a09 100%)',
         fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
-      }}
+        viewTransitionName: 'page-content',
+      } as React.CSSProperties}
     >
       <div
         className="fixed inset-0 pointer-events-none"

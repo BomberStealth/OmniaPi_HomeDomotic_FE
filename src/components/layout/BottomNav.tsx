@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import {
   RiHome4Line,
   RiDoorOpenLine,
@@ -27,6 +28,7 @@ const hexToRgb = (hex: string): string => {
 
 export const BottomNav = () => {
   const location = useLocation();
+  const navigate = useViewTransitionNavigate();
   const { colors: themeColors, modeColors } = useThemeColor();
 
   // Colori dinamici basati sul tema
@@ -83,10 +85,10 @@ export const BottomNav = () => {
         {menuItems.map((item) => {
           const active = isActive(item.path);
           return (
-            <Link
+            <div
               key={item.path}
-              to={item.path}
-              className="transition-all flex flex-col items-center gap-0.5"
+              onClick={() => navigate(item.path)}
+              className="transition-all flex flex-col items-center gap-0.5 cursor-pointer"
               style={{
                 padding: spacing.xs,
                 background: active ? `${colors.accent}15` : 'transparent',
@@ -110,7 +112,7 @@ export const BottomNav = () => {
               >
                 {item.label}
               </span>
-            </Link>
+            </div>
           );
         })}
       </div>

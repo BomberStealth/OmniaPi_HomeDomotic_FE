@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme, ThemeMode } from '@/contexts/ThemeColorContext';
 import { RiUserLine, RiNotification3Line, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
 import { APP_VERSION } from '@/config/version';
-import { useNavigate } from 'react-router-dom';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { toast } from '@/utils/toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
@@ -21,15 +21,10 @@ const cardVariants = {
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
 };
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
-
 export const Settings = () => {
   const { user, logout } = useAuthStore();
   const { colorTheme, setColorTheme, colors: themeColors, setThemeMode, isDarkMode, modeColors, useGradients, setUseGradients } = useThemeColor();
-  const navigate = useNavigate();
+  const navigate = useViewTransitionNavigate();
   const { isSupported, isEnabled, loading: notificationsLoading, error: notificationsError, enableNotifications, disableNotifications } = useNotifications();
   const { isStandalone } = usePWAInstall();
 
@@ -151,12 +146,7 @@ export const Settings = () => {
 
   return (
     <Layout>
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={containerVariants}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -652,7 +642,7 @@ export const Settings = () => {
           Esci dall'account
         </motion.button>
 
-      </motion.div>
+      </div>
     </Layout>
   );
 };

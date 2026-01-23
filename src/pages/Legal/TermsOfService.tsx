@@ -9,7 +9,7 @@ import { Card } from '@/components/common/Card';
 
 export const TermsOfService = () => {
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6">
+    <div className="min-h-screen bg-background p-4 sm:p-6" style={{ viewTransitionName: 'page-content' } as React.CSSProperties}>
       {/* Header */}
       <div className="max-w-3xl mx-auto">
         <Link

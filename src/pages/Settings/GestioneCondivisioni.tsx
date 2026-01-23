@@ -5,8 +5,8 @@ import { Toggle } from '@/components/common/Toggle';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
-import { useNavigate } from 'react-router-dom';
-import { condivisioniApi } from '@/services/api';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
+import { condivisioniApi, stanzeApi } from '@/services/api';
 import { toast } from '@/utils/toast';
 import { UserRole } from '@/types';
 import {
@@ -21,7 +21,8 @@ import {
   RiGroupLine,
   RiShieldUserLine,
   RiToolsLine,
-  RiUserStarLine
+  RiUserStarLine,
+  RiEditLine
 } from 'react-icons/ri';
 
 // ============================================
@@ -57,22 +58,18 @@ interface Condivisione {
   utente_tipo_account?: string;
 }
 
-// Variants per animazioni
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
-};
+interface Stanza {
+  id: number;
+  nome: string;
+  icona?: string;
+}
 
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
 
 export const GestioneCondivisioni = () => {
   const { colors: themeColors, modeColors } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
   const { user } = useAuthStore();
-  const navigate = useNavigate();
+  const navigate = useViewTransitionNavigate();
 
   // Verifica se l'utente può gestire condivisioni (admin, proprietario originale, installatore originale)
   const canManageShares = user?.ruolo === UserRole.ADMIN ||
@@ -87,7 +84,17 @@ export const GestioneCondivisioni = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteAccessoCompleto, setInviteAccessoCompleto] = useState(false);
+  const [inviteStanzeSelezionate, setInviteStanzeSelezionate] = useState<number[]>([]);
   const [sendingInvite, setSendingInvite] = useState(false);
+
+  // Stanze disponibili
+  const [stanze, setStanze] = useState<Stanza[]>([]);
+
+  // Modal modifica stanze
+  const [showEditStanzeModal, setShowEditStanzeModal] = useState(false);
+  const [editingCondivisione, setEditingCondivisione] = useState<Condivisione | null>(null);
+  const [editStanzeSelezionate, setEditStanzeSelezionate] = useState<number[]>([]);
+  const [savingStanze, setSavingStanze] = useState(false);
 
   // Colori dinamici basati sul tema
   const colors = {
@@ -138,9 +145,26 @@ export const GestioneCondivisioni = () => {
     }
   }, [impiantoCorrente?.id]);
 
+  // IMPORTANTE: dipendenza SOLO su impiantoId, non sulla funzione
+  // per evitare re-fetch ad ogni render
   useEffect(() => {
     loadCondivisioni();
-  }, [loadCondivisioni]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [impiantoCorrente?.id]);
+
+  // Carica stanze disponibili
+  useEffect(() => {
+    const loadStanze = async () => {
+      if (!impiantoCorrente?.id) return;
+      try {
+        const data = await stanzeApi.getStanze(impiantoCorrente.id);
+        setStanze(data || []);
+      } catch (error) {
+        console.error('Error loading stanze:', error);
+      }
+    };
+    loadStanze();
+  }, [impiantoCorrente?.id]);
 
   // Se non c'è impianto selezionato
   if (!impiantoCorrente) {
@@ -186,21 +210,91 @@ export const GestioneCondivisioni = () => {
       return;
     }
 
+    // Se non ha accesso completo, deve selezionare almeno una stanza
+    if (!inviteAccessoCompleto && inviteStanzeSelezionate.length === 0) {
+      toast.error('Seleziona almeno una stanza per l\'accesso ospite');
+      return;
+    }
+
     setSendingInvite(true);
     try {
       await condivisioniApi.invita(impiantoCorrente.id, {
         email: inviteEmail.trim(),
-        accesso_completo: inviteAccessoCompleto
+        accesso_completo: inviteAccessoCompleto,
+        stanze_abilitate: inviteAccessoCompleto ? null : inviteStanzeSelezionate
       });
       toast.success('Invito inviato!');
       setShowInviteModal(false);
       setInviteEmail('');
       setInviteAccessoCompleto(false);
+      setInviteStanzeSelezionate([]);
       loadCondivisioni();
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore invio invito');
     } finally {
       setSendingInvite(false);
+    }
+  };
+
+  // Toggle selezione stanza (invito)
+  const toggleStanzaSelection = (stanzaId: number) => {
+    setInviteStanzeSelezionate(prev =>
+      prev.includes(stanzaId)
+        ? prev.filter(id => id !== stanzaId)
+        : [...prev, stanzaId]
+    );
+  };
+
+  // Toggle selezione stanza (modifica)
+  const toggleEditStanzaSelection = (stanzaId: number) => {
+    setEditStanzeSelezionate(prev =>
+      prev.includes(stanzaId)
+        ? prev.filter(id => id !== stanzaId)
+        : [...prev, stanzaId]
+    );
+  };
+
+  // Apri modal modifica stanze
+  const handleOpenEditStanze = (cond: Condivisione) => {
+    setEditingCondivisione(cond);
+    // Parsa stanze_abilitate - può essere JSON string o array
+    let stanzeAtt: number[] = [];
+    if (cond.stanze_abilitate) {
+      if (typeof cond.stanze_abilitate === 'string') {
+        try {
+          stanzeAtt = JSON.parse(cond.stanze_abilitate);
+        } catch { stanzeAtt = []; }
+      } else if (Array.isArray(cond.stanze_abilitate)) {
+        stanzeAtt = cond.stanze_abilitate;
+      }
+    }
+    setEditStanzeSelezionate(stanzeAtt);
+    setShowEditStanzeModal(true);
+  };
+
+  // Salva modifica stanze
+  const handleSaveStanze = async () => {
+    if (!editingCondivisione) return;
+
+    if (editStanzeSelezionate.length === 0) {
+      toast.error('Seleziona almeno una stanza');
+      return;
+    }
+
+    setSavingStanze(true);
+    try {
+      await condivisioniApi.modificaPermessi(editingCondivisione.id, {
+        stanze_abilitate: editStanzeSelezionate,
+        puo_controllare_dispositivi: true
+      });
+      toast.success('Stanze aggiornate');
+      setShowEditStanzeModal(false);
+      setEditingCondivisione(null);
+      loadCondivisioni();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore salvataggio');
+    } finally {
+      setSavingStanze(false);
     }
   };
 
@@ -262,7 +356,7 @@ export const GestioneCondivisioni = () => {
     const ruoloStyle = getRuoloStyle(ruolo);
 
     return (
-      <motion.div variants={cardVariants} style={{ ...cardStyle, padding: '16px' }}>
+      <div style={{ ...cardStyle, padding: '16px' }}>
         <div style={topHighlight} />
 
         {/* Header sezione */}
@@ -351,26 +445,48 @@ export const GestioneCondivisioni = () => {
                   </p>
                 </div>
                 {canManageShares && (
-                  <motion.button
-                    onClick={() => handleRemoveCondivisione(cond.id)}
-                    disabled={deleting === cond.id}
-                    style={{
-                      padding: '8px',
-                      borderRadius: '10px',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: deleting === cond.id ? 'not-allowed' : 'pointer',
-                      opacity: deleting === cond.id ? 0.5 : 1
-                    }}
-                    whileHover={{ background: `${colors.error}20` }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {deleting === cond.id ? (
-                      <RiLoader4Line size={16} style={{ color: colors.error, animation: 'spin 1s linear infinite' }} />
-                    ) : (
-                      <RiDeleteBinLine size={16} style={{ color: colors.error }} />
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {/* Bottone modifica stanze - solo per ospiti */}
+                    {!cond.accesso_completo && (
+                      <motion.button
+                        type="button"
+                        onClick={() => handleOpenEditStanze(cond)}
+                        style={{
+                          padding: '8px',
+                          borderRadius: '10px',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
+                        whileHover={{ background: `${colors.accent}20` }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <RiEditLine size={16} style={{ color: colors.accent }} />
+                      </motion.button>
                     )}
-                  </motion.button>
+                    {/* Bottone elimina */}
+                    <motion.button
+                      type="button"
+                      onClick={() => handleRemoveCondivisione(cond.id)}
+                      disabled={deleting === cond.id}
+                      style={{
+                        padding: '8px',
+                        borderRadius: '10px',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: deleting === cond.id ? 'not-allowed' : 'pointer',
+                        opacity: deleting === cond.id ? 0.5 : 1
+                      }}
+                      whileHover={{ background: `${colors.error}20` }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {deleting === cond.id ? (
+                        <RiLoader4Line size={16} style={{ color: colors.error, animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <RiDeleteBinLine size={16} style={{ color: colors.error }} />
+                      )}
+                    </motion.button>
+                  </div>
                 )}
               </div>
             ))}
@@ -437,17 +553,19 @@ export const GestioneCondivisioni = () => {
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     );
   };
 
   return (
     <Layout>
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={containerVariants}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          viewTransitionName: 'page-content'
+        }}
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -543,8 +661,7 @@ export const GestioneCondivisioni = () => {
 
         {/* Info box per utenti senza permessi di gestione */}
         {!canManageShares && (
-          <motion.div
-            variants={cardVariants}
+          <div
             style={{
               ...cardStyle,
               padding: '16px',
@@ -563,50 +680,78 @@ export const GestioneCondivisioni = () => {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Modal Invito */}
       <AnimatePresence>
         {showInviteModal && (
           <>
+            {/* Backdrop - cliccando chiude il modal */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowInviteModal(false);
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               style={{
                 position: 'fixed',
                 inset: 0,
                 background: 'rgba(0,0,0,0.6)',
-                zIndex: 100
+                zIndex: 100,
+                backdropFilter: 'blur(4px)',
+                touchAction: 'none',  // Blocca touch events sul backdrop
+                overscrollBehavior: 'contain'
               }}
-              onClick={() => setShowInviteModal(false)}
             />
-            <div style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 101,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '16px',
-              pointerEvents: 'none'
-            }}>
+            {/* Container centrato */}
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 101,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '16px',
+                pointerEvents: 'none'
+              }}
+            >
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
                 style={{
                   position: 'relative',
                   width: '100%',
                   maxWidth: '400px',
+                  maxHeight: '90vh',
+                  overflowY: 'auto',
                   background: colors.bgCardLit,
                   borderRadius: '20px',
                   padding: '20px',
                   border: `1px solid ${colors.border}`,
                   boxShadow: colors.cardShadowLit,
-                  pointerEvents: 'auto'
+                  pointerEvents: 'auto',
+                  overscrollBehavior: 'contain',  // Previene pull-to-refresh
+                  touchAction: 'pan-y'  // Permette solo scroll verticale interno
                 }}
               >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -614,6 +759,7 @@ export const GestioneCondivisioni = () => {
                   Invita Utente
                 </h3>
                 <motion.button
+                  type="button"
                   onClick={() => setShowInviteModal(false)}
                   style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
                   whileHover={{ background: `${colors.textMuted}20` }}
@@ -632,6 +778,12 @@ export const GestioneCondivisioni = () => {
                     type="email"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSendInvite();
+                      }
+                    }}
                     placeholder="email@esempio.com"
                     style={{
                       width: '100%',
@@ -674,6 +826,63 @@ export const GestioneCondivisioni = () => {
                   />
                 </div>
 
+                {/* Selezione Stanze - solo se accesso NON completo */}
+                {!inviteAccessoCompleto && (
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, display: 'block', marginBottom: '8px' }}>
+                      Stanze abilitate
+                    </label>
+                    {stanze.length === 0 ? (
+                      <div style={{
+                        padding: '12px',
+                        borderRadius: '10px',
+                        background: `${colors.warning}10`,
+                        border: `1px solid ${colors.warning}30`
+                      }}>
+                        <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
+                          Nessuna stanza disponibile. Crea prima delle stanze nell'impianto.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {stanze.map((stanza) => {
+                          const isSelected = inviteStanzeSelezionate.includes(stanza.id);
+                          return (
+                            <motion.button
+                              key={stanza.id}
+                              type="button"
+                              onClick={() => toggleStanzaSelection(stanza.id)}
+                              style={{
+                                padding: '8px 14px',
+                                borderRadius: '10px',
+                                background: isSelected ? `${colors.accent}20` : colors.bgCard,
+                                border: `1px solid ${isSelected ? colors.accent : colors.border}`,
+                                color: isSelected ? colors.accent : colors.textSecondary,
+                                fontSize: '13px',
+                                fontWeight: isSelected ? 600 : 400,
+                                cursor: 'pointer'
+                              }}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              {stanza.nome}
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {inviteStanzeSelezionate.length > 0 && (
+                      <p style={{ fontSize: '11px', color: colors.textMuted, margin: '8px 0 0 0' }}>
+                        {inviteStanzeSelezionate.length} stanza/e selezionata/e
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Info ruolo risultante */}
                 <div style={{
                   padding: '12px',
@@ -698,6 +907,7 @@ export const GestioneCondivisioni = () => {
 
                 {/* Bottone invio */}
                 <motion.button
+                  type="button"
                   onClick={handleSendInvite}
                   disabled={sendingInvite || !inviteEmail.trim()}
                   style={{
@@ -726,6 +936,187 @@ export const GestioneCondivisioni = () => {
                       <RiUserAddLine size={18} />
                       Invia Invito
                     </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Modifica Stanze */}
+      <AnimatePresence>
+        {showEditStanzeModal && editingCondivisione && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowEditStanzeModal(false);
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+                zIndex: 1000,
+                backdropFilter: 'blur(4px)',
+                touchAction: 'none',
+                overscrollBehavior: 'contain'
+              }}
+            />
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1001,
+                padding: '20px',
+                pointerEvents: 'none'
+              }}
+            >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              style={{
+                background: colors.bgCard,
+                borderRadius: '20px',
+                padding: '24px',
+                width: '100%',
+                maxWidth: '400px',
+                maxHeight: '80vh',
+                overflow: 'auto',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+                pointerEvents: 'auto',
+                overscrollBehavior: 'contain',
+                touchAction: 'pan-y'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ color: colors.textPrimary, margin: 0, fontSize: '18px' }}>
+                  Modifica Stanze
+                </h3>
+                <motion.button
+                  type="button"
+                  onClick={() => setShowEditStanzeModal(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: colors.textSecondary,
+                    cursor: 'pointer',
+                    padding: '4px'
+                  }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <RiCloseLine size={24} />
+                </motion.button>
+              </div>
+
+              <p style={{ color: colors.textSecondary, fontSize: '14px', marginBottom: '16px' }}>
+                Stanze accessibili per <strong style={{ color: colors.textPrimary }}>{editingCondivisione.email_invitato}</strong>
+              </p>
+
+              {/* Selezione stanze */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {stanze.map(stanza => (
+                    <motion.button
+                      key={stanza.id}
+                      type="button"
+                      onClick={() => toggleEditStanzaSelection(stanza.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        border: 'none',
+                        background: editStanzeSelezionate.includes(stanza.id)
+                          ? `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`
+                          : colors.bg,
+                        color: editStanzeSelezionate.includes(stanza.id) ? '#fff' : colors.textSecondary,
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {stanza.nome}
+                    </motion.button>
+                  ))}
+                </div>
+                {stanze.length === 0 && (
+                  <p style={{ color: colors.textSecondary, fontSize: '13px', textAlign: 'center' }}>
+                    Nessuna stanza disponibile
+                  </p>
+                )}
+              </div>
+
+              {/* Bottoni azioni */}
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <motion.button
+                  type="button"
+                  onClick={() => setShowEditStanzeModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: colors.bg,
+                    border: 'none',
+                    color: colors.textSecondary,
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    cursor: 'pointer'
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Annulla
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={handleSaveStanze}
+                  disabled={savingStanze || editStanzeSelezionate.length === 0}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '12px',
+                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+                    border: 'none',
+                    color: '#fff',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: savingStanze || editStanzeSelezionate.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: savingStanze || editStanzeSelezionate.length === 0 ? 0.6 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                  whileHover={!savingStanze && editStanzeSelezionate.length > 0 ? { scale: 1.02 } : {}}
+                  whileTap={!savingStanze && editStanzeSelezionate.length > 0 ? { scale: 0.98 } : {}}
+                >
+                  {savingStanze ? (
+                    <RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    'Salva'
                   )}
                 </motion.button>
               </div>

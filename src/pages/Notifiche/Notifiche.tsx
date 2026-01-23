@@ -281,11 +281,7 @@ export const Notifiche = () => {
 
   return (
     <Layout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{ padding: '16px', paddingBottom: '100px' }}
-      >
+      <div style={{ padding: '16px', paddingBottom: '100px', viewTransitionName: 'page-content' } as React.CSSProperties}>
         {/* Header */}
         <div style={{
           display: 'flex',
@@ -415,14 +411,11 @@ export const Notifiche = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filteredNotifications.map((notification, index) => {
+            {filteredNotifications.map((notification) => {
               const read = isRead(notification);
               return (
-                <motion.div
+                <div
                   key={notification.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.03 }}
                   onClick={() => !read && markAsRead(notification.id)}
                   style={{
                     ...cardStyle,
@@ -480,12 +473,12 @@ export const Notifiche = () => {
                       <RiCheckLine size={16} color={colors.textMuted} />
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         )}
-      </motion.div>
+      </div>
     </Layout>
   );
 };

@@ -59,16 +59,6 @@ const formatTimeAgo = (date: string): string => {
 };
 
 
-// Variants per animazioni card stanze (uniformi per tutte)
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.95 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
-};
-
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
-};
 
 export const Dashboard = () => {
   useTranslation(); // Hook per traduzioni (non usato direttamente ma necessario)
@@ -82,7 +72,14 @@ export const Dashboard = () => {
   const { dispositivi, updatePowerState, updateLedState } = useDispositiviStore();
 
   // Permessi utente sull'impianto corrente
-  const { canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
+  const { permessi, canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
+
+  // Filtra stanze in base ai permessi (stanze_abilitate = null significa tutte)
+  const stanzeFiltrate = useMemo(() => {
+    if (!stanze || stanze.length === 0) return [];
+    if (permessi.stanze_abilitate === null) return stanze; // Accesso completo
+    return stanze.filter((s: any) => permessi.stanze_abilitate!.includes(s.id));
+  }, [stanze, permessi.stanze_abilitate]);
 
   const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -125,16 +122,16 @@ export const Dashboard = () => {
 
   // Inizializza stanze espanse quando cambiano (tutte chiuse di default)
   useEffect(() => {
-    if (stanze.length > 0) {
+    if (stanzeFiltrate.length > 0) {
       setExpandedRooms(prev => {
         const newState: Record<number, boolean> = {};
-        stanze.forEach((s: any) => {
+        stanzeFiltrate.forEach((s: any) => {
           newState[s.id] = prev[s.id] ?? false; // Mantieni stato esistente o chiuso
         });
         return newState;
       });
     }
-  }, [stanze]);
+  }, [stanzeFiltrate]);
 
   // Fetch meteo (Rimini default)
   useEffect(() => {
@@ -175,13 +172,13 @@ export const Dashboard = () => {
         newState[roomId] = newValue;
       } else {
         // Desktop: toggle stanze sulla stessa riga (grid 2 colonne)
-        const roomIndex = stanze.findIndex((s: any) => s.id === roomId);
+        const roomIndex = stanzeFiltrate.findIndex((s: any) => s.id === roomId);
         const row = Math.floor(roomIndex / 2);
         const startIndex = row * 2;
 
         // Toggle entrambe le stanze nella riga
-        if (stanze[startIndex]) newState[stanze[startIndex].id] = newValue;
-        if (stanze[startIndex + 1]) newState[stanze[startIndex + 1].id] = newValue;
+        if (stanzeFiltrate[startIndex]) newState[stanzeFiltrate[startIndex].id] = newValue;
+        if (stanzeFiltrate[startIndex + 1]) newState[stanzeFiltrate[startIndex + 1].id] = newValue;
       }
 
       return newState;
@@ -429,7 +426,7 @@ export const Dashboard = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Saluto e Meteo */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
@@ -443,9 +440,7 @@ export const Dashboard = () => {
             )}
           </div>
           {weather && (
-            <motion.div
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -458,7 +453,7 @@ export const Dashboard = () => {
             >
               <span style={{ fontSize: '18px' }}>{weather.icon}</span>
               <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>{weather.temp}°C</span>
-            </motion.div>
+            </div>
           )}
         </div>
 
@@ -754,28 +749,21 @@ export const Dashboard = () => {
         )}
 
         {/* Stanze e Dispositivi */}
-        {impiantoCorrente && (stanze.length > 0 || unassignedDevices.length > 0) && (
+        {impiantoCorrente && (stanzeFiltrate.length > 0 || unassignedDevices.length > 0) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h2 style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
               Stanze e Dispositivi
             </h2>
 
-            <motion.div
-              initial="hidden"
-              animate="show"
-              variants={containerVariants}
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}
-            >
-              {stanze.map((stanza) => {
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+              {stanzeFiltrate.map((stanza) => {
                 const roomDevices = getDevicesByRoom(stanza.id);
                 const isExpanded = expandedRooms[stanza.id];
                 const devicesOn = roomDevices.filter(d => d.power_state).length;
 
                 return (
-                  <motion.div
+                  <div
                     key={stanza.id}
-                    variants={cardVariants}
-                    whileTap={{ scale: 0.98 }}
                     style={{
                       background: colors.bgCardLit,
                       border: `1px solid ${colors.border}`,
@@ -883,15 +871,13 @@ export const Dashboard = () => {
                     )}
 
                     {/* Rimuove il blocco "Nessun dispositivo" - stanza chiusa = solo header */}
-                  </motion.div>
+                  </div>
                 );
               })}
 
               {/* Dispositivi non assegnati */}
               {unassignedDevices.length > 0 && (
-                <motion.div
-                  variants={cardVariants}
-                  whileTap={{ scale: 0.98 }}
+                <div
                   style={{
                     background: colors.bgCardLit,
                     border: `1px solid ${colors.border}`,
@@ -984,9 +970,9 @@ export const Dashboard = () => {
                       </div>
                     </div>
                   )}
-                </motion.div>
+                </div>
               )}
-            </motion.div>
+            </div>
           </div>
         )}
 

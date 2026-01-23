@@ -167,7 +167,7 @@ export const DispositiviConnessi = () => {
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', viewTransitionName: 'page-content' as any }}>
         {/* Header con Back */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <motion.button
@@ -205,11 +205,7 @@ export const DispositiviConnessi = () => {
 
         {/* Contenuto */}
         {loading ? (
-          <motion.div
-            style={{ ...cardStyle, padding: '40px' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+          <div style={{ ...cardStyle, padding: '40px' }}>
             <div style={topHighlight} />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
               <RiLoader4Line size={32} style={{ color: colors.accent, animation: 'spin 1s linear infinite' }} />
@@ -217,31 +213,24 @@ export const DispositiviConnessi = () => {
                 Caricamento sessioni...
               </p>
             </div>
-          </motion.div>
+          </div>
         ) : sessions.length === 0 ? (
-          <motion.div
-            style={{ ...cardStyle, padding: '40px' }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
+          <div style={{ ...cardStyle, padding: '40px' }}>
             <div style={topHighlight} />
             <p style={{ color: modeColors.textMuted, fontSize: '14px', textAlign: 'center' }}>
               Nessuna sessione attiva trovata.
             </p>
-          </motion.div>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {sessions.map((session, index) => {
+            {sessions.map((session) => {
               const DeviceIcon = getDeviceIcon(session.device);
               const isDeleting = deleting === session.id;
 
               return (
-                <motion.div
+                <div
                   key={session.id}
                   style={{ ...cardStyle, padding: '16px' }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
                 >
                   <div style={topHighlight} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -326,7 +315,7 @@ export const DispositiviConnessi = () => {
                       </motion.button>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
 
@@ -352,9 +341,6 @@ export const DispositiviConnessi = () => {
                   marginTop: '8px',
                 }}
                 whileTap={deletingAll ? undefined : { scale: 0.98 }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
               >
                 {deletingAll ? (
                   <RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} />
@@ -368,15 +354,12 @@ export const DispositiviConnessi = () => {
         )}
 
         {/* Info Card */}
-        <motion.div
+        <div
           style={{
             ...cardStyle,
             padding: '16px',
             background: `${colors.accent}08`,
           }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
         >
           <div style={topHighlight} />
           <p style={{
@@ -388,7 +371,7 @@ export const DispositiviConnessi = () => {
             Qui puoi vedere tutti i dispositivi connessi al tuo account.
             Se noti attività sospette, disconnetti la sessione e cambia subito la password.
           </p>
-        </motion.div>
+        </div>
       </div>
 
       {/* Stile per animazione spin */}
