@@ -378,52 +378,35 @@ body {
 }
 
 /* ============================================ */
-/* VIEW TRANSITIONS API - Uniform Slide */
+/* VIEW TRANSITIONS API - Stile Spotify (fade) */
 /* ============================================ */
 
 @view-transition {
   navigation: auto;
 }
 
-/* Slide transition per tutte le pagine */
+/* Fade transition per tutte le pagine */
 ::view-transition-old(page-content) {
-  animation: slide-out 0.25s ease-out forwards;
+  animation: vt-fade-out 0.25s ease-out forwards;
 }
 
 ::view-transition-new(page-content) {
-  animation: slide-in 0.25s ease-out forwards;
+  animation: vt-fade-in 0.25s ease-in forwards;
 }
 
-@keyframes slide-out {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
-@keyframes slide-in {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Fallback per browser senza View Transitions */
 @supports not (view-transition-name: page-content) {
   .page-content {
-    animation: fade-in 0.2s ease-out;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    animation: vt-fade-in 0.15s ease-out;
   }
 }

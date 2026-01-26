@@ -53,52 +53,135 @@ export const useRealTimeSync = (impiantoId: number | null) => {
 
     // Stanze
     socketService.onStanzaUpdate(({ stanza, action }) => {
-      switch (action) {
-        case 'created':
-          addStanza(stanza);
-          break;
-        case 'updated':
-          updateStanza(stanza);
-          break;
-        case 'deleted':
-          removeStanza(stanza.id);
-          break;
+      try {
+        console.log('[WS] stanza-update received:', { stanza, action });
+
+        if (!stanza || !action) {
+          console.error('[WS] stanza-update: invalid data', { stanza, action });
+          return;
+        }
+
+        switch (action) {
+          case 'created':
+            addStanza(stanza);
+            break;
+          case 'updated':
+            updateStanza(stanza);
+            break;
+          case 'deleted':
+            if (!stanza.id) {
+              console.error('[WS] stanza-update deleted: missing stanza.id!');
+              return;
+            }
+            removeStanza(stanza.id);
+            break;
+          default:
+            console.warn('[WS] stanza-update: unknown action:', action);
+        }
+      } catch (err) {
+        console.error('[WS] stanza-update CRASH:', err, { stanza, action });
       }
     });
 
     // Scene
     socketService.onScenaUpdate(({ scena, action }) => {
-      switch (action) {
-        case 'created':
-          addScena(scena);
-          break;
-        case 'updated':
-          updateScena(scena);
-          break;
-        case 'executed':
-          markExecuted(scena.id);
-          break;
-        case 'deleted':
-          removeScena(scena.id);
-          break;
+      try {
+        console.log('[WS] scena-update received:', { scena, action });
+
+        // Validazione dati ricevuti
+        if (!scena) {
+          console.error('[WS] scena-update: scena is undefined!');
+          return;
+        }
+        if (!action) {
+          console.error('[WS] scena-update: action is undefined!');
+          return;
+        }
+
+        switch (action) {
+          case 'created':
+            if (!scena.id) {
+              console.error('[WS] scena-update created: missing scena.id!');
+              return;
+            }
+            addScena(scena);
+            break;
+          case 'updated':
+            if (!scena.id) {
+              console.error('[WS] scena-update updated: missing scena.id!');
+              return;
+            }
+            updateScena(scena);
+            break;
+          case 'executed':
+            if (!scena.id) {
+              console.error('[WS] scena-update executed: missing scena.id!');
+              return;
+            }
+            markExecuted(scena.id);
+            break;
+          case 'deleted':
+            if (!scena.id) {
+              console.error('[WS] scena-update deleted: missing scena.id!');
+              return;
+            }
+            removeScena(scena.id);
+            break;
+          default:
+            console.warn('[WS] scena-update: unknown action:', action);
+        }
+      } catch (err) {
+        console.error('[WS] scena-update CRASH:', err, { scena, action });
       }
     });
 
     // Dispositivi (Tasmota + altri)
     socketService.onDispositivoUpdate(({ dispositivo, action }) => {
-      switch (action) {
-        case 'created':
-          addDispositivo(dispositivo);
-          break;
-        case 'updated':
-          updateDispositivo(dispositivo);
-          break;
-        case 'deleted':
-          removeDispositivo(dispositivo.id);
-          break;
-        case 'state-changed':
-          updatePowerState(dispositivo.id, dispositivo.power_state);
-          break;
+      try {
+        console.log('[WS] dispositivo-update received:', { dispositivo, action });
+
+        if (!dispositivo || !action) {
+          console.error('[WS] dispositivo-update: invalid data', { dispositivo, action });
+          return;
+        }
+
+        switch (action) {
+          case 'created':
+            addDispositivo(dispositivo);
+            break;
+          case 'updated':
+            updateDispositivo(dispositivo);
+            break;
+          case 'deleted':
+            if (!dispositivo.id) {
+              console.error('[WS] dispositivo-update deleted: missing dispositivo.id!');
+              return;
+            }
+            removeDispositivo(dispositivo.id);
+            break;
+          case 'state-changed':
+            if (!dispositivo.id) {
+              console.error('[WS] dispositivo-update state-changed: missing dispositivo.id!');
+              return;
+            }
+            updatePowerState(dispositivo.id, dispositivo.power_state);
+            break;
+          default:
+            console.warn('[WS] dispositivo-update: unknown action:', action);
+        }
+      } catch (err) {
+        console.error('[WS] dispositivo-update CRASH:', err, { dispositivo, action });
+      }
+    });
+
+    // Gateway updates (associato/disassociato/aggiornato)
+    socketService.onGatewayUpdate(({ gateway, action }) => {
+      try {
+        console.log('[WS] gateway-update received:', { gateway, action });
+        // Gateway events sono gestiti a livello di componente (GatewayCard, Settings)
+        // Questo log aiuta il debug e i componenti possono ascoltare direttamente
+      } catch (err) {
+        console.error('[WS] gateway-update CRASH:', err, { gateway, action });
       }
     });
 
@@ -169,6 +252,7 @@ export const useRealTimeSync = (impiantoId: number | null) => {
       socketService.offStanzaUpdate();
       socketService.offScenaUpdate();
       socketService.offDispositivoUpdate();
+      socketService.offGatewayUpdate();
       socketService.offOmniapiNodeUpdate();
       socketService.offOmniapiNodesUpdate();
       socketService.offOmniapiLedUpdate();

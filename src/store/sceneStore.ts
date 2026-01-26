@@ -49,7 +49,18 @@ export const useSceneStore = create<SceneState>((set) => ({
   },
 
   addScena: (scena: Scena) => {
-    set((state) => ({ scene: [...state.scene, scena] }));
+    set((state) => {
+      // Previeni duplicati - se la scena esiste già, aggiornala invece di aggiungerla
+      const exists = state.scene.some((s) => s.id === scena.id);
+      if (exists) {
+        console.log('[SceneStore] addScena: scena già esiste, aggiorno invece', scena.id);
+        return {
+          scene: state.scene.map((s) => (s.id === scena.id ? { ...s, ...scena } : s)),
+        };
+      }
+      console.log('[SceneStore] addScena: nuova scena aggiunta', scena.id, scena.nome);
+      return { scene: [...state.scene, scena] };
+    });
   },
 
   updateScena: (scena: Scena) => {

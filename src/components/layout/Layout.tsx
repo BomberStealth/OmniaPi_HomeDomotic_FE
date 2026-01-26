@@ -4,7 +4,7 @@ import { BottomNav } from './BottomNav';
 import { MobileHeader } from './MobileHeader';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
-import { useRealTimeSync } from '@/hooks/useRealTimeSync';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { spacing } from '@/styles/responsive';
 
 // ============================================
@@ -29,7 +29,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
 
-  useRealTimeSync(impiantoCorrente?.id ?? null);
+  useWebSocket(impiantoCorrente?.id ?? null);
 
   const { bgGradient, ambientGlow } = useMemo(() => {
     const accentRgb = hexToRgb(themeColors.accent);
