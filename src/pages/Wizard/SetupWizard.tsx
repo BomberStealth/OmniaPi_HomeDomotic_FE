@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
 import { Button } from '@/components/common/Button';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 import { StepImpianto } from '@/components/wizard/StepImpianto';
 import { StepGateway } from '@/components/wizard/StepGateway';
 import { StepGatewayConnected } from '@/components/wizard/StepGatewayConnected';
 import { StepDispositivi } from '@/components/wizard/StepDispositivi';
 import { StepCompleto } from '@/components/wizard/StepCompleto';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
-import { RiHome4Line, RiRouterLine, RiCheckboxCircleLine, RiDeviceLine, RiTrophyLine, RiSparklingLine } from 'react-icons/ri';
+import { RiHome4Line, RiRouterLine, RiCheckboxCircleLine, RiDeviceLine, RiTrophyLine, RiSparklingLine, RiRefreshLine, RiLogoutBoxLine } from 'react-icons/ri';
 
 // ============================================
 // SETUP WIZARD - Anno 3050 Edition 🚀
@@ -65,6 +66,8 @@ export const SetupWizard = () => {
   const navigate = useNavigate();
   const { modeColors, isDarkMode, colors } = useThemeColor();
   const [particlesInit, setParticlesInit] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [state, setState] = useState<WizardState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -262,23 +265,14 @@ export const SetupWizard = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    if (confirm('Vuoi ricominciare da capo?')) {
-                      clearWizard();
-                    }
-                  }}
+                  onClick={() => setShowRestartConfirm(true)}
                 >
                   Ricomincia
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    if (confirm('Vuoi uscire?')) {
-                      clearWizard();
-                      navigate('/dashboard');
-                    }
-                  }}
+                  onClick={() => setShowExitConfirm(true)}
                 >
                   Esci
                 </Button>
@@ -492,6 +486,35 @@ export const SetupWizard = () => {
             ? `linear-gradient(to top, ${colors.accent}05, transparent)`
             : `linear-gradient(to top, ${colors.accent}03, transparent)`,
         }}
+      />
+
+      {/* Confirm Popup - Ricomincia */}
+      <ConfirmPopup
+        isOpen={showRestartConfirm}
+        onClose={() => setShowRestartConfirm(false)}
+        onConfirm={clearWizard}
+        title="Ricominciare da capo?"
+        message="Tutti i dati inseriti finora andranno persi. Sei sicuro di voler ricominciare?"
+        confirmText="Ricomincia"
+        cancelText="Annulla"
+        confirmVariant="warning"
+        icon={<RiRefreshLine size={20} />}
+      />
+
+      {/* Confirm Popup - Esci */}
+      <ConfirmPopup
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        onConfirm={() => {
+          clearWizard();
+          navigate('/dashboard');
+        }}
+        title="Uscire dal wizard?"
+        message="Tutti i dati inseriti finora andranno persi. Sei sicuro di voler uscire?"
+        confirmText="Esci"
+        cancelText="Annulla"
+        confirmVariant="danger"
+        icon={<RiLogoutBoxLine size={20} />}
       />
     </div>
   );

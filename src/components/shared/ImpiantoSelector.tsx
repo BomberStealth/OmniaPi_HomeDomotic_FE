@@ -1,12 +1,13 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
+import { useAdminModeStore } from '@/store/adminModeStore';
 import { useNavigate } from 'react-router-dom';
-import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiMailLine, RiCheckLine, RiCloseLine, RiSettings4Line } from 'react-icons/ri';
+import { RiArrowDownSLine, RiBuilding2Line, RiLoader4Line, RiAddLine, RiMailLine, RiCheckLine, RiCloseLine, RiSettings4Line, RiAdminLine } from 'react-icons/ri';
 import { condivisioniApi } from '@/services/api';
 import { socketService } from '@/services/socket';
 import { toast } from '@/utils/toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // ============================================
@@ -41,6 +42,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
   const navigate = useNavigate();
   const { impiantoCorrente, setImpiantoCorrente, impianti, loading, refresh } = useImpiantoContext();
   const { user } = useAuthStore();
+  const { isAdminMode, adminImpianto } = useAdminModeStore();
   const [isOpen, setIsOpen] = useState(false);
   const [inviti, setInviti] = useState<InvitoPendente[]>([]);
   const [invitiLoading, setInvitiLoading] = useState(false);
@@ -48,6 +50,17 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
 
   // PROPRIETARIO non può creare impianti (solo ADMIN e INSTALLATORE)
   const canCreateImpianto = user?.ruolo !== 'proprietario';
+
+  // In admin mode, includi l'impianto admin nella lista se non già presente
+  const impiantiList = useMemo(() => {
+    if (isAdminMode && adminImpianto) {
+      const exists = impianti.some(i => i.id === adminImpianto.id);
+      if (!exists) {
+        return [adminImpianto, ...impianti];
+      }
+    }
+    return impianti;
+  }, [impianti, isAdminMode, adminImpianto]);
 
   // Carica inviti pendenti
   const loadInviti = useCallback(async () => {
@@ -136,14 +149,34 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
     }
   };
 
-  // Colori dinamici basati sul tema
-  const colors = useMemo(() => ({
-    ...modeColors,
-    accent: themeColors.accent,
-    accentLight: themeColors.accentLight,
-    border: `rgba(${hexToRgb(themeColors.accent)}, 0.15)`,
-    borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
-  }), [themeColors, modeColors]);
+  // Colori dinamici basati sul tema (con fallback per evitare errori motion.js)
+  const colors = useMemo(() => {
+    // Fallback colors in caso modeColors sia undefined
+    const defaultModeColors = {
+      bg: '#0a0a09',
+      bgCard: '#1e1c18',
+      bgCardLit: '#1e1c18', // Solid color per evitare errori motion con gradient
+      bgSecondary: '#141312',
+      textPrimary: '#ffffff',
+      textSecondary: 'rgba(255, 255, 255, 0.75)',
+      textMuted: 'rgba(255, 255, 255, 0.5)',
+      border: 'rgba(255, 255, 255, 0.1)',
+      cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+      cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5)',
+    };
+
+    const safeModeColors = modeColors || defaultModeColors;
+    const safeAccent = themeColors?.accent || '#6ad4a0';
+    const safeAccentLight = themeColors?.accentLight || '#a0e8c4';
+
+    return {
+      ...safeModeColors,
+      accent: safeAccent,
+      accentLight: safeAccentLight,
+      border: `rgba(${hexToRgb(safeAccent)}, 0.15)`,
+      borderHover: `rgba(${hexToRgb(safeAccent)}, 0.35)`,
+    };
+  }, [themeColors, modeColors]);
 
   const handleCreateNew = () => {
     setIsOpen(false);
@@ -169,7 +202,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
   }
 
   // Nessun impianto - mostra dropdown con inviti se ce ne sono
-  if (!impiantoCorrente || impianti.length === 0) {
+  if (!impiantoCorrente || impiantiList.length === 0) {
     // Se ci sono inviti pendenti, mostra un selettore cliccabile
     if (inviti.length > 0) {
       return (
@@ -182,7 +215,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
               alignItems: 'center',
               gap: '8px',
               padding: '10px 12px',
-              background: variant === 'desktop' ? colors.bgCardLit : 'transparent',
+              background: variant === 'desktop' ? colors.bgCard : 'transparent',
               border: variant === 'desktop' ? `1px solid ${colors.accent}40` : `1px solid ${colors.accent}30`,
               borderRadius: '16px',
               cursor: 'pointer',
@@ -203,30 +236,25 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
             </motion.div>
           </motion.button>
 
-          {/* Dropdown con inviti */}
-          <AnimatePresence>
-            {isOpen && (
-              <>
-                <div
-                  style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                  onClick={() => setIsOpen(false)}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: 'absolute',
-                    zIndex: 50,
-                    width: '100%',
-                    top: '100%',
-                    marginTop: '4px',
-                    background: colors.bgCardLit,
-                    borderRadius: '16px',
-                    border: `1px solid ${colors.border}`,
-                    boxShadow: colors.cardShadowLit,
-                    overflow: 'hidden',
+          {/* Dropdown con inviti - usando div normale per evitare errori motion.js con gradient */}
+          {isOpen && (
+            <>
+              <div
+                style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                onClick={() => setIsOpen(false)}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  zIndex: 50,
+                  width: '100%',
+                  top: '100%',
+                  marginTop: '4px',
+                  background: colors.bgCard, // Solid color invece di bgCardLit (gradient)
+                  borderRadius: '16px',
+                  border: `1px solid ${colors.border}`,
+                  boxShadow: colors.cardShadow,
+                  overflow: 'hidden',
                     maxHeight: '280px',
                     overflowY: 'auto',
                   }}
@@ -338,10 +366,9 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                       </motion.button>
                     </div>
                   )}
-                </motion.div>
+                </div>
               </>
             )}
-          </AnimatePresence>
         </div>
       );
     }
@@ -356,7 +383,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
             alignItems: 'center',
             gap: '8px',
             padding: '10px 12px',
-            background: variant === 'desktop' ? colors.bgCardLit : 'transparent',
+            background: variant === 'desktop' ? colors.bgCard : 'transparent',
             border: variant === 'desktop' ? `1px solid ${colors.border}` : 'none',
             borderRadius: '16px',
           }}
@@ -379,14 +406,14 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
           alignItems: 'center',
           gap: '8px',
           padding: '10px 12px',
-          background: variant === 'desktop' ? colors.bgCardLit : 'transparent',
+          background: variant === 'desktop' ? colors.bgCard : 'transparent',
           border: variant === 'desktop' ? `1px solid ${colors.border}` : 'none',
           borderRadius: '16px',
           cursor: 'pointer',
         }}
         whileHover={{
           background: variant === 'desktop'
-            ? (isDarkMode ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)' : colors.bgSecondary)
+            ? (isDarkMode ? '#2a2722' : colors.bgSecondary)
             : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
           borderColor: colors.borderHover,
         }}
@@ -411,14 +438,14 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
             alignItems: 'center',
             gap: '8px',
             padding: '10px 12px',
-            background: variant === 'desktop' ? colors.bgCardLit : 'transparent',
+            background: variant === 'desktop' ? colors.bgCard : 'transparent',
             border: variant === 'desktop' ? `1px solid ${colors.border}` : 'none',
             borderRadius: '16px',
             cursor: 'pointer',
           }}
           whileHover={{
             background: variant === 'desktop'
-              ? (isDarkMode ? 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)' : colors.bgSecondary)
+              ? (isDarkMode ? '#2a2722' : colors.bgSecondary)
               : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)'),
           }}
         >
@@ -447,7 +474,7 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
           style={{
             padding: '10px',
             borderRadius: '12px',
-            background: variant === 'desktop' ? colors.bgCardLit : 'transparent',
+            background: variant === 'desktop' ? colors.bgCard : 'transparent',
             border: variant === 'desktop' ? `1px solid ${colors.border}` : `1px solid ${colors.border}`,
             cursor: 'pointer',
             display: 'flex',
@@ -466,41 +493,36 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
         </motion.button>
       </div>
 
-      {/* Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Overlay per chiudere al click fuori */}
-            <div
-              style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 40,
-              }}
-              onClick={() => setIsOpen(false)}
-            />
+      {/* Dropdown - usando div normale per evitare errori motion.js con gradient */}
+      {isOpen && (
+        <>
+          {/* Overlay per chiudere al click fuori */}
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 40,
+            }}
+            onClick={() => setIsOpen(false)}
+          />
 
-            {/* Menu */}
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                position: 'absolute',
-                zIndex: 50,
-                width: '100%',
-                top: '100%',
-                marginTop: '4px',
-                background: colors.bgCardLit,
-                borderRadius: '16px',
-                border: `1px solid ${colors.border}`,
-                boxShadow: colors.cardShadowLit,
-                overflow: 'hidden',
-                maxHeight: '320px',
-                overflowY: 'auto',
-              }}
-            >
+          {/* Menu */}
+          <div
+            style={{
+              position: 'absolute',
+              zIndex: 50,
+              width: '100%',
+              top: '100%',
+              marginTop: '4px',
+              background: colors.bgCard, // Solid color invece di bgCardLit (gradient)
+              borderRadius: '16px',
+              border: `1px solid ${colors.border}`,
+              boxShadow: colors.cardShadow,
+              overflow: 'hidden',
+              maxHeight: '320px',
+              overflowY: 'auto',
+            }}
+          >
               {/* Sezione Inviti Pendenti */}
               {inviti.length > 0 && (
                 <div style={{ borderBottom: `1px solid ${colors.border}` }}>
@@ -591,58 +613,76 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
               )}
 
               {/* Lista Impianti */}
-              {impianti.map((impianto) => (
-                <button
-                  key={impianto.id}
-                  onClick={() => {
-                    setImpiantoCorrente(impianto);
-                    setIsOpen(false);
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '12px',
-                    textAlign: 'left',
-                    background: impianto.id === impiantoCorrente.id
-                      ? `${colors.accent}15`
-                      : 'transparent',
-                    border: 'none',
-                    borderLeft: impianto.id === impiantoCorrente.id
-                      ? `2px solid ${colors.accent}`
-                      : '2px solid transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <RiBuilding2Line
-                    size={16}
-                    style={{
-                      color: impianto.id === impiantoCorrente.id
-                        ? colors.accent
-                        : colors.textMuted
+              {impiantiList.map((impianto) => {
+                const isAdminImpianto = isAdminMode && adminImpianto?.id === impianto.id;
+                return (
+                  <button
+                    key={impianto.id}
+                    onClick={() => {
+                      setImpiantoCorrente(impianto);
+                      setIsOpen(false);
                     }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: impianto.id === impiantoCorrente.id
-                          ? colors.accent
-                          : colors.textPrimary,
-                        margin: 0,
-                      }}
-                    >
-                      {impianto.nome}
-                    </p>
-                    <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
-                      {impianto.citta}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '12px',
+                      textAlign: 'left',
+                      background: impianto.id === impiantoCorrente.id
+                        ? `${colors.accent}15`
+                        : isAdminImpianto
+                          ? 'rgba(245, 158, 11, 0.1)'
+                          : 'transparent',
+                      border: 'none',
+                      borderLeft: impianto.id === impiantoCorrente.id
+                        ? `2px solid ${colors.accent}`
+                        : isAdminImpianto
+                          ? '2px solid rgba(245, 158, 11, 0.5)'
+                          : '2px solid transparent',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {isAdminImpianto ? (
+                      <RiAdminLine size={16} style={{ color: '#f59e0b' }} />
+                    ) : (
+                      <RiBuilding2Line
+                        size={16}
+                        style={{
+                          color: impianto.id === impiantoCorrente.id
+                            ? colors.accent
+                            : colors.textMuted
+                        }}
+                      />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <p
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: impianto.id === impiantoCorrente.id
+                            ? colors.accent
+                            : isAdminImpianto
+                              ? '#f59e0b'
+                              : colors.textPrimary,
+                          margin: 0,
+                        }}
+                      >
+                        {impianto.nome}
+                        {isAdminImpianto && (
+                          <span style={{ fontSize: '10px', marginLeft: '6px', opacity: 0.7 }}>
+                            (Admin)
+                          </span>
+                        )}
+                      </p>
+                      <p style={{ fontSize: '12px', color: colors.textMuted, margin: 0 }}>
+                        {impianto.citta}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
 
               {/* Separatore + Crea Nuovo (solo per Admin/Installatore) */}
               {canCreateImpianto && (
@@ -669,10 +709,9 @@ export const ImpiantoSelector = ({ variant = 'mobile' }: ImpiantoSelectorProps) 
                   </motion.button>
                 </div>
               )}
-            </motion.div>
+            </div>
           </>
         )}
-      </AnimatePresence>
     </div>
   );
 };

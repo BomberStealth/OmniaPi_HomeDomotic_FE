@@ -6,6 +6,7 @@ import { useDispositiviStore } from '@/store/dispositiviStore';
 import { useOmniapiStore } from '@/store/omniapiStore';
 import { useCondivisioniStore } from '@/store/condivisioniStore';
 import { useAuthStore } from '@/store/authStore';
+import { useUpdateTrigger } from '@/store/updateTriggerStore';
 
 // ============================================
 // WEBSOCKET HOOK - Simplified Architecture
@@ -43,6 +44,7 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
       useStanzeStore.getState().fetchStanze(impiantoId);
       useSceneStore.getState().fetchScene(impiantoId);
       useDispositiviStore.getState().fetchDispositivi(impiantoId);
+      useCondivisioniStore.getState().fetchCondivisioni(impiantoId);
     }
 
     // Event handler
@@ -63,7 +65,16 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
           if (payload?.id) stanzeStore.updateStanza(payload);
           break;
         case WS_EVENTS.STANZA_DELETED:
-          if (payload?.id) stanzeStore.removeStanza(payload.id);
+          if (payload?.id) {
+            stanzeStore.removeStanza(payload.id);
+            // Aggiorna i dispositivi che erano in quella stanza → ora "non assegnati"
+            const dispositivi = dispositiviStore.dispositivi;
+            dispositivi.forEach(d => {
+              if (d.stanza_id === payload.id) {
+                dispositiviStore.updateDispositivo({ ...d, stanza_id: null });
+              }
+            });
+          }
           break;
 
         // SCENE
@@ -142,6 +153,7 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
         // CONDIVISIONI - Update store + call callback
         case WS_EVENTS.CONDIVISIONE_CREATED:
         case WS_EVENTS.INVITE_RECEIVED:
+          console.log(`[WS] ${type} payload:`, JSON.stringify(payload, null, 2));
           if (payload?.id) {
             useCondivisioniStore.getState().addCondivisione(payload);
           }
@@ -151,6 +163,7 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
         case WS_EVENTS.CONDIVISIONE_ACCEPTED:
         case WS_EVENTS.CONDIVISIONE_UPDATED:
         case WS_EVENTS.INVITE_ACCEPTED:
+          console.log(`[WS] ${type} payload:`, JSON.stringify(payload, null, 2));
           if (payload?.id) {
             useCondivisioniStore.getState().updateCondivisione(payload);
           }
@@ -158,11 +171,30 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
           break;
 
         case WS_EVENTS.CONDIVISIONE_REJECTED:
-        case WS_EVENTS.CONDIVISIONE_REMOVED:
         case WS_EVENTS.INVITE_REJECTED:
+          console.log(`[WS] ${type} payload:`, JSON.stringify(payload, null, 2));
           if (payload?.id) {
             useCondivisioniStore.getState().removeCondivisione(payload.id);
           }
+          opts.onCondivisioneUpdate?.(type, payload);
+          break;
+
+        case WS_EVENTS.CONDIVISIONE_REMOVED:
+          // NUCLEAR OPTION: Svuota TUTTI gli store e ricarica la pagina
+          console.log('[WS] CONDIVISIONE_REMOVED - NUCLEAR RESET');
+
+          // Svuota tutti gli store
+          useCondivisioniStore.getState().clear();
+          sceneStore.clear();
+          stanzeStore.clear();
+          dispositiviStore.clear();
+          omniapiStore.clear();
+
+          // Forza reload della pagina dopo 500ms
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+
           opts.onCondivisioneUpdate?.(type, payload);
           break;
 
@@ -186,6 +218,9 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
           }
           break;
       }
+
+      // Forza re-render globale per tutte le pagine che usano useUpdateTrigger
+      useUpdateTrigger.getState().forceTrigger();
     };
 
     // Subscribe to events

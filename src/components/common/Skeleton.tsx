@@ -92,10 +92,10 @@ export const SkeletonCard = () => {
   return (
     <div
       style={{
-        background: colors.bgCardLit,
+        background: colors.bgCard,
         border: `1px solid ${colors.border}`,
         borderRadius: '24px',
-        boxShadow: colors.cardShadowLit,
+        boxShadow: colors.cardShadow,
         padding: '16px',
         position: 'relative',
         overflow: 'hidden',
@@ -153,10 +153,10 @@ export const SkeletonList = ({ count = 3 }: { count?: number }) => {
         <div
           key={i}
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: '24px',
-            boxShadow: colors.cardShadowLit,
+            boxShadow: colors.cardShadow,
             padding: '16px',
             display: 'flex',
             alignItems: 'center',

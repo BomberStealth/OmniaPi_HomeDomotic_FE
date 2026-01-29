@@ -86,12 +86,12 @@ export const ImpiantoSettings = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   };
 
-  // Stile base card
+  // Stile base card - usa bgCard (solid) invece di bgCardLit (gradient) per evitare errori framer-motion
   const cardStyle = {
-    background: colors.bgCardLit,
+    background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };
@@ -478,7 +478,7 @@ export const ImpiantoSettings = () => {
 
           <SettingRow
             icon={RiGroupLine}
-            iconBg={`${colors.success}20`}
+            iconBg={`${colors.accent}20`}
             title="Gestione Condivisioni"
             subtitle="Gestisci accessi e inviti"
             onClick={() => navigate('/impianto/condivisioni')}
@@ -600,11 +600,11 @@ export const ImpiantoSettings = () => {
                 position: 'relative',
                 width: '100%',
                 maxWidth: '400px',
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 borderRadius: '20px',
                 padding: '20px',
                 border: `1px solid ${colors.border}`,
-                boxShadow: colors.cardShadowLit
+                boxShadow: colors.cardShadow
               }}
             >
               {/* Header Modal */}
@@ -746,11 +746,11 @@ export const ImpiantoSettings = () => {
                 position: 'relative',
                 width: '100%',
                 maxWidth: '400px',
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 borderRadius: '20px',
                 padding: '20px',
                 border: `1px solid ${colors.error}30`,
-                boxShadow: colors.cardShadowLit
+                boxShadow: colors.cardShadow
               }}
             >
               {/* Header Modal */}

@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { User } from '@/types';
 import { authApi } from '@/services/api';
 import { socketService } from '@/services/socket';
+import { useAdminModeStore } from './adminModeStore';
+import { useImpiantiStore } from './impiantiStore';
+import { useDispositiviStore } from './dispositiviStore';
+import { useStanzeStore } from './stanzeStore';
+import { useSceneStore } from './sceneStore';
 
 // ============================================
 // AUTH STORE (ZUSTAND)
@@ -25,6 +30,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     set({ isLoading: true });
     try {
+      // IMPORTANTE: Pulisci tutti gli store PRIMA del login
+      // Questo evita che dati di un account precedente rimangano
+      console.log('🔐 LOGIN - Resetting all stores before login...');
+      useAdminModeStore.getState().clear();
+      useImpiantiStore.getState().clear();
+      useDispositiviStore.getState().clear();
+      useStanzeStore.getState().clear();
+      useSceneStore.getState().clear();
+
       const response = await authApi.login(email, password);
       if (response.success && response.data) {
         const { token, user } = response.data;
@@ -33,6 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
         // Connetti WebSocket
         socketService.connect(token);
+        console.log('🔐 LOGIN - Success for user:', user.email);
       }
     } catch (error) {
       set({ isLoading: false });
@@ -45,6 +60,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Pulisci anche lo stato del wizard
     localStorage.removeItem('omniapi_setup_wizard');
     socketService.disconnect();
+
+    // Pulisci tutti gli store
+    useAdminModeStore.getState().clear();
+    useImpiantiStore.getState().clear();
+    useDispositiviStore.getState().clear();
+    useStanzeStore.getState().clear();
+    useSceneStore.getState().clear();
+
     set({ user: null, token: null });
   },
 

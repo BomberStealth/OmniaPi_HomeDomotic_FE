@@ -52,6 +52,7 @@ interface DispositiviState {
   updateLedState: (dispositivoId: number, ledState: Partial<Pick<Dispositivo, 'led_power' | 'led_r' | 'led_g' | 'led_b' | 'led_brightness' | 'led_effect' | 'led_speed'>>) => void;
   // By MAC (for WebSocket updates)
   updateByMac: (mac: string, updates: Partial<Dispositivo>) => void;
+  clear: () => void;
 }
 
 export const useDispositiviStore = create<DispositiviState>((set) => ({
@@ -71,7 +72,13 @@ export const useDispositiviStore = create<DispositiviState>((set) => ({
   },
 
   addDispositivo: (dispositivo: Dispositivo) => {
-    set((state) => ({ dispositivi: [...state.dispositivi, dispositivo] }));
+    set((state) => {
+      // Evita duplicati controllando se esiste già un dispositivo con lo stesso ID
+      if (state.dispositivi.some((d) => d.id === dispositivo.id)) {
+        return state; // Non modificare lo stato se già esiste
+      }
+      return { dispositivi: [...state.dispositivi, dispositivo] };
+    });
   },
 
   updateDispositivo: (dispositivo: Dispositivo) => {
@@ -114,5 +121,9 @@ export const useDispositiviStore = create<DispositiviState>((set) => ({
         d.mac_address === mac ? { ...d, ...updates } : d
       ),
     }));
+  },
+
+  clear: () => {
+    set({ dispositivi: [], loading: false, error: null });
   },
 }));

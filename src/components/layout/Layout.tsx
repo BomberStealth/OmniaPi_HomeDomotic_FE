@@ -2,8 +2,10 @@ import { ReactNode, useMemo } from 'react';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { MobileHeader } from './MobileHeader';
+import { AdminModeBorder } from './AdminModeBorder';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
+import { useAdminModeStore } from '@/store/adminModeStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { spacing } from '@/styles/responsive';
 
@@ -28,6 +30,7 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
+  const isAdminMode = useAdminModeStore((state) => state.isAdminMode);
 
   useWebSocket(impiantoCorrente?.id ?? null);
 
@@ -47,14 +50,19 @@ export const Layout = ({ children }: LayoutProps) => {
   }, [themeColors.accent, isDarkMode, modeColors]);
 
   return (
-    <div
-      className="flex flex-col md:flex-row overflow-hidden"
-      style={{
-        height: '100dvh', // Dynamic viewport height per mobile
-        background: bgGradient,
-        fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
-      }}
-    >
+    <>
+      {/* Admin Mode Border - effetto bordo pulsante */}
+      <AdminModeBorder />
+
+      <div
+        className="flex flex-col md:flex-row overflow-hidden"
+        style={{
+          height: '100dvh', // Dynamic viewport height per mobile
+          background: bgGradient,
+          fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
+          paddingTop: isAdminMode ? '40px' : 0, // Space for admin banner
+        }}
+      >
       {/* Ambient glow overlay */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -74,16 +82,20 @@ export const Layout = ({ children }: LayoutProps) => {
         {/* Content - scrollabile */}
         <main
           className="flex-1 overflow-y-auto"
-          style={{ padding: spacing.lg }}
+          style={{
+            padding: spacing.lg,
+            paddingBottom: 'calc(70px + env(safe-area-inset-bottom, 0px))', // Space for fixed BottomNav on mobile
+          }}
         >
-          <div className="max-w-5xl mx-auto w-full">
+          <div className="max-w-5xl mx-auto w-full md:pb-0">
             {children}
           </div>
         </main>
 
-        {/* Bottom Navbar - Mobile/Tablet only, NON fixed */}
+        {/* Bottom Navbar - Mobile/Tablet only, FIXED */}
         <BottomNav />
       </div>
     </div>
+    </>
   );
 };

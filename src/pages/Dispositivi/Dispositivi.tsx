@@ -295,7 +295,7 @@ export const Dispositivi = () => {
                 height: '44px',
                 padding: 0,
                 borderRadius: '16px',
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 border: `1px solid ${colors.border}`,
                 cursor: refreshing ? 'not-allowed' : 'pointer',
                 display: 'flex',
@@ -343,10 +343,10 @@ export const Dispositivi = () => {
           /* Empty State */
           <div
             style={{
-              background: colors.bgCardLit,
+              background: colors.bgCard,
               border: `1px solid ${colors.border}`,
               borderRadius: '28px',
-              boxShadow: colors.cardShadowLit,
+              boxShadow: colors.cardShadow,
               padding: '60px 32px',
               textAlign: 'center',
               position: 'relative',

@@ -2,7 +2,7 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v1.5.3';
+export const APP_VERSION = 'v1.9.1';
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

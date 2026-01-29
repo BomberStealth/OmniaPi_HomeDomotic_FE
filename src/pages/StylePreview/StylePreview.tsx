@@ -476,8 +476,8 @@ const DarkLuxuryGold = () => {
               style={{
                 fontFamily: font.family,
                 background: i === selectedFont
-                  ? `linear-gradient(165deg, ${colors.gold}15, ${colors.bgCard})`
-                  : colors.bgCardLit,
+                  ? `${colors.gold}15`
+                  : colors.bgCard,
                 border: `1px solid ${i === selectedFont ? colors.gold : colors.border}`,
                 borderRadius: radius.lg,
                 boxShadow: i === selectedFont
@@ -596,7 +596,7 @@ const DarkLuxuryGold = () => {
         <motion.button
           className="p-2.5 relative overflow-hidden"
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius.lg,
             boxShadow: colors.cardShadow
@@ -618,10 +618,10 @@ const DarkLuxuryGold = () => {
         <motion.div
           className="p-4 relative overflow-hidden"
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius['2xl'],
-            boxShadow: colors.cardShadowLit
+            boxShadow: colors.cardShadow
           }}
           whileHover={{
             borderColor: colors.borderHover,
@@ -712,10 +712,10 @@ const DarkLuxuryGold = () => {
         <motion.div
           className="p-4 relative overflow-hidden"
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius['2xl'],
-            boxShadow: colors.cardShadowLit
+            boxShadow: colors.cardShadow
           }}
           whileHover={{
             borderColor: colors.borderHover,
@@ -776,8 +776,8 @@ const DarkLuxuryGold = () => {
               className="flex flex-col items-center gap-2 p-3 relative overflow-hidden"
               style={{
                 background: action.active
-                  ? `linear-gradient(165deg, ${colors.gold}20, ${colors.bgCard})`
-                  : colors.bgCardLit,
+                  ? `${colors.gold}20`
+                  : colors.bgCard,
                 border: `1px solid ${action.active ? colors.gold : colors.border}`,
                 borderRadius: radius.xl,
                 boxShadow: action.active
@@ -824,10 +824,10 @@ const DarkLuxuryGold = () => {
               key={i}
               className="p-4 flex items-center justify-between relative overflow-hidden cursor-pointer"
               style={{
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 border: `1px solid ${colors.border}`,
                 borderRadius: radius.xl,
-                boxShadow: colors.cardShadowLit
+                boxShadow: colors.cardShadow
               }}
               whileHover={{
                 background: colors.bgCardHover,
@@ -890,13 +890,13 @@ const DarkLuxuryGold = () => {
               className="p-4 text-left relative overflow-hidden"
               style={{
                 background: device.isOn
-                  ? `linear-gradient(165deg, ${colors.gold}12, ${colors.bgCard})`
-                  : colors.bgCardLit,
+                  ? `${colors.gold}12`
+                  : colors.bgCard,
                 border: `1px solid ${device.isOn ? colors.gold : colors.border}`,
                 borderRadius: radius.xl,
                 boxShadow: device.isOn
                   ? `0 6px 28px ${colors.gold}20, ${colors.cardShadow}`
-                  : colors.cardShadowLit
+                  : colors.cardShadow
               }}
               whileHover={{
                 scale: 1.02,
@@ -1030,8 +1030,8 @@ const DarkLuxuryGold = () => {
               className="flex-shrink-0 px-4 py-2.5 text-left relative overflow-hidden"
               style={{
                 background: i === selectedIconSet
-                  ? `linear-gradient(165deg, ${colors.gold}20, ${colors.bgCard})`
-                  : colors.bgCardLit,
+                  ? `${colors.gold}20`
+                  : colors.bgCard,
                 border: `1px solid ${i === selectedIconSet ? colors.gold : colors.border}`,
                 borderRadius: radius.lg,
                 boxShadow: i === selectedIconSet
@@ -1086,10 +1086,10 @@ const DarkLuxuryGold = () => {
           transition={{ duration: 0.3 }}
           className="p-4 relative overflow-hidden"
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius['2xl'],
-            boxShadow: colors.cardShadowLit
+            boxShadow: colors.cardShadow
           }}
         >
           {/* Top highlight */}
@@ -1156,7 +1156,7 @@ const DarkLuxuryGold = () => {
                   key={`scene-${id}`}
                   className="p-3 text-center relative overflow-hidden"
                   style={{
-                    background: `linear-gradient(165deg, ${colors.gold}12, ${colors.bgCard})`,
+                    background: `${colors.gold}12`,
                     border: `1px solid ${colors.gold}40`,
                     borderRadius: radius.xl,
                     boxShadow: `0 4px 16px ${colors.gold}15`
@@ -1203,7 +1203,7 @@ const DarkLuxuryGold = () => {
         <div
           className="flex items-center justify-around py-3 px-4 mx-auto max-w-md relative overflow-hidden"
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius['2xl'],
             backdropFilter: 'blur(20px)',

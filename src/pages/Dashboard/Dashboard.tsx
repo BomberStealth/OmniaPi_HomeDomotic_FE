@@ -82,14 +82,6 @@ export const Dashboard = () => {
   }, [stanze, permessi.stanze_abilitate]);
 
   const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  // Detect mobile/desktop
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
   const [executing, setExecuting] = useState<number | null>(null);
   const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
   const [togglingAll, setTogglingAll] = useState<string | null>(null);
@@ -120,13 +112,22 @@ export const Dashboard = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   }), [themeColors, modeColors]);
 
-  // Inizializza stanze espanse quando cambiano (tutte chiuse di default)
+  // Inizializza stanze espanse quando ne vengono aggiunte di nuove
+  // IMPORTANTE: Non sovrascrivere lo stato esistente, solo aggiungere nuove stanze
   useEffect(() => {
     if (stanzeFiltrate.length > 0) {
       setExpandedRooms(prev => {
-        const newState: Record<number, boolean> = {};
-        stanzeFiltrate.forEach((s: any) => {
-          newState[s.id] = prev[s.id] ?? false; // Mantieni stato esistente o chiuso
+        // Controlla se ci sono nuove stanze da aggiungere
+        const existingIds = Object.keys(prev).map(k => Number(k));
+        const newRooms = stanzeFiltrate.filter((s: any) => !existingIds.includes(s.id));
+
+        // Se non ci sono nuove stanze, non modificare lo stato
+        if (newRooms.length === 0) return prev;
+
+        // Aggiungi solo le nuove stanze, mantenendo tutto lo stato esistente
+        const newState = { ...prev };
+        newRooms.forEach((s: any) => {
+          newState[s.id] = false; // Nuove stanze iniziano chiuse
         });
         return newState;
       });
@@ -158,28 +159,29 @@ export const Dashboard = () => {
 
   const toggleRoom = (roomId: number) => {
     setExpandedRooms(prev => {
-      const newState = { ...prev };
-      const newValue = !newState[roomId];
+      const isCurrentlyOpen = prev[roomId];
+      const newValue = !isCurrentlyOpen;
 
-      // Caso speciale: "Non assegnati" (id = -1)
+      // Caso speciale: "Non assegnati" (id = -1) si togga da solo
       if (roomId === -1) {
-        newState[-1] = newValue;
-        return newState;
+        return { ...prev, [-1]: newValue };
       }
 
-      if (isMobile) {
-        // Mobile: toggle singola stanza
-        newState[roomId] = newValue;
-      } else {
-        // Desktop: toggle stanze sulla stessa riga (grid 2 colonne)
-        const roomIndex = stanzeFiltrate.findIndex((s: any) => s.id === roomId);
-        const row = Math.floor(roomIndex / 2);
-        const startIndex = row * 2;
-
-        // Toggle entrambe le stanze nella riga
-        if (stanzeFiltrate[startIndex]) newState[stanzeFiltrate[startIndex].id] = newValue;
-        if (stanzeFiltrate[startIndex + 1]) newState[stanzeFiltrate[startIndex + 1].id] = newValue;
+      // Trova l'indice della stanza cliccata
+      const stanzaIndex = stanzeFiltrate.findIndex((s: any) => s.id === roomId);
+      if (stanzaIndex === -1) {
+        return { ...prev, [roomId]: newValue };
       }
+
+      // Calcola quali stanze sono sulla stessa riga (2 per riga su desktop)
+      const rowStart = Math.floor(stanzaIndex / 2) * 2;
+      const stanzeStessaRiga = stanzeFiltrate.slice(rowStart, rowStart + 2);
+
+      // Aggiorna TUTTE le stanze sulla stessa riga con lo stesso valore
+      const newState = { ...prev };
+      stanzeStessaRiga.forEach((s: any) => {
+        newState[s.id] = newValue;
+      });
 
       return newState;
     });
@@ -460,10 +462,10 @@ export const Dashboard = () => {
         {/* Quick Stats Card - RESPONSIVE */}
         <div
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: radius.lg,
-            boxShadow: colors.cardShadowLit,
+            boxShadow: colors.cardShadow,
             padding: spacing.sm,
             position: 'relative',
             overflow: 'hidden',
@@ -618,10 +620,10 @@ export const Dashboard = () => {
         {sceneShortcuts.length > 0 && (
           <div
             style={{
-              background: colors.bgCardLit,
+              background: colors.bgCard,
               border: `1px solid ${colors.border}`,
               borderRadius: '20px',
-              boxShadow: colors.cardShadowLit,
+              boxShadow: colors.cardShadow,
               padding: '10px',
               position: 'relative',
               overflow: 'hidden',
@@ -651,10 +653,10 @@ export const Dashboard = () => {
                       justifyContent: 'center',
                       gap: '3px',
                       padding: '8px 4px',
-                      background: colors.bgCardLit,
+                      background: colors.bgCard,
                       border: executing === scena.id ? `1px solid ${colors.accent}` : `1px solid ${colors.border}`,
                       borderRadius: '14px',
-                      boxShadow: executing === scena.id ? `0 0 12px ${colors.accent}30` : colors.cardShadowLit,
+                      boxShadow: executing === scena.id ? `0 0 12px ${colors.accent}30` : colors.cardShadow,
                       cursor: !canControl ? 'not-allowed' : 'pointer',
                       opacity: !canControl ? 0.5 : 1,
                       position: 'relative',
@@ -718,7 +720,7 @@ export const Dashboard = () => {
             </div>
             <div
               style={{
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 border: `1px solid ${colors.border}`,
                 borderRadius: '16px',
                 padding: '8px 12px',
@@ -765,10 +767,10 @@ export const Dashboard = () => {
                   <div
                     key={stanza.id}
                     style={{
-                      background: colors.bgCardLit,
+                      background: colors.bgCard,
                       border: `1px solid ${colors.border}`,
                       borderRadius: '24px',
-                      boxShadow: devicesOn > 0 ? `0 0 20px ${colors.accent}30` : colors.cardShadowLit,
+                      boxShadow: devicesOn > 0 ? `0 0 20px ${colors.accent}30` : colors.cardShadow,
                       overflow: 'hidden',
                       position: 'relative',
                     }}
@@ -879,10 +881,10 @@ export const Dashboard = () => {
               {unassignedDevices.length > 0 && (
                 <div
                   style={{
-                    background: colors.bgCardLit,
+                    background: colors.bgCard,
                     border: `1px solid ${colors.border}`,
                     borderRadius: '24px',
-                    boxShadow: colors.cardShadowLit,
+                    boxShadow: colors.cardShadow,
                     overflow: 'hidden',
                     position: 'relative',
                   }}
@@ -980,10 +982,10 @@ export const Dashboard = () => {
         {!impiantoCorrente && (
           <div
             style={{
-              background: colors.bgCardLit,
+              background: colors.bgCard,
               border: `1px solid ${colors.border}`,
               borderRadius: '28px',
-              boxShadow: colors.cardShadowLit,
+              boxShadow: colors.cardShadow,
               padding: '32px',
               textAlign: 'center',
               position: 'relative',

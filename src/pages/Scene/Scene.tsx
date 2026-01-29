@@ -5,6 +5,7 @@ import { Modal } from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SceneList } from '@/components/scene/SceneList';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
@@ -17,7 +18,8 @@ import {
   RiAddLine, RiPlayLine, RiLoader4Line, RiLightbulbLine, RiCheckLine, RiShutDownLine,
   RiFlashlightLine, RiSunLine, RiMoonLine, RiDoorOpenLine, RiHandHeartLine, RiFilmLine,
   RiSunFoggyLine, RiMoonClearLine, RiHome4Line, RiFireLine, RiSnowflakeLine,
-  RiCupLine, RiHotelBedLine, RiTvLine, RiMusic2Line, RiShieldLine, RiHeartLine
+  RiCupLine, RiHotelBedLine, RiTvLine, RiMusic2Line, RiShieldLine, RiHeartLine,
+  RiDeleteBinLine
 } from 'react-icons/ri';
 import { toast } from '@/utils/toast';
 import type { ScheduleConfig } from '@/types';
@@ -115,6 +117,8 @@ export const Scene = () => {
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedSceneForSchedule, setSelectedSceneForSchedule] = useState<any | null>(null);
   const [newScene, setNewScene] = useState({ nome: '', icona: 'zap', azioni: [] as any[] });
+  const [showDeleteScenaConfirm, setShowDeleteScenaConfirm] = useState(false);
+  const [scenaToDelete, setScenaToDelete] = useState<number | null>(null);
   const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>({
     enabled: false,
     time: '18:00',
@@ -196,11 +200,17 @@ export const Scene = () => {
     }
   };
 
-  const handleDeleteScene = async (id: number) => {
-    if (!confirm('Eliminare la scena?')) return;
+  const handleDeleteScene = (id: number) => {
+    setScenaToDelete(id);
+    setShowDeleteScenaConfirm(true);
+  };
+
+  const confirmDeleteScena = async () => {
+    if (!scenaToDelete) return;
     try {
-      await sceneApi.deleteScena(id);
+      await sceneApi.deleteScena(scenaToDelete);
       toast.success('Eliminata');
+      setScenaToDelete(null);
       // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error('Errore');
@@ -633,6 +643,19 @@ export const Scene = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Confirm Popup - Elimina Scena */}
+      <ConfirmPopup
+        isOpen={showDeleteScenaConfirm}
+        onClose={() => { setShowDeleteScenaConfirm(false); setScenaToDelete(null); }}
+        onConfirm={confirmDeleteScena}
+        title="Elimina Scena"
+        message="Sei sicuro di voler eliminare questa scena? L'azione non può essere annullata."
+        confirmText="Elimina"
+        cancelText="Annulla"
+        confirmVariant="danger"
+        icon={<RiDeleteBinLine size={20} />}
+      />
     </Layout>
   );
 };

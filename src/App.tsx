@@ -40,6 +40,7 @@ const StylePreview = lazy(() => import('@/pages/StylePreview/StylePreview').then
 const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
 const Notifiche = lazy(() => import('@/pages/Notifiche').then(m => ({ default: m.Notifiche })));
+const GestioneAdmin = lazy(() => import('@/pages/Settings/GestioneAdmin').then(m => ({ default: m.GestioneAdmin })));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -181,6 +182,7 @@ function App() {
                 <Route path="/settings/guida" element={<ProtectedRoute><Guida /></ProtectedRoute>} />
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
+                <Route path="/settings/admin" element={<RoleRoute allowedRoles={[UserRole.ADMIN]}><GestioneAdmin /></RoleRoute>} />
                 <Route path="/setup" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><SetupWizard /></RoleRoute>} />
                 <Route path="/" element={<Navigate to="/dashboard" />} />
                 <Route path="*" element={<Navigate to="/dashboard" />} />

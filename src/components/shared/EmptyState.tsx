@@ -10,10 +10,12 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 
 // Colori base (invarianti)
 const baseColors = {
+  bgCard: '#1e1c18',
   bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
   textPrimary: '#ffffff',
   textSecondary: 'rgba(255, 255, 255, 0.75)',
   textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
   cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
 };
 
@@ -47,10 +49,10 @@ export const EmptyState = ({ icon: Icon, title, description, actionLabel, onActi
   return (
     <div
       style={{
-        background: colors.bgCardLit,
+        background: colors.bgCard,
         border: `1px solid ${colors.border}`,
         borderRadius: '28px',
-        boxShadow: colors.cardShadowLit,
+        boxShadow: colors.cardShadow,
         position: 'relative',
         overflow: 'hidden',
         padding: '48px 24px',

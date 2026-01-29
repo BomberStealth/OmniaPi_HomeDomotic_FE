@@ -39,18 +39,14 @@ interface CondivisioniState {
   clear: () => void;
 }
 
-export const useCondivisioniStore = create<CondivisioniState>((set, get) => ({
+export const useCondivisioniStore = create<CondivisioniState>((set) => ({
   condivisioni: [],
   loading: false,
   error: null,
   currentImpiantoId: null,
 
   fetchCondivisioni: async (impiantoId: number) => {
-    // Evita fetch se già caricato per questo impianto
-    if (get().currentImpiantoId === impiantoId && get().condivisioni.length > 0) {
-      return;
-    }
-
+    // RIMOSSO check cache - causa problemi di sync con WebSocket
     set({ loading: true, error: null, currentImpiantoId: impiantoId });
     try {
       const response = await condivisioniApi.getCondivisioni(impiantoId);
@@ -84,12 +80,21 @@ export const useCondivisioniStore = create<CondivisioniState>((set, get) => ({
   },
 
   updateCondivisione: (condivisione: Condivisione) => {
-    set((state) => ({
-      condivisioni: state.condivisioni.map((c) =>
-        c.id === condivisione.id ? { ...c, ...condivisione } : c
-      ),
-    }));
-    console.log('[CondivisioniStore] updateCondivisione:', condivisione.id, condivisione.stato);
+    set((state) => {
+      const exists = state.condivisioni.some((c) => c.id === condivisione.id);
+      if (!exists) {
+        // Se non esiste, aggiungilo (potrebbe essere arrivato via WS prima del fetch)
+        console.log('[CondivisioniStore] updateCondivisione: non trovato, aggiungo', condivisione.id);
+        return { condivisioni: [...state.condivisioni, condivisione] };
+      }
+      // Se esiste, aggiorna
+      console.log('[CondivisioniStore] updateCondivisione:', condivisione.id, condivisione.stato);
+      return {
+        condivisioni: state.condivisioni.map((c) =>
+          c.id === condivisione.id ? { ...c, ...condivisione } : c
+        ),
+      };
+    });
   },
 
   removeCondivisione: (condivisioneId: number) => {

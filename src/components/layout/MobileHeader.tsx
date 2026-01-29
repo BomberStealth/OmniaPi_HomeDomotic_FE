@@ -57,7 +57,7 @@ export const MobileHeader = () => {
     <div
       className="md:hidden flex-shrink-0"
       style={{
-        background: colors.bgCardLit,
+        background: colors.bgCard,
         borderBottom: `1px solid ${colors.border}`,
         boxShadow: colors.cardShadow,
         paddingTop: 'env(safe-area-inset-top, 0px)',

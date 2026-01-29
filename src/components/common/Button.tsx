@@ -55,14 +55,14 @@ export const Button = ({
         };
       case 'secondary':
         return {
-          background: modeColors.bgCardLit,
+          background: modeColors.bgCard,
           color: themeColors.accentLight,
           border: `1px solid ${themeColors.accent}`,
           boxShadow: modeColors.cardShadow,
         };
       case 'ghost':
         return {
-          background: modeColors.bgCardLit,
+          background: modeColors.bgCard,
           color: modeColors.textPrimary,
           border: `1px solid rgba(${accentRgb}, 0.15)`,
           boxShadow: modeColors.cardShadow,
@@ -76,10 +76,10 @@ export const Button = ({
         };
       case 'glass':
         return {
-          background: modeColors.bgCardLit,
+          background: modeColors.bgCard,
           color: modeColors.textSecondary,
           border: `1px solid rgba(${accentRgb}, 0.15)`,
-          boxShadow: modeColors.cardShadowLit,
+          boxShadow: modeColors.cardShadow,
           backdropFilter: 'blur(12px)',
         };
       default:

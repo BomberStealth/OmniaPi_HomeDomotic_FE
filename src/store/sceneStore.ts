@@ -30,6 +30,7 @@ interface SceneState {
   removeScena: (scenaId: number) => void;
   setScene: (scene: Scena[]) => void;
   markExecuted: (scenaId: number) => void;
+  clear: () => void;
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
@@ -85,5 +86,9 @@ export const useSceneStore = create<SceneState>((set) => ({
         s.id === scenaId ? { ...s, lastExecuted: new Date().toISOString() } : s
       ),
     }));
+  },
+
+  clear: () => {
+    set({ scene: [], loading: false, error: null });
   },
 }));

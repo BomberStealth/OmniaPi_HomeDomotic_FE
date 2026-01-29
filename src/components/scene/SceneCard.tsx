@@ -78,13 +78,13 @@ const SceneCardComponent = ({ scena, executing, onExecute, onDelete, onSchedule,
         }}
         style={{
           background: executing
-            ? `linear-gradient(165deg, ${colors.accent}15, ${colors.bgCard})`
-            : colors.bgCardLit,
+            ? `${colors.accent}15`
+            : colors.bgCard,
           border: `1px solid ${executing ? colors.accent : colors.border}`,
           borderRadius: '20px',
           boxShadow: executing
-            ? `0 0 20px ${colors.accent}30, ${colors.cardShadowLit}`
-            : colors.cardShadowLit,
+            ? `0 0 20px ${colors.accent}30, ${colors.cardShadow}`
+            : colors.cardShadow,
           position: 'relative',
           overflow: 'hidden',
           padding: '10px',

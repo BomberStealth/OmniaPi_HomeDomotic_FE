@@ -82,10 +82,10 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
           >
             <div
               style={{
-                background: colors.bgCardLit,
+                background: colors.bgCard,
                 border: `1px solid ${colors.border}`,
                 borderRadius: '28px',
-                boxShadow: colors.cardShadowLit,
+                boxShadow: colors.cardShadow,
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',

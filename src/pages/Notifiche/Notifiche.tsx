@@ -70,10 +70,10 @@ export const Notifiche = () => {
 
   // Stile base card
   const cardStyle = {
-    background: colors.bgCardLit,
+    background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '16px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };

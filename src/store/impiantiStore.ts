@@ -19,6 +19,7 @@ interface ImpiantiState {
   setImpiantoCorrente: (impianto: Impianto | null) => void;
   removeImpianto: (id: number) => void;
   initializeSelection: () => void;
+  clear: () => void;
 }
 
 export const useImpiantiStore = create<ImpiantiState>((set, get) => ({
@@ -114,5 +115,16 @@ export const useImpiantiStore = create<ImpiantiState>((set, get) => ({
 
     // Default: primo impianto
     set({ impiantoCorrente: impianti[0], initialized: true });
-  }
+  },
+
+  // Reset completo dello store (usato al logout)
+  clear: () => {
+    localStorage.removeItem(STORAGE_KEY);
+    set({
+      impianti: [],
+      impiantoCorrente: null,
+      isLoading: false,
+      initialized: false,
+    });
+  },
 }));

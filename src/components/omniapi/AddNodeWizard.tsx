@@ -171,7 +171,7 @@ export const AddNodeWizard = ({ isOpen, onClose, onNodeAdded }: AddNodeWizardPro
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: colors.bgCardLit,
+            background: colors.bgCard,
             border: `1px solid ${colors.border}`,
             borderRadius: '24px',
             width: '100%',

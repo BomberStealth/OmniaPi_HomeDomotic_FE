@@ -3,7 +3,8 @@ import { Layout } from '@/components/layout/Layout';
 import { Toggle } from '@/components/common/Toggle';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor, colorThemes, ColorTheme, ThemeMode } from '@/contexts/ThemeColorContext';
-import { RiUserLine, RiNotification3Line, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine } from 'react-icons/ri';
+import { RiUserLine, RiNotification3Line, RiMailLine, RiArrowRightSLine, RiLogoutBoxLine, RiInformationLine, RiQuestionLine, RiSmartphoneLine, RiPaletteLine, RiCheckLine, RiLockLine, RiLoader4Line, RiCheckboxCircleLine, RiSunLine, RiMoonLine, RiFlashlightLine, RiShieldUserLine, RiToolsLine, RiAdminLine } from 'react-icons/ri';
+import { UserRole } from '@/types';
 import { APP_VERSION } from '@/config/version';
 import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { toast } from '@/utils/toast';
@@ -38,12 +39,12 @@ export const Settings = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   };
 
-  // Stile base card (dinamico)
+  // Stile base card (dinamico) - usa bgCard (solid) invece di bgCardLit (gradient) per evitare errori framer-motion
   const cardStyle = {
-    background: colors.bgCardLit,
+    background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };
@@ -78,6 +79,21 @@ export const Settings = () => {
     logout();
     navigate('/login');
   };
+
+  // Icona account in base al ruolo
+  const getAccountIcon = () => {
+    const ruolo = user?.ruolo?.toLowerCase() || '';
+
+    if (ruolo === 'admin') {
+      return RiShieldUserLine;
+    }
+    if (ruolo === 'installatore') {
+      return RiToolsLine;
+    }
+    return RiUserLine; // Proprietario/ospite o default
+  };
+
+  const AccountIcon = getAccountIcon();
 
   // Setting Row Component
   const SettingRow = ({
@@ -195,7 +211,7 @@ export const Settings = () => {
                 flexShrink: 0,
               }}
             >
-              <RiUserLine size={24} style={{ color: colors.accent }} />
+              <AccountIcon size={24} style={{ color: colors.accent }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 style={{
@@ -549,6 +565,17 @@ export const Settings = () => {
                 title="App Installata"
                 subtitle="Stai usando l'app installata"
                 showArrow={false}
+              />
+            )}
+
+            {/* Gestione Admin - solo per admin */}
+            {user?.ruolo === UserRole.ADMIN && (
+              <SettingRow
+                icon={RiAdminLine}
+                iconBg={`${colors.warning}20`}
+                title="Gestione Admin"
+                subtitle="Accedi a qualsiasi impianto"
+                onClick={() => navigate('/settings/admin')}
               />
             )}
           </div>

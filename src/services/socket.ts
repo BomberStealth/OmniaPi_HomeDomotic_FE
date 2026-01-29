@@ -281,8 +281,8 @@ class SocketService {
       { event: 'scena-update', type: 'LEGACY_SCENA_UPDATE' },
       // Dispositivi
       { event: 'dispositivo-update', type: 'LEGACY_DISPOSITIVO_UPDATE' },
-      // Condivisioni
-      { event: 'condivisione-update', type: 'LEGACY_CONDIVISIONE_UPDATE' },
+      // Condivisioni - RIMOSSO: ora usa ws-event, legacy causava duplicati
+      // { event: 'condivisione-update', type: 'LEGACY_CONDIVISIONE_UPDATE' },
       // Gateway
       { event: 'gateway-update', type: 'LEGACY_GATEWAY_UPDATE' },
       // Omniapi nodes

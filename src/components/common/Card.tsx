@@ -65,12 +65,12 @@ export const Card = ({
       ? (isDarkMode
           ? `linear-gradient(165deg, ${colors.activeBg}, #1e1c18)`
           : `linear-gradient(165deg, ${colors.activeBg}, #ffffff)`)
-      : modeColors.bgCardLit,
+      : modeColors.bgCard,
     border: `1px solid ${isActive ? colors.borderActive : modeColors.border}`,
     borderRadius: radius.xl,
     boxShadow: isActive
       ? colors.activeShadow
-      : modeColors.cardShadowLit,
+      : modeColors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden',
   };

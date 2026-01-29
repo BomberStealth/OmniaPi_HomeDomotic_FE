@@ -93,6 +93,7 @@ export default defineConfig({
     }
   },
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         // Force unique hashes every build

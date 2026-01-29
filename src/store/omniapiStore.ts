@@ -28,6 +28,7 @@ interface OmniapiState {
   updateNodes: (nodes: OmniapiNode[]) => void;
   updateLedDevice: (ledDevice: LedDevice) => void;
   setLedDevices: (devices: LedDevice[]) => void;
+  clear: () => void;
 }
 
 export const useOmniapiStore = create<OmniapiState>((set, get) => ({
@@ -140,5 +141,9 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
 
   setLedDevices: (devices) => {
     set({ ledDevices: devices });
+  },
+
+  clear: () => {
+    set({ gateway: null, nodes: [], ledDevices: [], isLoading: false, error: null });
   },
 }));

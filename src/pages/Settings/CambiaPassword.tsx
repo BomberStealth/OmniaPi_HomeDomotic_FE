@@ -14,10 +14,12 @@ import { api } from '@/services/api';
 // ============================================
 
 const baseColors = {
+  bgCard: '#1e1c18', // Solid color per motion elements (evita errori framer-motion)
   bgCardLit: 'linear-gradient(165deg, #2a2722 0%, #1e1c18 50%, #1a1816 100%)',
   textPrimary: '#ffffff',
   textSecondary: 'rgba(255, 255, 255, 0.75)',
   textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
   cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
   error: '#ef4444',
   success: '#22c55e',
@@ -51,10 +53,10 @@ export const CambiaPassword = () => {
   };
 
   const cardStyle = {
-    background: colors.bgCardLit,
+    background: colors.bgCard, // Solid color per evitare errori framer-motion
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };

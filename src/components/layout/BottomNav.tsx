@@ -55,16 +55,31 @@ export const BottomNav = () => {
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
+  // Handler navigazione - evita ri-navigare se già sulla stessa pagina
+  const handleNavClick = (path: string) => {
+    if (location.pathname.startsWith(path)) {
+      return; // Già su questa sezione, non fare nulla
+    }
+    navigate(path);
+  };
+
   return (
     <nav
-      className="flex-shrink-0 md:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="md:hidden"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
     >
       <div
         className="flex items-center justify-around relative overflow-hidden"
         style={{
           padding: `${spacing.xs} ${spacing.md}`,
-          background: colors.bgCardLit,
+          background: colors.bgCard,
           borderTop: `1px solid ${colors.border}`,
           backdropFilter: 'blur(20px)',
           boxShadow: '0 -8px 32px rgba(0, 0, 0, 0.5), 0 -2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
@@ -87,7 +102,7 @@ export const BottomNav = () => {
           return (
             <div
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavClick(item.path)}
               className="transition-all flex flex-col items-center gap-0.5 cursor-pointer"
               style={{
                 padding: spacing.xs,

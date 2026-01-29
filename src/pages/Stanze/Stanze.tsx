@@ -3,13 +3,16 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/common/Button';
 import { Modal } from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useStanzeStore } from '@/store/stanzeStore';
 import { useDispositiviStore } from '@/store/dispositiviStore';
+import { useUpdateTrigger } from '@/store/updateTriggerStore';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { stanzeApi, tasmotaApi } from '@/services/api';
 import { motion } from 'framer-motion';
 import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
+import { Trash2 } from 'lucide-react';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { ROOM_ICON_OPTIONS, getRoomIcon, DEFAULT_ROOM_ICON } from '@/config/roomIcons';
@@ -37,6 +40,9 @@ export const Stanze = () => {
   const { stanze, loading: stanzeLoading } = useStanzeStore();
   const { dispositivi, loading: dispositiviLoading } = useDispositiviStore();
 
+  // Trigger globale per forzare re-render su eventi WebSocket
+  useUpdateTrigger((state) => state.trigger);
+
   // Permessi utente - filtra stanze in base a stanze_abilitate
   const { permessi, loading: permessiLoading } = usePermessiImpianto(impiantoCorrente?.id || null);
 
@@ -63,6 +69,10 @@ export const Stanze = () => {
   const [newStanza, setNewStanza] = useState({ nome: '', icona: DEFAULT_ROOM_ICON });
   const [newDeviceName, setNewDeviceName] = useState('');
   const [editStanza, setEditStanza] = useState({ nome: '', icona: '' });
+  const [showDeleteDeviceConfirm, setShowDeleteDeviceConfirm] = useState(false);
+  const [dispositivoIdToDelete, setDispositivoIdToDelete] = useState<number | null>(null);
+  const [showDeleteStanzaConfirm, setShowDeleteStanzaConfirm] = useState(false);
+  const [stanzaIdToDelete, setStanzaIdToDelete] = useState<number | null>(null);
 
   const impiantoId = impiantoCorrente?.id || 0;
   // IMPORTANTE: include permessiLoading per evitare race condition (mostrare tutte le stanze prima che i permessi siano caricati)
@@ -94,13 +104,21 @@ export const Stanze = () => {
     }
   };
 
-  const handleDeleteStanza = async () => {
-    if (!selectedStanza) return;
+  const handleDeleteStanza = () => {
+    if (!selectedStanza?.id) return;
+    // Cattura l'ID PRIMA di aprire il popup per evitare race condition
+    setStanzaIdToDelete(selectedStanza.id);
+    setShowDeleteStanzaConfirm(true);
+  };
+
+  const confirmDeleteStanza = async () => {
+    if (!stanzaIdToDelete) return;
     try {
-      await stanzeApi.deleteStanza(selectedStanza.id);
+      await stanzeApi.deleteStanza(stanzaIdToDelete);
       toast.success('Stanza eliminata!');
       setSettingsModalOpen(false);
       setSelectedStanza(null);
+      setStanzaIdToDelete(null);
       // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
@@ -181,14 +199,21 @@ export const Stanze = () => {
     }
   };
 
-  const handleDeleteDispositivo = async () => {
-    if (!selectedDispositivo) return;
-    if (!confirm(`Eliminare "${selectedDispositivo.nome}"?`)) return;
+  const handleDeleteDispositivo = () => {
+    if (!selectedDispositivo?.id) return;
+    // Cattura l'ID PRIMA di aprire il popup per evitare race condition
+    setDispositivoIdToDelete(selectedDispositivo.id);
+    setShowDeleteDeviceConfirm(true);
+  };
+
+  const confirmDeleteDispositivo = async () => {
+    if (!dispositivoIdToDelete) return;
     try {
-      await tasmotaApi.deleteDispositivo(selectedDispositivo.id);
+      await tasmotaApi.deleteDispositivo(dispositivoIdToDelete);
       toast.success('Dispositivo eliminato!');
       setDeviceActionModalOpen(false);
       setSelectedDispositivo(null);
+      setDispositivoIdToDelete(null);
       // WebSocket aggiornerà automaticamente lo store
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'eliminazione');
@@ -290,10 +315,10 @@ export const Stanze = () => {
         ) : !impiantoId ? (
           <div
             style={{
-              background: colors.bgCardLit,
+              background: colors.bgCard,
               border: `1px solid ${colors.border}`,
               borderRadius: '24px',
-              boxShadow: colors.cardShadowLit,
+              boxShadow: colors.cardShadow,
               padding: '32px',
               textAlign: 'center',
             }}
@@ -308,10 +333,10 @@ export const Stanze = () => {
             {dispositiviNonAssegnati.length > 0 && (
               <div
                 style={{
-                  background: colors.bgCardLit,
+                  background: colors.bgCard,
                   border: `1px solid ${colors.border}`,
                   borderRadius: '20px',
-                  boxShadow: colors.cardShadowLit,
+                  boxShadow: colors.cardShadow,
                   padding: '10px',
                   position: 'relative',
                   overflow: 'hidden',
@@ -374,10 +399,10 @@ export const Stanze = () => {
             {stanzeValide.length === 0 ? (
               <div
                 style={{
-                  background: colors.bgCardLit,
+                  background: colors.bgCard,
                   border: `1px solid ${colors.border}`,
                   borderRadius: '24px',
-                  boxShadow: colors.cardShadowLit,
+                  boxShadow: colors.cardShadow,
                   padding: '32px',
                   textAlign: 'center',
                 }}
@@ -397,10 +422,10 @@ export const Stanze = () => {
                   <div
                     key={stanza.id}
                     style={{
-                      background: colors.bgCardLit,
+                      background: colors.bgCard,
                       border: `1px solid ${colors.border}`,
                       borderRadius: '20px',
-                      boxShadow: colors.cardShadowLit,
+                      boxShadow: colors.cardShadow,
                       padding: '10px',
                       position: 'relative',
                       overflow: 'hidden',
@@ -477,10 +502,13 @@ export const Stanze = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
               {ROOM_ICON_OPTIONS.map((opt) => {
                 const Icon = getRoomIcon(opt.id);
+                // Lista nomi predefiniti per auto-aggiornamento
+                const predefinedNames = ROOM_ICON_OPTIONS.map(o => o.label);
+                const shouldUpdateName = !newStanza.nome || predefinedNames.includes(newStanza.nome);
                 return (
                   <motion.button
                     key={opt.id}
-                    onClick={() => setNewStanza({ nome: newStanza.nome || opt.label, icona: opt.id })}
+                    onClick={() => setNewStanza({ nome: shouldUpdateName ? opt.label : newStanza.nome, icona: opt.id })}
                     style={{
                       padding: '12px 8px',
                       display: 'flex',
@@ -714,10 +742,13 @@ export const Stanze = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
               {ROOM_ICON_OPTIONS.map((opt) => {
                 const Icon = getRoomIcon(opt.id);
+                // Lista nomi predefiniti per auto-aggiornamento
+                const predefinedNames = ROOM_ICON_OPTIONS.map(o => o.label);
+                const shouldUpdateName = !editStanza.nome || predefinedNames.includes(editStanza.nome);
                 return (
                   <motion.button
                     key={opt.id}
-                    onClick={() => setEditStanza({ nome: editStanza.nome || opt.label, icona: opt.id })}
+                    onClick={() => setEditStanza({ nome: shouldUpdateName ? opt.label : editStanza.nome, icona: opt.id })}
                     style={{
                       padding: '12px 8px',
                       display: 'flex',
@@ -745,6 +776,30 @@ export const Stanze = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Confirm Delete Dispositivo */}
+      <ConfirmPopup
+        isOpen={showDeleteDeviceConfirm}
+        onClose={() => { setShowDeleteDeviceConfirm(false); setDispositivoIdToDelete(null); }}
+        onConfirm={confirmDeleteDispositivo}
+        title="Elimina Dispositivo"
+        message={`Sei sicuro di voler eliminare "${selectedDispositivo?.nome}"? L'azione non può essere annullata.`}
+        confirmText="Elimina"
+        confirmVariant="danger"
+        icon={<Trash2 size={20} />}
+      />
+
+      {/* Confirm Delete Stanza */}
+      <ConfirmPopup
+        isOpen={showDeleteStanzaConfirm}
+        onClose={() => { setShowDeleteStanzaConfirm(false); setStanzaIdToDelete(null); }}
+        onConfirm={confirmDeleteStanza}
+        title="Elimina Stanza"
+        message={`Sei sicuro di voler eliminare "${selectedStanza?.nome}"? L'azione non può essere annullata.`}
+        confirmText="Elimina"
+        confirmVariant="danger"
+        icon={<RiDeleteBinLine size={20} />}
+      />
     </Layout>
   );
 };

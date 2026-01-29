@@ -80,11 +80,19 @@ export const Sidebar = () => {
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
+  // Handler navigazione - evita ri-navigare se già sulla stessa pagina
+  const handleNavClick = (path: string) => {
+    if (location.pathname.startsWith(path)) {
+      return; // Già su questa sezione, non fare nulla
+    }
+    navigate(path);
+  };
+
   return (
     <aside
       className="w-64 h-screen p-4 flex flex-col relative overflow-hidden"
       style={{
-        background: colors.bgCardLit,
+        background: colors.bgCard,
         borderRight: `1px solid ${colors.border}`,
         boxShadow: colors.cardShadow,
       }}
@@ -136,7 +144,7 @@ export const Sidebar = () => {
           return (
             <div
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavClick(item.path)}
               className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer"
               style={{
                 borderRadius: '20px',

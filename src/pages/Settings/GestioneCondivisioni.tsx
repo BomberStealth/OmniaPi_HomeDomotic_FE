@@ -6,6 +6,7 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useCondivisioniStore, Condivisione } from '@/store/condivisioniStore';
+import { useUpdateTrigger } from '@/store/updateTriggerStore';
 import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { condivisioniApi, stanzeApi } from '@/services/api';
 import { toast } from '@/utils/toast';
@@ -61,8 +62,15 @@ export const GestioneCondivisioni = () => {
     impiantoCorrente?.installatore_id === user?.id;
 
   // Condivisioni dal store (aggiornate via WebSocket automaticamente)
-  const { condivisioni, loading, fetchCondivisioni } = useCondivisioniStore();
+  // Usa selettori separati per garantire re-render quando lo stato cambia
+  const condivisioni = useCondivisioniStore((state) => state.condivisioni);
+  const loading = useCondivisioniStore((state) => state.loading);
+  const fetchCondivisioni = useCondivisioniStore((state) => state.fetchCondivisioni);
   const [deleting, setDeleting] = useState<number | null>(null);
+
+  // Sottoscrizione globale per forzare re-render quando arrivano eventi WebSocket
+  // Il semplice fatto di leggere 'trigger' causa re-render quando cambia
+  useUpdateTrigger((state) => state.trigger);
 
   // Modal invito
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -107,12 +115,12 @@ export const GestioneCondivisioni = () => {
     borderHover: `rgba(${hexToRgb(themeColors.accent)}, 0.35)`,
   };
 
-  // Stile base card
+  // Stile base card - usa bgCard (solid) invece di bgCardLit (gradient) per evitare errori framer-motion
   const cardStyle = {
-    background: colors.bgCardLit,
+    background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };
@@ -127,9 +135,11 @@ export const GestioneCondivisioni = () => {
     pointerEvents: 'none' as const,
   };
 
-  // Carica condivisioni tramite store
+  // Carica condivisioni tramite store - forza sempre il fetch
   useEffect(() => {
     if (impiantoCorrente?.id) {
+      // Forza sempre il fetch, non usare cache
+      useCondivisioniStore.getState().clear();
       fetchCondivisioni(impiantoCorrente.id);
     }
   }, [impiantoCorrente?.id, fetchCondivisioni]);
@@ -1019,11 +1029,11 @@ export const GestioneCondivisioni = () => {
                   maxWidth: '400px',
                   maxHeight: '90vh',
                   overflowY: 'auto',
-                  background: colors.bgCardLit,
+                  background: colors.bgCard,
                   borderRadius: '20px',
                   padding: '20px',
                   border: `1px solid ${colors.border}`,
-                  boxShadow: colors.cardShadowLit,
+                  boxShadow: colors.cardShadow,
                   pointerEvents: 'auto',
                   overscrollBehavior: 'contain',  // Previene pull-to-refresh
                   touchAction: 'pan-y'  // Permette solo scroll verticale interno
@@ -1466,7 +1476,7 @@ export const GestioneCondivisioni = () => {
                     border: 'none',
                     cursor: 'pointer'
                   }}
-                  whileHover={{ background: colors.bgCardLit }}
+                  whileHover={{ background: `${colors.textMuted}20` }}
                   whileTap={{ scale: 0.95 }}
                 >
                   <RiCloseLine size={20} style={{ color: colors.textMuted }} />

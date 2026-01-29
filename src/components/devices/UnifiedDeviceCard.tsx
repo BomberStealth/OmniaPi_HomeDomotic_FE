@@ -1453,10 +1453,10 @@ const UnifiedDeviceCardComponent = ({
       <div
         style={{
           padding: cardPadding,
-          background: colors.bgCardLit,
+          background: colors.bgCard,
           border: `1px solid ${colors.border}`,
           borderRadius: variant === 'mini' ? '16px' : '20px',
-          boxShadow: colors.cardShadowLit,
+          boxShadow: colors.cardShadow,
           position: 'relative',
           overflow: 'hidden',
           width: '100%',
@@ -1525,17 +1525,17 @@ const UnifiedDeviceCardComponent = ({
     <motion.div
       style={{
         background: bloccato
-          ? colors.bgCardLit
+          ? colors.bgCard
           : isOn
-            ? `linear-gradient(165deg, ${activeColor}12, ${colors.bgCard})`
-            : colors.bgCardLit,
+            ? `${activeColor}12`
+            : colors.bgCard,
         border: `1px solid ${bloccato ? 'rgba(100, 100, 100, 0.3)' : isOn ? activeColor : colors.border}`,
         borderRadius: variant === 'mini' ? '16px' : '20px',
         boxShadow: bloccato
           ? 'none'
           : isOn
             ? `0 4px 20px ${activeColor}20, ${colors.cardShadow}`
-            : colors.cardShadowLit,
+            : colors.cardShadow,
         opacity: bloccato ? 0.6 : 1,
         position: 'relative',
         overflow: 'hidden',
@@ -1600,7 +1600,7 @@ const UnifiedDeviceCardComponent = ({
                 ? isLed
                   ? 'rgba(30, 30, 30, 0.6)'  // Dark bg to show LED color
                   : `linear-gradient(145deg, ${colors.accent}30, ${colors.accent}15)`
-                : `${colors.textMuted}10`,
+                : 'rgba(128, 128, 128, 0.1)', // Off state - neutral gray at 10%
             borderRadius: variant === 'mini' ? '10px' : '14px',
             boxShadow: isOn && !bloccato
               ? `0 2px 8px ${activeColor}40`

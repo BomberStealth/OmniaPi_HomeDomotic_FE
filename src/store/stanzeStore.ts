@@ -24,6 +24,7 @@ interface StanzeState {
   updateStanza: (stanza: Stanza) => void;
   removeStanza: (stanzaId: number) => void;
   setStanze: (stanze: Stanza[]) => void;
+  clear: () => void;
 }
 
 export const useStanzeStore = create<StanzeState>((set) => ({
@@ -43,7 +44,13 @@ export const useStanzeStore = create<StanzeState>((set) => ({
   },
 
   addStanza: (stanza: Stanza) => {
-    set((state) => ({ stanze: [...state.stanze, stanza] }));
+    set((state) => {
+      // Evita duplicati controllando se esiste già una stanza con lo stesso ID
+      if (state.stanze.some((s) => s.id === stanza.id)) {
+        return state; // Non modificare lo stato se già esiste
+      }
+      return { stanze: [...state.stanze, stanza] };
+    });
   },
 
   updateStanza: (stanza: Stanza) => {
@@ -60,5 +67,9 @@ export const useStanzeStore = create<StanzeState>((set) => ({
 
   setStanze: (stanze: Stanza[]) => {
     set({ stanze });
+  },
+
+  clear: () => {
+    set({ stanze: [], loading: false, error: null });
   },
 }));

@@ -60,6 +60,7 @@ const baseColors = {
   textPrimary: '#ffffff',
   textSecondary: 'rgba(255, 255, 255, 0.75)',
   textMuted: 'rgba(255, 255, 255, 0.5)',
+  cardShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)',
   cardShadowLit: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
   success: '#22c55e',
   danger: '#ef4444',
@@ -118,7 +119,7 @@ export const PermessiImpianto = () => {
     background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };

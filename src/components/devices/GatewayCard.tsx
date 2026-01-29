@@ -56,10 +56,10 @@ export const GatewayCard = memo(({
 
   // Stile card
   const cardStyle = useMemo(() => ({
-    background: colors.bgCardLit,
+    background: colors.bgCard,
     border: `1px solid ${colors.border}`,
     borderRadius: '20px',
-    boxShadow: colors.cardShadowLit,
+    boxShadow: colors.cardShadow,
     padding: '16px',
     position: 'relative' as const,
     overflow: 'hidden' as const,
