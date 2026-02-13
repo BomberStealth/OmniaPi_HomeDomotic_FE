@@ -97,10 +97,12 @@ export const usePermessiImpianto = (impiantoId: number | null) => {
       }
     };
 
-    socketService.onNotification(handleNotification);
+    // Listen via getSocket() diretto — onNotification rimosso nel refactor v2.4.0
+    const socket = socketService.getSocket();
+    socket?.on('notification', handleNotification);
 
     return () => {
-      socketService.offNotification();
+      socket?.off('notification', handleNotification);
     };
   }, [impiantoId]);
 

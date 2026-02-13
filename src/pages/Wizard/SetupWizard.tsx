@@ -5,61 +5,72 @@ import Particles, { initParticlesEngine } from '@tsparticles/react';
 import { loadSlim } from '@tsparticles/slim';
 import { Button } from '@/components/common/Button';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
+import { StepPreStep } from '@/components/wizard/StepPreStep';
 import { StepImpianto } from '@/components/wizard/StepImpianto';
 import { StepGateway } from '@/components/wizard/StepGateway';
-import { StepGatewayConnected } from '@/components/wizard/StepGatewayConnected';
 import { StepDispositivi } from '@/components/wizard/StepDispositivi';
 import { StepCompleto } from '@/components/wizard/StepCompleto';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
-import { RiHome4Line, RiRouterLine, RiCheckboxCircleLine, RiDeviceLine, RiTrophyLine, RiSparklingLine, RiRefreshLine, RiLogoutBoxLine } from 'react-icons/ri';
+import { RiHome4Line, RiSearchLine, RiDeviceLine, RiTrophyLine, RiSparklingLine, RiRefreshLine, RiLogoutBoxLine, RiCheckboxCircleLine } from 'react-icons/ri';
 
 // ============================================
-// SETUP WIZARD - Anno 3050 Edition 🚀
-// Con particelle fluttuanti e animazioni WOW
+// SETUP WIZARD v2.0.0
+// Flusso: Pre-step + 4 step
+//   Step 0: "Il gateway è già in rete?"
+//   Step 1: Dati Impianto
+//   Step 2: Cerca e Seleziona Gateway
+//   Step 3: Aggiungi Dispositivi (skippabile)
+//   Step 4: Riepilogo + Completamento (tutte le API qui)
 // ============================================
 
 const STORAGE_KEY = 'omniapi_setup_wizard';
 
+export interface SelectedNode {
+  mac: string;
+  name: string;
+  type?: string;
+}
+
 export interface WizardState {
   currentStep: number;
+  // Pre-step
+  gatewayAlreadyConnected: boolean;
+  // Step 1
   impianto: {
     nome: string;
     indirizzo: string;
     citta: string;
     cap: string;
   };
-  gateway: {
-    mac?: string;
-    ip?: string;
-    version?: string;
-  };
-  dispositivi: Array<{
+  // Step 2
+  selectedGateway: {
     mac: string;
-    nome: string;
-    device_type?: string;
-    stanza_nome?: string;
-    stanza_icona?: string;
-  }>;
+    ip: string;
+    version: string;
+  } | null;
+  // Step 3
+  selectedNodes: SelectedNode[];
 }
 
 const initialState: WizardState = {
-  currentStep: 1,
+  currentStep: 0,
+  gatewayAlreadyConnected: false,
   impianto: {
     nome: '',
     indirizzo: '',
     citta: '',
     cap: '',
   },
-  gateway: {},
-  dispositivi: [],
+  selectedGateway: null,
+  selectedNodes: [],
 };
 
+// Steps visibili nella progress bar (1-4, step 0 è pre-step senza indicatore)
 const steps = [
   { id: 1, title: 'Impianto', icon: RiHome4Line },
-  { id: 2, title: 'Gateway', icon: RiRouterLine },
-  { id: 3, title: 'Connesso', icon: RiCheckboxCircleLine },
-  { id: 4, title: 'Dispositivi', icon: RiDeviceLine },
-  { id: 5, title: 'Completato', icon: RiTrophyLine },
+  { id: 2, title: 'Gateway', icon: RiSearchLine },
+  { id: 3, title: 'Dispositivi', icon: RiDeviceLine },
+  { id: 4, title: 'Completa', icon: RiTrophyLine },
 ];
 
 export const SetupWizard = () => {
@@ -94,7 +105,7 @@ export const SetupWizard = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // Configurazione particelle dinamica basata sul tema
+  // Configurazione particelle
   const particlesOptions = useMemo(() => ({
     fullScreen: false,
     background: { color: { value: 'transparent' } },
@@ -139,14 +150,20 @@ export const SetupWizard = () => {
     setState(initialState);
   };
 
+  const goToStep = (step: number) => {
+    if (step >= 0 && step <= 4) {
+      setState((prev) => ({ ...prev, currentStep: step }));
+    }
+  };
+
   const nextStep = () => {
-    if (state.currentStep < 5) {
+    if (state.currentStep < 4) {
       setState((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
     }
   };
 
   const prevStep = () => {
-    if (state.currentStep > 1) {
+    if (state.currentStep > 0) {
       setState((prev) => ({ ...prev, currentStep: prev.currentStep - 1 }));
     }
   };
@@ -158,31 +175,16 @@ export const SetupWizard = () => {
     }));
   };
 
-  const updateGateway = (data: Partial<WizardState['gateway']>) => {
+  const setSelectedNodes = (nodes: SelectedNode[]) => {
     setState((prev) => ({
       ...prev,
-      gateway: { ...prev.gateway, ...data },
-    }));
-  };
-
-  const addDispositivo = (dispositivo: WizardState['dispositivi'][0]) => {
-    setState((prev) => ({
-      ...prev,
-      dispositivi: [...prev.dispositivi, dispositivo],
+      selectedNodes: nodes,
     }));
   };
 
   const finishWizard = () => {
-    // Rimuovi localStorage PRIMA di qualsiasi state change per evitare race condition
-    // (l'useEffect salva state in localStorage ad ogni cambiamento)
     localStorage.removeItem(STORAGE_KEY);
     window.location.href = '/dashboard';
-  };
-
-  const goToStep = (step: number) => {
-    if (step >= 1 && step <= 5) {
-      setState((prev) => ({ ...prev, currentStep: step }));
-    }
   };
 
   // Animazioni per gli step
@@ -196,6 +198,11 @@ export const SetupWizard = () => {
   const glowStyle = {
     boxShadow: `0 0 20px ${colors.accent}40, 0 0 40px ${colors.accent}20, 0 0 60px ${colors.accent}10`,
   };
+
+  // Mostra progress bar solo per step 1-4 (non pre-step)
+  const showProgressBar = state.currentStep >= 1;
+  // Nascondi bottoni restart/esci nello step finale (successo)
+  const showHeaderButtons = state.currentStep < 4;
 
   return (
     <div
@@ -211,7 +218,7 @@ export const SetupWizard = () => {
         />
       )}
 
-      {/* Gradient overlay per profondità */}
+      {/* Gradient overlay */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
@@ -222,7 +229,7 @@ export const SetupWizard = () => {
         }}
       />
 
-      {/* Header con Progress - Glass effect */}
+      {/* Header con Progress */}
       <header
         className="px-4 py-4 relative z-10"
         style={{
@@ -234,7 +241,7 @@ export const SetupWizard = () => {
         }}
       >
         <div className="max-w-4xl mx-auto">
-          {/* Logo e titolo con animazione */}
+          {/* Logo e titolo */}
           <div className="flex items-center justify-between mb-6">
             <motion.div
               className="flex items-center gap-3"
@@ -259,8 +266,7 @@ export const SetupWizard = () => {
                 Setup Impianto
               </h1>
             </motion.div>
-            {/* Nascondi pulsanti nello step finale */}
-            {state.currentStep !== 5 && (
+            {showHeaderButtons && (
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
@@ -280,140 +286,140 @@ export const SetupWizard = () => {
             )}
           </div>
 
-          {/* Progress Steps con animazioni WOW - CENTRATO */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              width: '100%',
-              padding: '0 clamp(4px, 1vw, 12px)',
-            }}
-          >
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = state.currentStep === step.id;
-              const isCompleted = state.currentStep > step.id;
-              const isLast = index === steps.length - 1;
+          {/* Progress Steps - solo per step 1-4 */}
+          {showProgressBar && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                padding: '0 clamp(4px, 1vw, 12px)',
+              }}
+            >
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                const isActive = state.currentStep === step.id;
+                const isCompleted = state.currentStep > step.id;
+                const isLast = index === steps.length - 1;
 
-              return (
-                <div
-                  key={step.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flex: isLast ? 'none' : 1,
-                    maxWidth: isLast ? 'auto' : '100%',
-                  }}
-                >
-                  <div className="flex flex-col items-center">
-                    <motion.div
-                      className="rounded-full flex items-center justify-center relative"
-                      style={{
-                        width: 'clamp(36px, 10vw, 48px)',
-                        height: 'clamp(36px, 10vw, 48px)',
-                        background: isActive
-                          ? `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`
-                          : isCompleted
-                          ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                          : isDarkMode ? 'rgba(42, 42, 64, 0.8)' : 'rgba(229, 231, 235, 0.8)',
-                        color: isActive || isCompleted ? '#ffffff' : modeColors.textMuted,
-                        ...(isActive ? glowStyle : {}),
-                      }}
-                      animate={{
-                        scale: isActive ? [1, 1.08, 1] : 1,
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: isActive ? Infinity : 0,
-                        ease: "easeInOut",
-                      }}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      {/* Anello rotante per step attivo */}
-                      {isActive && (
-                        <motion.div
+                return (
+                  <div
+                    key={step.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      flex: isLast ? 'none' : 1,
+                      maxWidth: isLast ? 'auto' : '100%',
+                    }}
+                  >
+                    <div className="flex flex-col items-center">
+                      <motion.div
+                        className="rounded-full flex items-center justify-center relative"
+                        style={{
+                          width: 'clamp(36px, 10vw, 48px)',
+                          height: 'clamp(36px, 10vw, 48px)',
+                          background: isActive
+                            ? `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`
+                            : isCompleted
+                            ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                            : isDarkMode ? 'rgba(42, 42, 64, 0.8)' : 'rgba(229, 231, 235, 0.8)',
+                          color: isActive || isCompleted ? '#ffffff' : modeColors.textMuted,
+                          ...(isActive ? glowStyle : {}),
+                        }}
+                        animate={{
+                          scale: isActive ? [1, 1.08, 1] : 1,
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: isActive ? Infinity : 0,
+                          ease: "easeInOut",
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        {isActive && (
+                          <motion.div
+                            className="absolute inset-0 rounded-full"
+                            style={{
+                              border: `2px solid ${colors.accent}`,
+                              borderTopColor: 'transparent',
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                          />
+                        )}
+                        {isCompleted ? (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 500 }}
+                          >
+                            <RiCheckboxCircleLine className="w-[clamp(18px,5vw,24px)] h-[clamp(18px,5vw,24px)]" />
+                          </motion.div>
+                        ) : (
+                          <Icon className="w-[clamp(16px,4.5vw,22px)] h-[clamp(16px,4.5vw,22px)]" />
+                        )}
+                      </motion.div>
+                      <motion.span
+                        className="text-xs mt-2 hidden sm:block font-medium"
+                        style={{
+                          color: isActive
+                            ? colors.accent
+                            : isCompleted
+                            ? '#22c55e'
+                            : modeColors.textMuted,
+                        }}
+                        animate={{
+                          opacity: isActive ? [0.7, 1, 0.7] : 1,
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: isActive ? Infinity : 0,
+                        }}
+                      >
+                        {step.title}
+                      </motion.span>
+                    </div>
+
+                    {/* Connector Line */}
+                    {index < steps.length - 1 && (
+                      <div
+                        className="flex-1 relative"
+                        style={{
+                          height: 'clamp(2px, 0.5vw, 4px)',
+                          margin: '0 clamp(4px, 1.5vw, 12px)',
+                        }}
+                      >
+                        <div
                           className="absolute inset-0 rounded-full"
                           style={{
-                            border: `2px solid ${colors.accent}`,
-                            borderTopColor: 'transparent',
+                            background: isDarkMode ? 'rgba(42, 42, 64, 0.5)' : 'rgba(209, 213, 219, 0.5)',
                           }}
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
                         />
-                      )}
-                      {/* Checkmark animato per step completati */}
-                      {isCompleted ? (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", stiffness: 500 }}
-                        >
-                          <RiCheckboxCircleLine className="w-[clamp(18px,5vw,24px)] h-[clamp(18px,5vw,24px)]" />
-                        </motion.div>
-                      ) : (
-                        <Icon className="w-[clamp(16px,4.5vw,22px)] h-[clamp(16px,4.5vw,22px)]" />
-                      )}
-                    </motion.div>
-                    <motion.span
-                      className="text-xs mt-2 hidden sm:block font-medium"
-                      style={{
-                        color: isActive
-                          ? colors.accent
-                          : isCompleted
-                          ? '#22c55e'
-                          : modeColors.textMuted,
-                      }}
-                      animate={{
-                        opacity: isActive ? [0.7, 1, 0.7] : 1,
-                      }}
-                      transition={{
-                        duration: 2,
-                        repeat: isActive ? Infinity : 0,
-                      }}
-                    >
-                      {step.title}
-                    </motion.span>
+                          className="absolute inset-y-0 left-0 rounded-full"
+                          style={{
+                            background: isCompleted
+                              ? 'linear-gradient(90deg, #22c55e, #16a34a)'
+                              : `linear-gradient(90deg, ${colors.accent}, ${colors.accentLight})`,
+                          }}
+                          initial={{ width: '0%' }}
+                          animate={{
+                            width: isCompleted ? '100%' : isActive ? '50%' : '0%',
+                          }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                        />
+                      </div>
+                    )}
                   </div>
-
-                  {/* Connector Line animata */}
-                  {index < steps.length - 1 && (
-                    <div
-                      className="flex-1 relative"
-                      style={{
-                        height: 'clamp(2px, 0.5vw, 4px)',
-                        margin: '0 clamp(4px, 1.5vw, 12px)',
-                      }}
-                    >
-                      <div
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          background: isDarkMode ? 'rgba(42, 42, 64, 0.5)' : 'rgba(209, 213, 219, 0.5)',
-                        }}
-                      />
-                      <motion.div
-                        className="absolute inset-y-0 left-0 rounded-full"
-                        style={{
-                          background: isCompleted
-                            ? 'linear-gradient(90deg, #22c55e, #16a34a)'
-                            : `linear-gradient(90deg, ${colors.accent}, ${colors.accentLight})`,
-                        }}
-                        initial={{ width: '0%' }}
-                        animate={{
-                          width: isCompleted ? '100%' : isActive ? '50%' : '0%',
-                        }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Content con animazioni fluide */}
+      {/* Content */}
       <main className="flex-1 px-4 py-6 relative z-10">
         <div className="max-w-2xl mx-auto">
           <AnimatePresence mode="wait">
@@ -428,6 +434,16 @@ export const SetupWizard = () => {
                 ease: [0.25, 0.46, 0.45, 0.94],
               }}
             >
+              {/* Pre-step (Step 0) */}
+              {state.currentStep === 0 && (
+                <StepPreStep
+                  onReady={() => {
+                    setState((prev) => ({ ...prev, gatewayAlreadyConnected: true, currentStep: 1 }));
+                  }}
+                />
+              )}
+
+              {/* Step 1: Dati Impianto */}
               {state.currentStep === 1 && (
                 <StepImpianto
                   data={state.impianto}
@@ -436,39 +452,37 @@ export const SetupWizard = () => {
                 />
               )}
 
+              {/* Step 2: Cerca e Seleziona Gateway */}
               {state.currentStep === 2 && (
                 <StepGateway
                   onGatewaySelected={(gateway) => {
-                    updateGateway(gateway);
-                    nextStep();
+                    setState((prev) => ({
+                      ...prev,
+                      selectedGateway: gateway,
+                      currentStep: 3,
+                    }));
                   }}
                   onBack={prevStep}
                 />
               )}
 
+              {/* Step 3: Scan e Seleziona Nodi */}
               {state.currentStep === 3 && (
-                <StepGatewayConnected
-                  gateway={state.gateway}
-                  onNext={nextStep}
-                  onBack={prevStep}
-                />
-              )}
-
-              {state.currentStep === 4 && (
                 <StepDispositivi
-                  dispositivi={state.dispositivi}
-                  onAddDispositivo={addDispositivo}
+                  selectedNodes={state.selectedNodes}
+                  onUpdateNodes={setSelectedNodes}
                   onNext={nextStep}
                   onSkip={nextStep}
                   onBack={prevStep}
                 />
               )}
 
-              {state.currentStep === 5 && (
+              {/* Step 4: Riepilogo + Completamento */}
+              {state.currentStep === 4 && (
                 <StepCompleto
                   impianto={state.impianto}
-                  gateway={state.gateway}
-                  dispositivi={state.dispositivi}
+                  gateway={state.selectedGateway}
+                  selectedNodes={state.selectedNodes}
                   onFinish={finishWizard}
                   onGoToStep={goToStep}
                 />

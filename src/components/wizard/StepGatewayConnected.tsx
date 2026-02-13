@@ -72,10 +72,10 @@ export const StepGatewayConnected = ({
             marginBottom: spacing.xs,
           }}
         >
-          Gateway Connesso!
+          Gateway Selezionato
         </h2>
         <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
-          Associato con successo al tuo impianto
+          Verrà associato al tuo impianto nello step finale
         </p>
       </div>
 

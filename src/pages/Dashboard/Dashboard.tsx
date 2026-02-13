@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Layout } from '@/components/layout/Layout';
 import { ContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
@@ -83,7 +83,7 @@ export const Dashboard = () => {
 
   const [expandedRooms, setExpandedRooms] = useState<Record<number, boolean>>({});
   const [executing, setExecuting] = useState<number | null>(null);
-  const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
+  const debounceTimers = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const [togglingAll, setTogglingAll] = useState<string | null>(null);
   const [weather, setWeather] = useState<{ temp: number; icon: string } | null>(null);
   const [recentActivity] = useState<any[]>([]);  // Placeholder per futuro
@@ -187,43 +187,51 @@ export const Dashboard = () => {
     });
   };
 
-  const toggleDevice = async (dispositivo: any) => {
-    // Blocca se non ha permessi di controllo
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => { debounceTimers.current.forEach(t => clearTimeout(t)); };
+  }, []);
+
+  const toggleDevice = (dispositivo: any) => {
     if (!canControl) {
       toast.error('Non hai i permessi per controllare i dispositivi');
       return;
     }
-    if (togglingDevice === dispositivo.id) return;
-    setTogglingDevice(dispositivo.id);
-    try {
-      const newState = !dispositivo.power_state;
 
-      // LED Strip
-      if (dispositivo.device_type === 'omniapi_led') {
-        await omniapiApi.sendLedCommand(dispositivo.mac_address!, newState ? 'on' : 'off');
-        updateLedState(dispositivo.id, { led_power: newState });
-        updatePowerState(dispositivo.id, newState);
-      }
-      // OmniaPi nodes use MQTT via gateway
-      else if (dispositivo.device_type === 'omniapi_node') {
-        await omniapiApi.controlNode(dispositivo.id, 1, newState ? 'on' : 'off');
-        updatePowerState(dispositivo.id, newState);
-      } else {
-        // Tasmota devices use HTTP
-        await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
-        updatePowerState(dispositivo.id, newState);
-      }
-    } catch (error: any) {
-      console.error('Errore toggle dispositivo:', error);
-      // Gestione dispositivo bloccato
-      if (error.response?.data?.blocked) {
-        toast.error('Bloccato');
-      } else {
-        toast.error('Errore');
-      }
-    } finally {
-      setTogglingDevice(null);
+    const newState = !dispositivo.power_state;
+
+    // Optimistic UI update immediately
+    updatePowerState(dispositivo.id, newState);
+    if (dispositivo.device_type === 'omniapi_led') {
+      updateLedState(dispositivo.id, { led_power: newState });
     }
+
+    // Cancel previous timer for this device
+    const existing = debounceTimers.current.get(dispositivo.id);
+    if (existing) clearTimeout(existing);
+
+    // 300ms trailing debounce — only final state sends API call
+    debounceTimers.current.set(dispositivo.id, setTimeout(async () => {
+      debounceTimers.current.delete(dispositivo.id);
+      const current = useDispositiviStore.getState().dispositivi.find(d => d.id === dispositivo.id);
+      if (!current) return;
+      const targetState = !!current.power_state;
+
+      try {
+        if (dispositivo.device_type === 'omniapi_led') {
+          await omniapiApi.sendLedCommand(dispositivo.mac_address!, targetState ? 'on' : 'off');
+        } else if (dispositivo.device_type === 'omniapi_node') {
+          await omniapiApi.controlNode(dispositivo.id, 1, targetState ? 'on' : 'off');
+        } else {
+          await tasmotaApi.controlDispositivo(dispositivo.id, targetState ? 'ON' : 'OFF');
+        }
+      } catch (err: any) {
+        // Revert on error
+        updatePowerState(dispositivo.id, !targetState);
+        if (dispositivo.device_type === 'omniapi_led') updateLedState(dispositivo.id, { led_power: !targetState });
+        toast.error(err.response?.data?.blocked ? 'Bloccato' : 'Errore');
+      }
+    }, 300));
   };
 
   // Handle LED effect change
@@ -839,7 +847,7 @@ export const Dashboard = () => {
                               key={dispositivo.id}
                               nome={dispositivo.nome}
                               isOn={!!dispositivo.power_state || !!dispositivo.led_power}
-                              isLoading={togglingDevice === dispositivo.id}
+                              isLoading={false}
                               bloccato={!!dispositivo.bloccato}
                               canControl={canControl}
                               canViewState={canViewState}
@@ -940,7 +948,7 @@ export const Dashboard = () => {
                             key={dispositivo.id}
                             nome={dispositivo.nome}
                             isOn={!!dispositivo.power_state || !!dispositivo.led_power}
-                            isLoading={togglingDevice === dispositivo.id}
+                            isLoading={false}
                             bloccato={!!dispositivo.bloccato}
                             canControl={canControl}
                             canViewState={canViewState}

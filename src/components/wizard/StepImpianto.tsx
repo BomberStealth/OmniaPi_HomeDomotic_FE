@@ -7,8 +7,9 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { spacing, fontSize, radius } from '@/styles/responsive';
 
 // ============================================
-// STEP 1: DATI IMPIANTO (solo salvataggio locale)
-// L'impianto viene creato nel DB solo a Step 5
+// STEP 1: DATI IMPIANTO
+// Raccoglie solo i dati in locale, NESSUNA chiamata API.
+// La creazione dell'impianto avviene nello Step finale.
 // ============================================
 
 interface StepImpiantoProps {
@@ -29,6 +30,18 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
   const validate = (): boolean => {
     if (!data.nome.trim()) {
       setError('Inserisci il nome dell\'impianto');
+      return false;
+    }
+    if (!data.indirizzo.trim()) {
+      setError('Inserisci l\'indirizzo');
+      return false;
+    }
+    if (!data.citta.trim()) {
+      setError('Inserisci la città');
+      return false;
+    }
+    if (!data.cap.trim()) {
+      setError('Inserisci il CAP');
       return false;
     }
     return true;
@@ -89,7 +102,7 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
         />
 
         <Input
-          label="Indirizzo (opzionale)"
+          label="Indirizzo *"
           value={data.indirizzo}
           onChange={(e) => onUpdate({ indirizzo: e.target.value })}
           placeholder="es. Via Roma 123"
@@ -103,13 +116,13 @@ export const StepImpianto = ({ data, onUpdate, onNext }: StepImpiantoProps) => {
           }}
         >
           <Input
-            label="Città"
+            label="Città *"
             value={data.citta}
             onChange={(e) => onUpdate({ citta: e.target.value })}
             placeholder="es. Milano"
           />
           <Input
-            label="CAP"
+            label="CAP *"
             value={data.cap}
             onChange={(e) => onUpdate({ cap: e.target.value.replace(/\D/g, '').slice(0, 5) })}
             placeholder="es. 20100"

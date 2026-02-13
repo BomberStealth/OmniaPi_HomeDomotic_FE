@@ -1,6 +1,6 @@
 {
   "name": "omniapi-homedomotic-fe",
-  "version": "1.9.1",
+  "version": "1.9.7",
   "type": "module",
   "scripts": {
     "dev": "vite",

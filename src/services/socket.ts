@@ -70,11 +70,14 @@ const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || window.l
 class SocketService {
   private socket: Socket | null = null;
   private eventCallbacks: Set<EventCallback> = new Set();
+  private reconnectCallbacks: Set<() => void> = new Set();
+  private connectionStateCallbacks: Set<(connected: boolean) => void> = new Set();
   private currentImpiantoId: number | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private connectionPromise: Promise<void> | null = null;
+  private wasEverConnected = false;
 
   // ============================================
   // CONNECTION MANAGEMENT
@@ -108,10 +111,20 @@ class SocketService {
         this.reconnectAttempts = 0;
         this.connectionPromise = null;
 
+        // Notify connection state listeners
+        this.connectionStateCallbacks.forEach(cb => cb(true));
+
         // Rejoin impianto if we had one
         if (this.currentImpiantoId) {
           this.joinImpianto(this.currentImpiantoId);
         }
+
+        // Trigger reconnection callbacks (data refresh)
+        if (this.wasEverConnected) {
+          console.log('[WS] 🔄 Reconnected — triggering data refresh');
+          this.reconnectCallbacks.forEach(cb => cb());
+        }
+        this.wasEverConnected = true;
 
         // Start heartbeat
         this.startHeartbeat();
@@ -122,6 +135,8 @@ class SocketService {
       this.socket.on('disconnect', (reason) => {
         console.log('[WS] ❌ Disconnected:', reason);
         this.stopHeartbeat();
+        // Notify connection state listeners
+        this.connectionStateCallbacks.forEach(cb => cb(false));
       });
 
       this.socket.on('connect_error', (err) => {
@@ -133,14 +148,11 @@ class SocketService {
         }
       });
 
-      // NEW: Unified event listener for new architecture
+      // Unified event listener
       this.socket.on('ws-event', (event: WSEvent) => {
         console.log('[WS] 📨 Event:', event.type);
         this.eventCallbacks.forEach(cb => cb(event));
       });
-
-      // LEGACY: Keep old listeners for backward compatibility during migration
-      this.setupLegacyListeners();
 
       // Heartbeat response
       this.socket.on('pong', () => {
@@ -158,6 +170,9 @@ class SocketService {
     this.currentImpiantoId = null;
     this.connectionPromise = null;
     this.eventCallbacks.clear();
+    this.reconnectCallbacks.clear();
+    this.connectionStateCallbacks.clear();
+    this.wasEverConnected = false;
     console.log('[WS] Disconnected');
   }
 
@@ -266,227 +281,22 @@ class SocketService {
   }
 
   // ============================================
-  // LEGACY LISTENERS (for backward compatibility)
-  // Will be removed after full migration
+  // RECONNECTION CALLBACK
   // ============================================
 
-  private setupLegacyListeners() {
-    if (!this.socket) return;
-
-    // Convert legacy events to new format
-    const legacyMappings: Array<{ event: string; type: WSEventType | string }> = [
-      // Stanze
-      { event: 'stanza-update', type: 'LEGACY_STANZA_UPDATE' },
-      // Scene
-      { event: 'scena-update', type: 'LEGACY_SCENA_UPDATE' },
-      // Dispositivi
-      { event: 'dispositivo-update', type: 'LEGACY_DISPOSITIVO_UPDATE' },
-      // Condivisioni - RIMOSSO: ora usa ws-event, legacy causava duplicati
-      // { event: 'condivisione-update', type: 'LEGACY_CONDIVISIONE_UPDATE' },
-      // Gateway
-      { event: 'gateway-update', type: 'LEGACY_GATEWAY_UPDATE' },
-      // Omniapi nodes
-      { event: 'omniapi-node-update', type: WS_EVENTS.NODE_UPDATED },
-      { event: 'omniapi-nodes-update', type: WS_EVENTS.NODE_UPDATED },
-      { event: 'omniapi-led-update', type: WS_EVENTS.LED_UPDATED },
-      { event: 'omniapi-gateway-update', type: WS_EVENTS.GATEWAY_UPDATED },
-      // Notifications
-      { event: 'notification', type: WS_EVENTS.NOTIFICATION },
-      // Permessi
-      { event: 'permessi-aggiornati', type: WS_EVENTS.PERMESSI_AGGIORNATI },
-      { event: 'condivisione-rimossa', type: WS_EVENTS.KICKED_FROM_IMPIANTO },
-      // Full sync
-      { event: 'full-sync', type: WS_EVENTS.FULL_SYNC },
-      // Device update
-      { event: 'device-update', type: WS_EVENTS.DISPOSITIVO_STATE_CHANGED },
-    ];
-
-    legacyMappings.forEach(({ event, type }) => {
-      this.socket?.on(event, (data: any) => {
-        // Convert legacy format to new format
-        let payload = data;
-
-        // Handle legacy {action, data} format
-        if (data && typeof data === 'object' && 'action' in data) {
-          // Map legacy action to specific event type
-          const actionMap: Record<string, string> = {
-            created: type.replace('LEGACY_', '').replace('_UPDATE', '_CREATED'),
-            updated: type.replace('LEGACY_', '').replace('_UPDATE', '_UPDATED'),
-            deleted: type.replace('LEGACY_', '').replace('_UPDATE', '_DELETED'),
-            executed: type.replace('LEGACY_', '').replace('_UPDATE', '_EXECUTED'),
-            accepted: type.replace('LEGACY_', '').replace('_UPDATE', '_ACCEPTED'),
-            removed: type.replace('LEGACY_', '').replace('_UPDATE', '_REMOVED'),
-            'state-changed': type.replace('LEGACY_', '').replace('_UPDATE', '_STATE_CHANGED'),
-          };
-
-          const mappedType = actionMap[data.action] || type;
-          payload = data.stanza || data.scena || data.dispositivo || data.condivisione || data.gateway || data;
-
-          const wsEvent: WSEvent = {
-            type: mappedType,
-            payload,
-            timestamp: new Date().toISOString()
-          };
-
-          console.log('[WS] 📨 Legacy event converted:', event, '->', mappedType);
-          this.eventCallbacks.forEach(cb => cb(wsEvent));
-        } else {
-          // Just forward as-is
-          const wsEvent: WSEvent = {
-            type,
-            payload,
-            timestamp: new Date().toISOString()
-          };
-
-          console.log('[WS] 📨 Legacy event:', event);
-          this.eventCallbacks.forEach(cb => cb(wsEvent));
-        }
-      });
-    });
+  onReconnect(callback: () => void): () => void {
+    this.reconnectCallbacks.add(callback);
+    return () => this.reconnectCallbacks.delete(callback);
   }
 
-  // ============================================
-  // LEGACY COMPATIBILITY METHODS
-  // Keep these for components not yet migrated
-  // ============================================
-
-  // Scene
-  onScenaUpdate(callback: (data: { scena: any; action: string }) => void) {
-    this.socket?.on('scena-update', callback);
+  /**
+   * Subscribe to connection state changes (connected/disconnected)
+   * Returns unsubscribe function
+   */
+  onConnectionStateChange(callback: (connected: boolean) => void): () => void {
+    this.connectionStateCallbacks.add(callback);
+    return () => this.connectionStateCallbacks.delete(callback);
   }
-  offScenaUpdate() {
-    this.socket?.off('scena-update');
-  }
-
-  // Stanze
-  onStanzaUpdate(callback: (data: { stanza: any; action: string }) => void) {
-    this.socket?.on('stanza-update', callback);
-  }
-  offStanzaUpdate() {
-    this.socket?.off('stanza-update');
-  }
-
-  // Dispositivi
-  onDispositivoUpdate(callback: (data: { dispositivo: any; action: string }) => void) {
-    this.socket?.on('dispositivo-update', callback);
-  }
-  offDispositivoUpdate() {
-    this.socket?.off('dispositivo-update');
-  }
-
-  // Full Sync
-  onFullSync(callback: (data: { stanze?: any[]; scene?: any[]; dispositivi?: any[] }) => void) {
-    this.socket?.on('full-sync', callback);
-  }
-  offFullSync() {
-    this.socket?.off('full-sync');
-  }
-
-  // Gateway
-  onGatewayUpdate(callback: (data: { gateway: any; action: string }) => void) {
-    this.socket?.on('gateway-update', callback);
-  }
-  offGatewayUpdate() {
-    this.socket?.off('gateway-update');
-  }
-
-  // Omniapi
-  onOmniapiGatewayUpdate(callback: (gateway: any) => void) {
-    this.socket?.on('omniapi-gateway-update', callback);
-  }
-  offOmniapiGatewayUpdate() {
-    this.socket?.off('omniapi-gateway-update');
-  }
-
-  onOmniapiNodeUpdate(callback: (node: any) => void) {
-    this.socket?.on('omniapi-node-update', callback);
-  }
-  offOmniapiNodeUpdate() {
-    this.socket?.off('omniapi-node-update');
-  }
-
-  onOmniapiNodesUpdate(callback: (nodes: any[]) => void) {
-    this.socket?.on('omniapi-nodes-update', callback);
-  }
-  offOmniapiNodesUpdate() {
-    this.socket?.off('omniapi-nodes-update');
-  }
-
-  onOmniapiLedUpdate(callback: (ledDevice: any) => void) {
-    this.socket?.on('omniapi-led-update', callback);
-  }
-  offOmniapiLedUpdate() {
-    this.socket?.off('omniapi-led-update');
-  }
-
-  // Device update
-  onDeviceUpdate(callback: (payload: any) => void) {
-    this.socket?.on('device-update', callback);
-  }
-  offDeviceUpdate() {
-    this.socket?.off('device-update');
-  }
-
-  // Notifications
-  onNotification(callback: (notification: any) => void) {
-    this.socket?.on('notification', callback);
-  }
-  offNotification() {
-    this.socket?.off('notification');
-  }
-
-  // Permessi
-  onPermessiAggiornati(callback: (data: any) => void) {
-    this.socket?.on('permessi-aggiornati', callback);
-  }
-  offPermessiAggiornati() {
-    this.socket?.off('permessi-aggiornati');
-  }
-
-  // Condivisione rimossa
-  onCondivisioneRimossa(callback: (data: any) => void) {
-    this.socket?.on('condivisione-rimossa', callback);
-  }
-  offCondivisioneRimossa() {
-    this.socket?.off('condivisione-rimossa');
-  }
-
-  // Condivisione update
-  onCondivisioneUpdate(callback: (data: CondivisioneUpdateEvent) => void) {
-    this.socket?.on('condivisione-update', callback);
-  }
-  offCondivisioneUpdate() {
-    this.socket?.off('condivisione-update');
-  }
-}
-
-// Legacy type exports for backward compatibility
-export interface NotificationEvent {
-  id: number;
-  impiantoId: number;
-  type: string;
-  title: string;
-  body: string;
-  data?: any;
-  created_at: string;
-}
-
-export interface PermessiAggiornatoEvent {
-  tipo: 'permessi-aggiornati';
-  impianto_id: number;
-  puo_controllare_dispositivi: boolean;
-  puo_vedere_stato: boolean;
-  stanze_abilitate: number[] | null;
-}
-
-export interface CondivisioneRimossaEvent {
-  tipo: 'condivisione-rimossa';
-  impianto_id: number;
-}
-
-export interface CondivisioneUpdateEvent {
-  condivisione: any;
-  action: 'created' | 'accepted' | 'removed';
 }
 
 // Singleton instance

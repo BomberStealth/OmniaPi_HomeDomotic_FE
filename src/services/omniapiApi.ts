@@ -210,4 +210,65 @@ export const omniapiApi = {
     const { data } = await api.post('/api/led/command', { mac, action, ...params });
     return data;
   },
+
+  // ============================================
+  // OTA FIRMWARE UPDATE (Admin only)
+  // ============================================
+
+  uploadGatewayFirmware: async (file: File): Promise<{
+    success: boolean;
+    old_version?: string;
+    new_version?: string;
+    reboot_required?: boolean;
+    firmware_size?: number;
+    error?: string;
+  }> => {
+    const { data } = await api.post('/api/admin/ota/gateway', file, {
+      headers: { 'Content-Type': 'application/octet-stream' },
+      timeout: 180000,
+    });
+    return data;
+  },
+
+  uploadNodeFirmware: async (mac: string, file: File): Promise<{
+    success: boolean;
+    message?: string;
+    firmware_size?: number;
+    target_mac?: string;
+    error?: string;
+  }> => {
+    const { data } = await api.post(`/api/admin/ota/node/${encodeURIComponent(mac)}`, file, {
+      headers: { 'Content-Type': 'application/octet-stream' },
+      timeout: 180000,
+    });
+    return data;
+  },
+
+  getOtaStatus: async (): Promise<{
+    success: boolean;
+    gateway_ota?: any;
+    node_ota?: any;
+    error?: string;
+  }> => {
+    const { data } = await api.get('/api/admin/ota/status');
+    return data;
+  },
+
+  // Stato gateway + busy lock
+  getGatewayStatus: async (): Promise<{
+    busy: boolean;
+    operation: string | null;
+    started_at: string | null;
+    gateway: {
+      online: boolean;
+      ip: string | null;
+      version: string | null;
+      heap_free: number | null;
+      uptime: number | null;
+      nodes_count: number | null;
+    };
+  }> => {
+    const { data } = await api.get('/api/admin/gateway/status');
+    return data;
+  },
 };

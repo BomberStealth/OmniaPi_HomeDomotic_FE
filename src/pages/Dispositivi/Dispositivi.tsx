@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { UnifiedDeviceCard, GatewayCard } from '@/components/devices';
 import { AddDeviceModal } from '@/components/dispositivi';
@@ -13,9 +13,11 @@ import {
   RiLightbulbLine,
   RiAddLine,
   RiRefreshLine,
+  RiDeleteBinLine,
 } from 'react-icons/ri';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
 
 // ============================================
 // DISPOSITIVI PAGE - Same system as Dashboard
@@ -52,11 +54,14 @@ export const Dispositivi = () => {
     );
   }, [dispositivi, permessi.stanze_abilitate]);
 
-  const [togglingDevice, setTogglingDevice] = useState<number | null>(null);
+  const debounceTimers = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [gateway, setGateway] = useState<Gateway | null>(null);
   const [gatewayLoading, setGatewayLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<Dispositivo | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [gatewayBusy, setGatewayBusy] = useState(false);
 
   // Fetch gateway info
   useEffect(() => {
@@ -102,45 +107,52 @@ export const Dispositivi = () => {
     pointerEvents: 'none' as const,
   };
 
-  // Toggle device (same logic as Dashboard)
-  const toggleDevice = async (dispositivo: Dispositivo) => {
-    // Blocca se non ha permessi di controllo
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => { debounceTimers.current.forEach(t => clearTimeout(t)); };
+  }, []);
+
+  // Toggle device with 300ms trailing debounce (same logic as Dashboard)
+  const toggleDevice = (dispositivo: Dispositivo) => {
     if (!canControl) {
       toast.error('Non hai i permessi per controllare i dispositivi');
       return;
     }
-    if (togglingDevice === dispositivo.id) return;
-    setTogglingDevice(dispositivo.id);
 
-    try {
-      const newState = !dispositivo.power_state;
+    const newState = !dispositivo.power_state;
 
-      // LED Strip
-      if (dispositivo.device_type === 'omniapi_led') {
-        await omniapiApi.sendLedCommand(dispositivo.mac_address!, newState ? 'on' : 'off');
-        updateLedState(dispositivo.id, { led_power: newState });
-        updatePowerState(dispositivo.id, newState);
-      }
-      // OmniaPi relay nodes
-      else if (dispositivo.device_type === 'omniapi_node') {
-        await omniapiApi.controlNode(dispositivo.id, 1, newState ? 'on' : 'off');
-        updatePowerState(dispositivo.id, newState);
-      }
-      // Tasmota devices
-      else {
-        await tasmotaApi.controlDispositivo(dispositivo.id, newState ? 'ON' : 'OFF');
-        updatePowerState(dispositivo.id, newState);
-      }
-    } catch (error: any) {
-      console.error('Errore toggle dispositivo:', error);
-      if (error.response?.data?.blocked) {
-        toast.error('Bloccato');
-      } else {
-        toast.error('Errore');
-      }
-    } finally {
-      setTogglingDevice(null);
+    // Optimistic UI update immediately
+    updatePowerState(dispositivo.id, newState);
+    if (dispositivo.device_type === 'omniapi_led') {
+      updateLedState(dispositivo.id, { led_power: newState });
     }
+
+    // Cancel previous timer for this device
+    const existing = debounceTimers.current.get(dispositivo.id);
+    if (existing) clearTimeout(existing);
+
+    // 300ms trailing debounce — only final state sends API call
+    debounceTimers.current.set(dispositivo.id, setTimeout(async () => {
+      debounceTimers.current.delete(dispositivo.id);
+      const current = useDispositiviStore.getState().dispositivi.find(d => d.id === dispositivo.id);
+      if (!current) return;
+      const targetState = !!current.power_state;
+
+      try {
+        if (dispositivo.device_type === 'omniapi_led') {
+          await omniapiApi.sendLedCommand(dispositivo.mac_address!, targetState ? 'on' : 'off');
+        } else if (dispositivo.device_type === 'omniapi_node') {
+          await omniapiApi.controlNode(dispositivo.id, 1, targetState ? 'on' : 'off');
+        } else {
+          await tasmotaApi.controlDispositivo(dispositivo.id, targetState ? 'ON' : 'OFF');
+        }
+      } catch (err: any) {
+        // Revert on error
+        updatePowerState(dispositivo.id, !targetState);
+        if (dispositivo.device_type === 'omniapi_led') updateLedState(dispositivo.id, { led_power: !targetState });
+        toast.error(err.response?.data?.blocked ? 'Bloccato' : 'Errore');
+      }
+    }, 300));
   };
 
   // Handle LED effect change
@@ -253,6 +265,32 @@ export const Dispositivi = () => {
     }
   };
 
+  // Delete device
+  const handleDeleteDevice = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setGatewayBusy(true);
+    try {
+      const res = await omniapiApi.unregisterNode(deleteTarget.id);
+      if ((res as any).gateway_confirmed === false) {
+        toast.success(`${deleteTarget.nome} eliminato. Il gateway potrebbe impiegare qualche secondo per aggiornare.`);
+      } else {
+        toast.success(`${deleteTarget.nome} eliminato`);
+      }
+      if (impiantoCorrente?.id) {
+        await fetchDispositivi(impiantoCorrente.id);
+      }
+    } catch (error) {
+      console.error('Errore eliminazione dispositivo:', error);
+      toast.error('Errore durante l\'eliminazione');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+      // Cooldown: gateway needs time after delete before scan/commission
+      setTimeout(() => setGatewayBusy(false), 2000);
+    }
+  };
+
   // Filter valid devices (usa dispositiviFiltrati per rispettare permessi)
   const validDevices = dispositiviFiltrati.filter(d => d !== null && d !== undefined);
 
@@ -315,23 +353,26 @@ export const Dispositivi = () => {
 
             {/* Add Device */}
             <motion.button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => !gatewayBusy && setShowAddModal(true)}
               style={{
                 width: '44px',
                 height: '44px',
                 padding: 0,
                 borderRadius: '16px',
-                background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+                background: gatewayBusy
+                  ? colors.textMuted
+                  : `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
                 border: 'none',
-                cursor: 'pointer',
+                cursor: gatewayBusy ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: `0 4px 20px ${colors.accent}50`,
+                boxShadow: gatewayBusy ? 'none' : `0 4px 20px ${colors.accent}50`,
+                opacity: gatewayBusy ? 0.5 : 1,
               }}
-              whileHover={{ scale: 1.05, boxShadow: `0 6px 24px ${colors.accent}60` }}
-              whileTap={{ scale: 0.95 }}
-              title="Aggiungi Dispositivo"
+              whileHover={gatewayBusy ? {} : { scale: 1.05, boxShadow: `0 6px 24px ${colors.accent}60` }}
+              whileTap={gatewayBusy ? {} : { scale: 0.95 }}
+              title={gatewayBusy ? 'Attendere...' : 'Aggiungi Dispositivo'}
             >
               <RiAddLine size={20} style={{ color: '#fff', display: 'block' }} />
             </motion.button>
@@ -436,11 +477,13 @@ export const Dispositivi = () => {
                       key={dispositivo.id}
                       nome={dispositivo.nome}
                       isOn={!!dispositivo.led_power || !!dispositivo.power_state}
-                      isLoading={togglingDevice === dispositivo.id}
+                      isLoading={false}
                       bloccato={!!dispositivo.bloccato}
                       canControl={canControl}
                       canViewState={canViewState}
                       onToggle={() => toggleDevice(dispositivo)}
+                      showDelete={canControl}
+                      onDelete={() => setDeleteTarget(dispositivo)}
                       deviceType="omniapi_led"
                       variant="full"
                       ledColor={{
@@ -486,11 +529,13 @@ export const Dispositivi = () => {
                       key={dispositivo.id}
                       nome={dispositivo.nome}
                       isOn={!!dispositivo.power_state}
-                      isLoading={togglingDevice === dispositivo.id}
+                      isLoading={false}
                       bloccato={!!dispositivo.bloccato}
                       canControl={canControl}
                       canViewState={canViewState}
                       onToggle={() => toggleDevice(dispositivo)}
+                      showDelete={canControl}
+                      onDelete={() => setDeleteTarget(dispositivo)}
                       deviceType={dispositivo.device_type || 'relay'}
                       variant="full"
                     />
@@ -549,6 +594,19 @@ export const Dispositivi = () => {
           }
         }}
         existingMacs={validDevices.map(d => d.mac_address || '').filter(Boolean)}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmPopup
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteDevice}
+        title="Elimina dispositivo"
+        message={`Vuoi eliminare "${deleteTarget?.nome}"? Il dispositivo verrà rimosso dall'impianto e da tutte le scene.`}
+        confirmText="Elimina"
+        cancelText="Annulla"
+        confirmVariant="danger"
+        icon={<RiDeleteBinLine size={20} />}
       />
     </Layout>
   );

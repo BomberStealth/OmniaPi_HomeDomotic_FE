@@ -11,9 +11,13 @@ import {
   RiPaletteLine,
   RiDeleteBinLine,
   RiSettings3Line,
-  RiCloseLine
+  RiCloseLine,
+  RiMore2Fill,
+  RiEditLine,
+  RiHome4Line,
 } from 'react-icons/ri';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
+import { useOmniapiStore } from '@/store/omniapiStore';
 import { Toggle } from '@/components/common/Toggle';
 
 // ============================================
@@ -1397,7 +1401,35 @@ const UnifiedDeviceCardComponent = ({
   onDelete,
 }: UnifiedDeviceCardProps) => {
   const { colors: themeColors, modeColors } = useThemeColor();
+  const gateway = useOmniapiStore((state) => state.gateway);
+  const gatewayOffline = gateway !== null && gateway.online === false;
   const [showModal, setShowModal] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const menuDropRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (menuBtnRef.current?.contains(target)) return;
+      if (menuDropRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpen]);
+
+  // Calculate dropdown position when menu opens
+  const openMenu = useCallback(() => {
+    if (menuBtnRef.current) {
+      const rect = menuBtnRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setMenuOpen(prev => !prev);
+  }, []);
 
   // Normalize device type
   const normalizedType = useMemo(() => {
@@ -1409,7 +1441,7 @@ const UnifiedDeviceCardComponent = ({
 
   const isLed = normalizedType === 'led';
   const isSensor = normalizedType === 'sensor';
-  const isDisabled = bloccato || isLoading || !canControl;
+  const isDisabled = bloccato || isLoading || !canControl || gatewayOffline;
 
   // Dynamic colors based on theme
   const colors = useMemo(() => ({
@@ -1738,32 +1770,101 @@ const UnifiedDeviceCardComponent = ({
         </>
       )}
 
-      {/* Delete button (only when showDelete is true) */}
-      {showDelete && onDelete && (
+      {/* Three-dot menu button - top-right corner, above toggle */}
+      {showDelete && (
         <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          ref={menuBtnRef}
+          onClick={(e) => { e.stopPropagation(); openMenu(); }}
           style={{
             position: 'absolute',
-            top: '8px',
-            right: '8px',
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'rgba(239, 68, 68, 0.1)',
+            top: '4px',
+            right: '4px',
+            width: '24px',
+            height: '24px',
+            borderRadius: '6px',
+            background: menuOpen ? `rgba(${hexToRgb(colors.accent)}, 0.15)` : 'transparent',
             border: 'none',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: colors.error || '#ef4444',
-            opacity: 0.7,
+            color: colors.textMuted,
+            opacity: menuOpen ? 1 : 0.5,
             transition: 'all 0.2s ease',
+            zIndex: 5,
+            padding: 0,
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.7'; }}
+          onMouseLeave={(e) => { if (!menuOpen) e.currentTarget.style.opacity = '0.5'; }}
         >
-          <RiDeleteBinLine size={14} />
+          <RiMore2Fill size={14} />
         </button>
+      )}
+
+      {/* Dropdown menu - rendered via portal to avoid overflow:hidden clip */}
+      {showDelete && menuOpen && menuPos && createPortal(
+        <AnimatePresence>
+          <motion.div
+            ref={menuDropRef}
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            transition={{ duration: 0.12 }}
+            style={{
+              position: 'fixed',
+              top: menuPos.top,
+              right: menuPos.right,
+              minWidth: '170px',
+              background: colors.bgCard,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '12px',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.5)',
+              zIndex: 9999,
+              overflow: 'hidden',
+            }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+              style={{
+                width: '100%', padding: '10px 14px', border: 'none',
+                background: 'transparent', cursor: 'default', opacity: 0.4,
+                display: 'flex', alignItems: 'center', gap: '10px',
+                color: colors.textMuted, fontSize: '13px', textAlign: 'left',
+              }}
+              disabled
+            >
+              <RiEditLine size={15} /> Rinomina
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
+              style={{
+                width: '100%', padding: '10px 14px', border: 'none',
+                background: 'transparent', cursor: 'default', opacity: 0.4,
+                display: 'flex', alignItems: 'center', gap: '10px',
+                color: colors.textMuted, fontSize: '13px', textAlign: 'left',
+              }}
+              disabled
+            >
+              <RiHome4Line size={15} /> Sposta stanza
+            </button>
+            <div style={{ height: '1px', background: colors.border, margin: '2px 8px' }} />
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); onDelete?.(); }}
+              style={{
+                width: '100%', padding: '10px 14px', border: 'none',
+                background: 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '10px',
+                color: '#ef4444', fontSize: '13px', textAlign: 'left',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <RiDeleteBinLine size={15} /> Elimina
+            </button>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
       )}
     </motion.div>
   );

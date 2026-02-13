@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { spacing, fontSize, radius } from '@/styles/responsive';
@@ -10,14 +11,26 @@ import {
   RiDashboardLine,
   RiLoader4Line,
   RiAlertLine,
+  RiCheckboxCircleLine,
+  RiCpuLine,
+  RiWifiLine,
+  RiMapPinLine,
 } from 'react-icons/ri';
-import { impiantiApi, stanzeApi, api } from '@/services/api';
+import { impiantiApi, api } from '@/services/api';
 import { gatewayApi } from '@/services/gatewayApi';
 import { omniapiApi } from '@/services/omniapiApi';
+import { SelectedNode } from '@/pages/Wizard/SetupWizard';
 
 // ============================================
-// STEP 5: COMPLETATO - ANIMAZIONE CYBER
-// Particelle convergono + Icona cresce + Esplosione + Onde Loop
+// STEP 4: RIEPILOGO + COMPLETAMENTO
+// Flusso: commissioning PRIMA, impianto DOPO
+//   1. Commissioning nodi via MQTT + polling (0-60%)
+//   2. Crea impianto (60-70%)
+//   3. Associa gateway (70-80%)
+//   4. Registra nodi nel DB (80-90%)
+//   5. Auto-popola scene (90-100%)
+// L'impianto viene creato SOLO se almeno 1 nodo
+// è stato commissionato (o se non ci sono nodi).
 // ============================================
 
 interface StepCompletoProps {
@@ -28,83 +41,80 @@ interface StepCompletoProps {
     cap: string;
   };
   gateway: {
-    mac?: string;
-    ip?: string;
-    version?: string;
-  };
-  dispositivi: Array<{
     mac: string;
-    nome: string;
-    device_type?: string;
-    stanza_nome?: string;
-    stanza_icona?: string;
-  }>;
+    ip: string;
+    version: string;
+  } | null;
+  selectedNodes: SelectedNode[];
   onFinish: () => void;
   onGoToStep?: (step: number) => void;
 }
 
+type SetupPhase = 'summary' | 'creating' | 'error' | 'success';
 type AnimPhase = 'gathering' | 'exploding' | 'complete';
 
 export const StepCompleto = ({
   impianto,
   gateway,
-  dispositivi,
+  selectedNodes,
   onFinish,
   onGoToStep,
 }: StepCompletoProps) => {
-  const [creating, setCreating] = useState(true);
+  const [phase, setPhase] = useState<SetupPhase>('summary');
   const [error, setError] = useState('');
   const [isGatewayError, setIsGatewayError] = useState(false);
+
+  // Progress state
+  const [progress, setProgress] = useState(0);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [commissionFailures, setCommissionFailures] = useState<string[]>([]);
+
+  // Animation state
   const [animPhase, setAnimPhase] = useState<AnimPhase>('gathering');
   const [arrivedCount, setArrivedCount] = useState(0);
   const [animKey, setAnimKey] = useState(0);
-  const { modeColors, colors, isDarkMode } = useThemeColor();
 
+  const { modeColors, colors, isDarkMode } = useThemeColor();
   const TOTAL_PARTICLES = 60;
 
-  // Previene doppia esecuzione in React 18 Strict Mode
   const hasCreatedRef = useRef(false);
 
-  // Scroll to top quando si arriva a questo step
+  // Scroll to top
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // Crea tutto al mount del componente
+  // Start animation after success
   useEffect(() => {
-    if (hasCreatedRef.current) return;
-    hasCreatedRef.current = true;
-    createEverything();
-  }, []);
-
-  // Avvia animazione dopo creazione completata
-  useEffect(() => {
-    if (!creating && !error) {
+    if (phase === 'success') {
       setAnimKey(k => k + 1);
       setArrivedCount(0);
       setAnimPhase('gathering');
     }
-  }, [creating, error]);
+  }, [phase]);
 
-  // Genera particelle da TUTTI i bordi (random)
+  // ============================================
+  // PARTICLE ANIMATION
+  // ============================================
+
   const particles = useMemo(() => Array.from({ length: TOTAL_PARTICLES }, (_, i) => {
     const side = Math.floor(Math.random() * 4);
     let startX = 0, startY = 0;
 
     switch(side) {
-      case 0: // Top
+      case 0:
         startX = Math.random() * 400 - 200;
         startY = -200 - Math.random() * 50;
         break;
-      case 1: // Right
+      case 1:
         startX = 200 + Math.random() * 50;
         startY = Math.random() * 400 - 200;
         break;
-      case 2: // Bottom
+      case 2:
         startX = Math.random() * 400 - 200;
         startY = 200 + Math.random() * 50;
         break;
-      case 3: // Left
+      case 3:
         startX = -200 - Math.random() * 50;
         startY = Math.random() * 400 - 200;
         break;
@@ -120,7 +130,6 @@ export const StepCompleto = ({
     };
   }), [animKey]);
 
-  // Callback quando una particella arriva
   const handleParticleArrived = useCallback(() => {
     setArrivedCount(prev => {
       const newCount = prev + 1;
@@ -132,53 +141,132 @@ export const StepCompleto = ({
     });
   }, []);
 
-  // Scala icona: parte da 0.1 e cresce fino a 1.0
   const iconScale = animPhase === 'gathering'
     ? 0.1 + (arrivedCount / TOTAL_PARTICLES) * 0.9
     : animPhase === 'exploding' ? 1.3
     : 1;
 
-  const createEverything = async () => {
-    setCreating(true);
+  // ============================================
+  // SETUP FUNCTIONS
+  // ============================================
+
+  const normalizeMac = (mac: string) => mac.toUpperCase().replace(/-/g, ':');
+
+  const startSetup = async () => {
+    if (hasCreatedRef.current) return;
+    hasCreatedRef.current = true;
+
+    setPhase('creating');
+    setProgress(0);
+    setStatusMessage('Preparazione...');
+    setCommissionFailures([]);
     setError('');
     setIsGatewayError(false);
 
-    let createdImpiantoId: number | null = null;
-    const createdStanzeIds: number[] = [];
-    const createdDispositiviIds: number[] = [];
-
-    // Funzione di rollback completo
-    const rollbackAll = async (_reason: string) => {
-      // 1. Elimina dispositivi creati
-      for (const id of createdDispositiviIds) {
-        try {
-          await omniapiApi.unregisterNode(id);
-        } catch (_e) {
-          // Ignore errors during rollback
-        }
-      }
-
-      // 2. Elimina stanze create
-      for (const id of createdStanzeIds) {
-        try {
-          await stanzeApi.deleteStanza(id);
-        } catch (_e) {
-          // Ignore errors during rollback
-        }
-      }
-
-      // 3. Elimina impianto (cascade eliminerà anche gateway association)
-      if (createdImpiantoId) {
-        try {
-          await impiantiApi.delete(createdImpiantoId);
-        } catch (_e) {
-          // Ignore errors during rollback
-        }
-      }
-    };
+    const hasNodes = selectedNodes.length > 0;
 
     try {
-      // 1. Crea l'impianto
+      let commissionedNodes: SelectedNode[] = [];
+      let failures: string[] = [];
+
+      // ========== FASE 1-2: Commissioning nodi (solo se presenti) ==========
+      if (hasNodes) {
+        const targetMacs = selectedNodes.map(n => normalizeMac(n.mac));
+
+        // 1. Invia tutti i comandi commissioning in parallelo (0-5%)
+        setStatusMessage('Invio comandi commissioning...');
+        setProgress(2);
+
+        const commissionWithRetry = async (mac: string, name: string) => {
+          const MAX_RETRIES = 3;
+          const RETRY_DELAY = 5000;
+          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+              await gatewayApi.commissionNode(mac, name);
+              return;
+            } catch (err: any) {
+              const is409 = err?.response?.status === 409;
+              if (is409 && attempt < MAX_RETRIES) {
+                console.warn(`[StepCompleto] Commission ${mac}: gateway occupato, tentativo ${attempt}/${MAX_RETRIES} — riprovo tra 5s`);
+                setStatusMessage(`Gateway occupato, riprovo tra qualche secondo... (${attempt}/${MAX_RETRIES})`);
+                await new Promise(r => setTimeout(r, RETRY_DELAY));
+              } else {
+                console.error(`[StepCompleto] Commission failed for ${mac} (attempt ${attempt}):`, err);
+              }
+            }
+          }
+        };
+
+        await Promise.all(
+          selectedNodes.map(node => commissionWithRetry(node.mac, node.name))
+        );
+        console.log(`[StepCompleto] ${selectedNodes.length} commission commands sent`);
+        setProgress(5);
+
+        // 2. Poll GET /api/omniapi/nodes ogni 4s (5-60%)
+        const POLL_INTERVAL = 4000;
+        const TIMEOUT = 45000 + (selectedNodes.length * 5000);
+        const startTime = Date.now();
+        const commissionedMacs = new Set<string>();
+
+        setStatusMessage(`Commissioning nodi... (0/${selectedNodes.length} completati)`);
+
+        while (Date.now() - startTime < TIMEOUT) {
+          await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+          try {
+            const res = await omniapiApi.getNodes();
+            const onlineMacs = new Set(
+              res.nodes.map(n => normalizeMac(n.mac))
+            );
+
+            for (const mac of targetMacs) {
+              if (onlineMacs.has(mac) && !commissionedMacs.has(mac)) {
+                commissionedMacs.add(mac);
+                console.log(`[StepCompleto] Node ${mac} found on production mesh`);
+              }
+            }
+
+            const ratio = commissionedMacs.size / targetMacs.length;
+            setProgress(Math.round(5 + ratio * 55));
+            setStatusMessage(
+              `Commissioning nodi... (${commissionedMacs.size}/${selectedNodes.length} completati)`
+            );
+
+            if (commissionedMacs.size === targetMacs.length) {
+              console.log('[StepCompleto] All nodes commissioned!');
+              break;
+            }
+          } catch (pollErr) {
+            console.warn('[StepCompleto] Poll error (will retry):', pollErr);
+          }
+        }
+
+        setProgress(60);
+
+        // 3. Valuta risultati
+        commissionedNodes = selectedNodes.filter(n =>
+          commissionedMacs.has(normalizeMac(n.mac))
+        );
+        const failedNodes = selectedNodes.filter(n =>
+          !commissionedMacs.has(normalizeMac(n.mac))
+        );
+        failures = failedNodes.map(n => n.name);
+
+        console.log(`[StepCompleto] Commissioned: ${commissionedNodes.length}, Failed: ${failedNodes.length}`);
+
+        if (commissionedNodes.length === 0) {
+          throw new Error(
+            'Nessun nodo commissionato. Verifica che il gateway sia acceso e i nodi siano raggiungibili.'
+          );
+        }
+      }
+
+      // ========== FASE 3: Crea impianto (60-70% o 0-30% se no nodi) ==========
+      setStatusMessage('Creazione impianto...');
+      setProgress(hasNodes ? 65 : 10);
+
+      console.log('[StepCompleto] Creazione impianto...', impianto);
       const impiantoRes = await impiantiApi.create({
         nome: impianto.nome.trim(),
         indirizzo: impianto.indirizzo.trim() || undefined,
@@ -187,89 +275,241 @@ export const StepCompleto = ({
       });
 
       const impiantoData = impiantoRes as any;
-      createdImpiantoId = impiantoData.impianto?.id || impiantoData.data?.id || impiantoData.id;
+      const impiantoId = impiantoData.impianto?.id || impiantoData.data?.id || impiantoData.id;
 
-      if (!createdImpiantoId) {
+      if (!impiantoId) {
         throw new Error('Errore nella creazione dell\'impianto');
       }
 
-      // 2. Associa il gateway all'impianto
-      if (gateway.mac) {
+      console.log('[StepCompleto] Impianto creato con ID:', impiantoId);
+      setProgress(hasNodes ? 70 : 30);
+
+      // ========== FASE 4: Associa gateway (70-80% o 30-60%) ==========
+      if (gateway) {
+        setStatusMessage('Associazione gateway...');
+        setProgress(hasNodes ? 75 : 40);
+
+        console.log('[StepCompleto] Associazione gateway:', gateway.mac);
         try {
-          await gatewayApi.associateGateway(createdImpiantoId, gateway.mac, 'Gateway OmniaPi');
+          await gatewayApi.associateGateway(impiantoId, gateway.mac, 'Gateway OmniaPi', gateway.ip, gateway.version);
         } catch (gatewayErr: any) {
           const errorMsg = gatewayErr.response?.data?.error || gatewayErr.message || '';
           if (errorMsg.toLowerCase().includes('già associato') || errorMsg.toLowerCase().includes('already associated')) {
             setIsGatewayError(true);
           }
-          await rollbackAll('Gateway già associato');
+          // Rollback impianto
+          try { await impiantiApi.delete(impiantoId); } catch (_e) { /* ignore */ }
           throw gatewayErr;
         }
       }
+      setProgress(hasNodes ? 80 : 60);
 
-      // 3. Crea le stanze uniche con le loro icone
-      // Raggruppa stanze uniche con la prima icona trovata
-      const stanzeUniche: Record<string, string | undefined> = {};
-      for (const d of dispositivi) {
-        if (d.stanza_nome && !stanzeUniche.hasOwnProperty(d.stanza_nome)) {
-          stanzeUniche[d.stanza_nome] = d.stanza_icona;
-        }
-      }
-      const stanzeMap: Record<string, number> = {};
+      // ========== FASE 5: Registra nodi commissionati nel DB (80-90%) ==========
+      if (commissionedNodes.length > 0) {
+        setStatusMessage('Registrazione nodi...');
+        const nodeSlice = 10 / commissionedNodes.length;
 
-      for (const [stanzaNome, stanzaIcona] of Object.entries(stanzeUniche)) {
-        try {
-          const stanzaRes = await stanzeApi.createStanza(createdImpiantoId, {
-            nome: stanzaNome,
-            icona: stanzaIcona || 'door' // default to 'door' if no icon
-          });
-          stanzeMap[stanzaNome] = stanzaRes.id;
-          createdStanzeIds.push(stanzaRes.id);
-        } catch (stanzaErr: any) {
-          await rollbackAll(`Errore creazione stanza "${stanzaNome}"`);
-          throw new Error(`Errore creazione stanza "${stanzaNome}": ${stanzaErr.response?.data?.error || stanzaErr.message}`);
-        }
-      }
-
-      // 4. Registra tutti i dispositivi
-      for (const dispositivo of dispositivi) {
-        const stanzaId = dispositivo.stanza_nome ? stanzeMap[dispositivo.stanza_nome] : undefined;
-        const deviceType = (dispositivo.device_type as 'omniapi_node' | 'omniapi_led') || 'omniapi_node';
-
-        try {
-          const result = await omniapiApi.registerNode(
-            createdImpiantoId,
-            dispositivo.mac,
-            dispositivo.nome,
-            stanzaId,
-            deviceType
-          );
-          if (result.dispositivo?.id) {
-            createdDispositiviIds.push(result.dispositivo.id);
+        for (let i = 0; i < commissionedNodes.length; i++) {
+          const node = commissionedNodes[i];
+          try {
+            await omniapiApi.registerNode(
+              impiantoId,
+              node.mac,
+              node.name,
+              undefined,
+              (node.type as 'omniapi_node' | 'omniapi_led') || 'omniapi_node'
+            );
+            console.log(`[StepCompleto] Node ${node.mac} registered in DB`);
+          } catch (regErr) {
+            console.error(`[StepCompleto] DB registration failed for ${node.mac}:`, regErr);
           }
-        } catch (dispErr: any) {
-          const errMsg = dispErr.response?.data?.error || dispErr.message || 'Errore sconosciuto';
-          await rollbackAll(`Errore registrazione dispositivo "${dispositivo.nome}"`);
-          throw new Error(`Dispositivo "${dispositivo.nome}" non registrabile: ${errMsg}`);
+          setProgress((hasNodes ? 80 : 60) + Math.round((i + 1) * nodeSlice));
         }
       }
+      setProgress(hasNodes ? 90 : 70);
 
-      // 5. Auto-popola scene Entra/Esci (non blocca se fallisce)
+      // ========== FASE 6: Auto-popola scene (non bloccante) ==========
+      setStatusMessage('Finalizzazione...');
+      setProgress(95);
       try {
-        await api.post(`/api/impianti/${createdImpiantoId}/scene/auto-populate`);
+        await api.post(`/api/impianti/${impiantoId}/scene/auto-populate`);
       } catch (_sceneErr) {
-        // Auto-populate failed, non-blocking
+        // Non bloccante
       }
 
+      setProgress(100);
+      setCommissionFailures(failures);
+      console.log('[StepCompleto] Setup completato! Failures:', failures);
+      setPhase('success');
     } catch (err: any) {
+      console.error('[StepCompleto] Errore setup:', err);
+      hasCreatedRef.current = false;
       setError(err.response?.data?.error || err.message || 'Errore durante la creazione');
-    } finally {
-      setCreating(false);
+      setPhase('error');
     }
   };
 
-  // Loading state
-  if (creating) {
+  const handleRetry = () => {
+    hasCreatedRef.current = false;
+    startSetup();
+  };
+
+  // ============================================
+  // RENDER: SUMMARY (default view)
+  // ============================================
+  if (phase === 'summary') {
+    return (
+      <Card variant="glass" style={{ padding: spacing.md }}>
+        {/* Header */}
+        <div
+          className="flex items-center"
+          style={{ gap: spacing.sm, marginBottom: spacing.md }}
+        >
+          <div
+            style={{
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              background: `${colors.accent}20`,
+            }}
+          >
+            <RiCheckboxCircleLine
+              style={{
+                width: 'clamp(20px, 6vw, 28px)',
+                height: 'clamp(20px, 6vw, 28px)',
+                color: colors.accent,
+              }}
+            />
+          </div>
+          <div>
+            <h2
+              style={{
+                fontSize: fontSize.lg,
+                fontWeight: 'bold',
+                color: modeColors.textPrimary,
+              }}
+            >
+              Riepilogo Setup
+            </h2>
+            <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
+              Controlla i dati prima di completare
+            </p>
+          </div>
+        </div>
+
+        {/* Impianto */}
+        <Card
+          variant="glass-dark"
+          style={{ padding: spacing.md, marginBottom: spacing.sm }}
+        >
+          <div className="flex items-center" style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+            <RiHome4Line style={{ width: 20, height: 20, color: colors.accent }} />
+            <span style={{ fontSize: fontSize.md, fontWeight: 600, color: modeColors.textPrimary }}>
+              Impianto
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <p style={{ fontSize: fontSize.sm, color: modeColors.textPrimary, fontWeight: 500 }}>
+              {impianto.nome}
+            </p>
+            <div className="flex items-center" style={{ gap: spacing.xs }}>
+              <RiMapPinLine style={{ width: 14, height: 14, color: modeColors.textSecondary }} />
+              <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                {impianto.indirizzo}, {impianto.citta} {impianto.cap}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Gateway */}
+        <Card
+          variant="glass-dark"
+          style={{ padding: spacing.md, marginBottom: spacing.sm }}
+        >
+          <div className="flex items-center" style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+            <RiRouterLine style={{ width: 20, height: 20, color: colors.accent }} />
+            <span style={{ fontSize: fontSize.md, fontWeight: 600, color: modeColors.textPrimary }}>
+              Gateway
+            </span>
+          </div>
+          {gateway ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: spacing.xs,
+              }}
+            >
+              <div className="flex items-center" style={{ gap: spacing.xs }}>
+                <RiCpuLine style={{ width: 14, height: 14, color: modeColors.textSecondary }} />
+                <div>
+                  <p style={{ fontSize: '10px', color: modeColors.textSecondary }}>MAC</p>
+                  <p className="font-mono" style={{ fontSize: fontSize.xs, color: modeColors.textPrimary }}>
+                    {gateway.mac}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center" style={{ gap: spacing.xs }}>
+                <RiWifiLine style={{ width: 14, height: 14, color: modeColors.textSecondary }} />
+                <div>
+                  <p style={{ fontSize: '10px', color: modeColors.textSecondary }}>IP</p>
+                  <p className="font-mono" style={{ fontSize: fontSize.xs, color: modeColors.textPrimary }}>
+                    {gateway.ip}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: fontSize.sm, color: modeColors.textMuted }}>
+              Nessun gateway selezionato
+            </p>
+          )}
+        </Card>
+
+        {/* Nodi */}
+        <Card
+          variant="glass-dark"
+          style={{ padding: spacing.md, marginBottom: spacing.lg }}
+        >
+          <div className="flex items-center" style={{ gap: spacing.sm, marginBottom: spacing.sm }}>
+            <RiDeviceLine style={{ width: 20, height: 20, color: colors.accent }} />
+            <span style={{ fontSize: fontSize.md, fontWeight: 600, color: modeColors.textPrimary }}>
+              Nodi da commissionare ({selectedNodes.length})
+            </span>
+          </div>
+          {selectedNodes.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {selectedNodes.map((n) => (
+                <div key={n.mac} className="flex items-center justify-between">
+                  <span style={{ fontSize: fontSize.sm, color: modeColors.textPrimary }}>
+                    {n.name}
+                  </span>
+                  <span className="font-mono" style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                    {n.mac.slice(-8)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: fontSize.sm, color: modeColors.textMuted }}>
+              Nessun nodo selezionato
+            </p>
+          )}
+        </Card>
+
+        {/* Bottone Completa Setup */}
+        <div className="flex justify-center">
+          <Button variant="primary" onClick={startSetup} style={{ padding: '14px 32px', fontSize: fontSize.md }}>
+            Completa Setup
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  // ============================================
+  // RENDER: CREATING (progress bar)
+  // ============================================
+  if (phase === 'creating') {
     return (
       <div
         className="min-h-[300px] flex flex-col items-center justify-center"
@@ -285,21 +525,50 @@ export const StepCompleto = ({
             width: 'clamp(40px, 12vw, 56px)',
             height: 'clamp(40px, 12vw, 56px)',
             color: colors.accent,
-            marginBottom: spacing.sm,
+            marginBottom: spacing.md,
           }}
         />
         <h2 style={{ fontSize: fontSize.lg, fontWeight: 'bold', marginBottom: spacing.xs, color: modeColors.textPrimary }}>
-          Creazione in corso...
+          Configurazione in corso...
         </h2>
-        <p className="text-center" style={{ fontSize: fontSize.sm, color: modeColors.textSecondary }}>
-          Stiamo configurando il tuo impianto
+        <p className="text-center" style={{ fontSize: fontSize.sm, color: modeColors.textSecondary, marginBottom: spacing.md }}>
+          {statusMessage}
+        </p>
+
+        {/* Progress bar */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 320,
+            height: 8,
+            borderRadius: 4,
+            background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+            marginBottom: spacing.xs,
+          }}
+        >
+          <motion.div
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            style={{
+              height: '100%',
+              borderRadius: 4,
+              background: `linear-gradient(90deg, ${colors.accent}, ${colors.accentDark || colors.accent})`,
+              boxShadow: `0 0 10px ${colors.accent}60`,
+            }}
+          />
+        </div>
+        <p style={{ fontSize: fontSize.xs, color: modeColors.textMuted }}>
+          {progress}%
         </p>
       </div>
     );
   }
 
-  // Error state
-  if (error) {
+  // ============================================
+  // RENDER: ERROR
+  // ============================================
+  if (phase === 'error') {
     return (
       <div
         className="min-h-[300px] flex flex-col items-center justify-center"
@@ -330,7 +599,7 @@ export const StepCompleto = ({
           {isGatewayError && onGoToStep ? (
             <Button variant="primary" onClick={() => onGoToStep(2)}>Altro Gateway</Button>
           ) : (
-            <Button variant="primary" onClick={createEverything}>Riprova</Button>
+            <Button variant="primary" onClick={handleRetry}>Riprova</Button>
           )}
         </div>
       </div>
@@ -338,19 +607,17 @@ export const StepCompleto = ({
   }
 
   // ============================================
-  // SUCCESS STATE - ANIMAZIONE CYBER + ONDE LOOP
+  // RENDER: SUCCESS - ANIMAZIONE CYBER + ONDE LOOP
   // ============================================
-
   return (
     <div
       className="relative overflow-hidden rounded-2xl"
       style={{
-        minHeight: 'calc(100vh - 180px)',  // Altezza dinamica, meno spazio vuoto
+        minHeight: 'calc(100vh - 180px)',
         maxHeight: 600,
         background: 'transparent',
       }}
     >
-      {/* Container animazione centrato */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ paddingTop: spacing.sm }}>
 
         {/* PARTICELLE che convergono da tutti i lati */}
@@ -417,7 +684,7 @@ export const StepCompleto = ({
           </motion.div>
         )}
 
-        {/* ESPLOSIONE - Particelle verso fuori */}
+        {/* ESPLOSIONE */}
         <AnimatePresence>
           {animPhase === 'exploding' && Array.from({ length: 80 }).map((_, i) => {
             const angle = (i / 80) * Math.PI * 2;
@@ -461,12 +728,9 @@ export const StepCompleto = ({
           ))}
         </AnimatePresence>
 
-        {/* ============================================ */}
-        {/* FASE COMPLETE - Contenuto + ONDE LOOP INFINITO */}
-        {/* ============================================ */}
+        {/* FASE COMPLETE */}
         {animPhase === 'complete' && (
           <>
-            {/* CONTENUTO FINALE con wrapper per icona + onde */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -480,7 +744,7 @@ export const StepCompleto = ({
                 textAlign: 'center',
               }}
             >
-              {/* WRAPPER per icona + onde - centratura perfetta */}
+              {/* WRAPPER per icona + onde */}
               <div
                 style={{
                   position: 'relative',
@@ -492,7 +756,7 @@ export const StepCompleto = ({
                   marginBottom: spacing.md,
                 }}
               >
-                {/* ONDE LOOP INFINITO - centrate nel wrapper con margin */}
+                {/* ONDE LOOP INFINITO */}
                 {[1, 2, 3].map(ring => (
                   <motion.div
                     key={`loop-ring-${ring}`}
@@ -511,8 +775,8 @@ export const StepCompleto = ({
                       left: '50%',
                       width: 100,
                       height: 100,
-                      marginTop: -50,   // Centra verticalmente (metà dell'altezza)
-                      marginLeft: -50,  // Centra orizzontalmente (metà della larghezza)
+                      marginTop: -50,
+                      marginLeft: -50,
                       borderRadius: '50%',
                       border: `2px solid ${colors.accent}`,
                       boxShadow: `0 0 20px ${colors.accent}40`,
@@ -521,7 +785,7 @@ export const StepCompleto = ({
                   />
                 ))}
 
-                {/* Icona Casa finale - centrata */}
+                {/* Icona Casa finale */}
                 <motion.div
                   animate={{
                     boxShadow: [
@@ -550,13 +814,39 @@ export const StepCompleto = ({
               >
                 Impianto Creato!
               </h1>
-              <p style={{ color: modeColors.textSecondary, marginBottom: spacing.md }}>
+              <p style={{ color: modeColors.textSecondary, marginBottom: spacing.sm }}>
                 {impianto.nome} è pronto
               </p>
 
+              {/* Warning per nodi falliti */}
+              {commissionFailures.length > 0 && (
+                <div
+                  style={{
+                    background: 'rgba(234, 179, 8, 0.15)',
+                    border: '1px solid rgba(234, 179, 8, 0.3)',
+                    borderRadius: radius.md,
+                    padding: spacing.sm,
+                    marginBottom: spacing.sm,
+                    maxWidth: 300,
+                  }}
+                >
+                  <p style={{ fontSize: fontSize.xs, color: '#eab308', fontWeight: 500, marginBottom: 2 }}>
+                    Commissioning fallito per:
+                  </p>
+                  {commissionFailures.map((name, i) => (
+                    <p key={i} style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+                      • {name}
+                    </p>
+                  ))}
+                  <p style={{ fontSize: '10px', color: modeColors.textMuted, marginTop: 4 }}>
+                    Potrai aggiungerli in seguito dalle impostazioni
+                  </p>
+                </div>
+              )}
+
               {/* Badges */}
               <div className="flex flex-wrap justify-center gap-3" style={{ marginBottom: spacing.lg }}>
-                {gateway.mac && (
+                {gateway && (
                   <div
                     className="flex items-center gap-2 px-4 py-2 rounded-full"
                     style={{ background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
@@ -565,14 +855,14 @@ export const StepCompleto = ({
                     <span className="text-sm" style={{ color: modeColors.textSecondary }}>Gateway</span>
                   </div>
                 )}
-                {dispositivi.length > 0 && (
+                {selectedNodes.length > 0 && (
                   <div
                     className="flex items-center gap-2 px-4 py-2 rounded-full"
                     style={{ background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }}
                   >
                     <RiDeviceLine size={18} style={{ color: colors.accent }} />
                     <span className="text-sm" style={{ color: modeColors.textSecondary }}>
-                      {dispositivi.length} dispositiv{dispositivi.length === 1 ? 'o' : 'i'}
+                      {selectedNodes.length - commissionFailures.length} nod{selectedNodes.length - commissionFailures.length === 1 ? 'o' : 'i'}
                     </span>
                   </div>
                 )}

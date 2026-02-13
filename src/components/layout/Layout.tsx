@@ -1,4 +1,5 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
 import { MobileHeader } from './MobileHeader';
@@ -6,7 +7,9 @@ import { AdminModeBorder } from './AdminModeBorder';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAdminModeStore } from '@/store/adminModeStore';
+import { useOmniapiStore } from '@/store/omniapiStore';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { socketService } from '@/services/socket';
 import { spacing } from '@/styles/responsive';
 
 // ============================================
@@ -31,8 +34,22 @@ export const Layout = ({ children }: LayoutProps) => {
   const { colors: themeColors, modeColors, isDarkMode } = useThemeColor();
   const { impiantoCorrente } = useImpiantoContext();
   const isAdminMode = useAdminModeStore((state) => state.isAdminMode);
+  const gateway = useOmniapiStore((state) => state.gateway);
+  const navigate = useNavigate();
 
-  useWebSocket(impiantoCorrente?.id ?? null);
+  // WebSocket connection state
+  const [wsConnected, setWsConnected] = useState(socketService.isConnected());
+  useEffect(() => {
+    const unsub = socketService.onConnectionStateChange(setWsConnected);
+    return unsub;
+  }, []);
+
+  useWebSocket(impiantoCorrente?.id ?? null, {
+    onCondivisioneRemoved: () => navigate('/impianti', { replace: true }),
+  });
+
+  // Gateway offline = gateway exists but online === false
+  const gatewayOffline = gateway !== null && gateway.online === false;
 
   const { bgGradient, ambientGlow } = useMemo(() => {
     const accentRgb = hexToRgb(themeColors.accent);
@@ -68,6 +85,44 @@ export const Layout = ({ children }: LayoutProps) => {
         className="fixed inset-0 pointer-events-none z-0"
         style={{ background: ambientGlow }}
       />
+
+      {/* Status banners - fixed top, above all content */}
+      {gatewayOffline && (
+        <div style={{
+          position: 'fixed',
+          top: isAdminMode ? '40px' : 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          background: 'rgba(220, 38, 38, 0.95)',
+          color: '#fff',
+          padding: '8px 16px',
+          fontSize: '13px',
+          fontWeight: 600,
+          textAlign: 'center',
+          backdropFilter: 'blur(8px)',
+        }}>
+          Gateway non raggiungibile. I comandi non funzioneranno.
+        </div>
+      )}
+      {!wsConnected && (
+        <div style={{
+          position: 'fixed',
+          top: isAdminMode ? (gatewayOffline ? '76px' : '40px') : (gatewayOffline ? '36px' : 0),
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          background: 'rgba(234, 138, 0, 0.95)',
+          color: '#fff',
+          padding: '8px 16px',
+          fontSize: '13px',
+          fontWeight: 600,
+          textAlign: 'center',
+          backdropFilter: 'blur(8px)',
+        }}>
+          Connessione al server persa. Riconnessione in corso...
+        </div>
+      )}
 
       {/* Sidebar - Desktop only */}
       <aside className="hidden md:flex md:flex-shrink-0 relative z-10">

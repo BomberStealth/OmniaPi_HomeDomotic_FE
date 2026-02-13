@@ -24,7 +24,8 @@ import {
   RiLoader4Line,
   RiSaveLine,
   RiDeleteBinLine,
-  RiAlertLine
+  RiAlertLine,
+  RiCpuLine,
 } from 'react-icons/ri';
 
 // ============================================
@@ -75,6 +76,9 @@ export const ImpiantoSettings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Permesso firmware: admin o installatore
+  const canManageFirmware = user?.ruolo === UserRole.ADMIN || user?.ruolo === UserRole.INSTALLATORE;
 
   // Colori dinamici basati sul tema
   const colors = {
@@ -483,6 +487,16 @@ export const ImpiantoSettings = () => {
             subtitle="Gestisci accessi e inviti"
             onClick={() => navigate('/impianto/condivisioni')}
           />
+
+          {canManageFirmware && (
+            <SettingRow
+              icon={RiCpuLine}
+              iconBg={`${colors.accent}20`}
+              title="Gestione Firmware"
+              subtitle="Aggiorna gateway e nodi"
+              onClick={() => navigate(`/impianto/${impiantoCorrente.id}/firmware`)}
+            />
+          )}
         </div>
 
         {/* Mappa Placeholder */}

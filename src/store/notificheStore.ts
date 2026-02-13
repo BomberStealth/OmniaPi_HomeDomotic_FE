@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { api } from '@/services/api';
-import { socketService, NotificationEvent } from '@/services/socket';
+import { socketService } from '@/services/socket';
 
 interface NotificheState {
   unreadCount: number;
@@ -22,7 +22,7 @@ interface NotificheState {
 }
 
 // Callback globale per evitare duplicati - usa listener diretto per non essere rimosso da altri
-let globalNotificationHandler: ((notification: NotificationEvent) => void) | null = null;
+let globalNotificationHandler: ((notification: any) => void) | null = null;
 
 export const useNotificheStore = create<NotificheState>((set, get) => ({
   unreadCount: 0,
@@ -73,7 +73,7 @@ export const useNotificheStore = create<NotificheState>((set, get) => ({
       return;
     }
 
-    globalNotificationHandler = (notification: NotificationEvent) => {
+    globalNotificationHandler = (notification: any) => {
       // Ignora eventi di tipo condivisione-rimossa (gestiti da ImpiantoContext)
       if ((notification as any).tipo === 'condivisione-rimossa') return;
       set(state => ({ unreadCount: state.unreadCount + 1 }));

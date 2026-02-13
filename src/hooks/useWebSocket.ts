@@ -17,6 +17,7 @@ interface UseWebSocketOptions {
   onPermessiAggiornati?: (data: any) => void;
   onKickedFromImpianto?: (data: { impiantoId: number }) => void;
   onCondivisioneUpdate?: (type: string, data: any) => void;
+  onCondivisioneRemoved?: () => void;
   onGatewayUpdate?: (type: string, data: any) => void;
 }
 
@@ -180,21 +181,13 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
           break;
 
         case WS_EVENTS.CONDIVISIONE_REMOVED:
-          // NUCLEAR OPTION: Svuota TUTTI gli store e ricarica la pagina
-          console.log('[WS] CONDIVISIONE_REMOVED - NUCLEAR RESET');
-
-          // Svuota tutti gli store
+          console.log('[WS] CONDIVISIONE_REMOVED — clearing stores and navigating');
           useCondivisioniStore.getState().clear();
           sceneStore.clear();
           stanzeStore.clear();
           dispositiviStore.clear();
           omniapiStore.clear();
-
-          // Forza reload della pagina dopo 500ms
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-
+          opts.onCondivisioneRemoved?.();
           opts.onCondivisioneUpdate?.(type, payload);
           break;
 
@@ -226,10 +219,22 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
     // Subscribe to events
     const unsubscribe = socketService.onEvent(handleEvent);
 
+    // Subscribe to reconnection — refetch all data when WS reconnects
+    const unsubReconnect = socketService.onReconnect(() => {
+      if (impiantoId) {
+        console.log('[WS] 🔄 Reconnected — refetching data for impianto', impiantoId);
+        useStanzeStore.getState().fetchStanze(impiantoId);
+        useSceneStore.getState().fetchScene(impiantoId);
+        useDispositiviStore.getState().fetchDispositivi(impiantoId);
+        useCondivisioniStore.getState().fetchCondivisioni(impiantoId);
+      }
+    });
+
     // Cleanup: only unsubscribe, don't leave room
     // Leave is handled by socketService.joinImpianto when switching
     return () => {
       unsubscribe();
+      unsubReconnect();
     };
   }, [token, impiantoId]);
 
