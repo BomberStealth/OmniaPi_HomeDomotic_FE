@@ -4,6 +4,7 @@ import { UnifiedDeviceCard, GatewayCard } from '@/components/devices';
 import { AddDeviceModal } from '@/components/dispositivi';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useDispositiviStore, Dispositivo } from '@/store/dispositiviStore';
+import { useOmniapiStore } from '@/store/omniapiStore';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { omniapiApi } from '@/services/omniapiApi';
 import { tasmotaApi } from '@/services/api';
@@ -40,6 +41,7 @@ export const Dispositivi = () => {
 
   // Use the SAME store as Dashboard
   const { dispositivi, loading, updatePowerState, updateLedState, fetchDispositivi } = useDispositiviStore();
+  const { setPending, isDevicePending } = useOmniapiStore();
 
   // Permessi utente sull'impianto corrente
   const { permessi, canControl, canViewState } = usePermessiImpianto(impiantoCorrente?.id || null);
@@ -142,14 +144,17 @@ export const Dispositivi = () => {
         if (dispositivo.device_type === 'omniapi_led') {
           await omniapiApi.sendLedCommand(dispositivo.mac_address!, targetState ? 'on' : 'off');
         } else if (dispositivo.device_type === 'omniapi_node') {
+          // Set pending state for spinner feedback
+          if (dispositivo.mac_address) setPending(dispositivo.mac_address, 1);
           await omniapiApi.controlNode(dispositivo.id, 1, targetState ? 'on' : 'off');
         } else {
           await tasmotaApi.controlDispositivo(dispositivo.id, targetState ? 'ON' : 'OFF');
         }
       } catch (err: any) {
-        // Revert on error
+        // Revert on error + clear pending
         updatePowerState(dispositivo.id, !targetState);
         if (dispositivo.device_type === 'omniapi_led') updateLedState(dispositivo.id, { led_power: !targetState });
+        if (dispositivo.mac_address) useOmniapiStore.getState().clearPending(dispositivo.mac_address);
         toast.error(err.response?.data?.blocked ? 'Bloccato' : 'Errore');
       }
     }, 300));
@@ -529,7 +534,7 @@ export const Dispositivi = () => {
                       key={dispositivo.id}
                       nome={dispositivo.nome}
                       isOn={!!dispositivo.power_state}
-                      isLoading={false}
+                      isLoading={dispositivo.device_type === 'omniapi_node' && !!dispositivo.mac_address && isDevicePending(dispositivo.mac_address)}
                       bloccato={!!dispositivo.bloccato}
                       canControl={canControl}
                       canViewState={canViewState}

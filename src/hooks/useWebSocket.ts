@@ -134,6 +134,21 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
           }
           break;
 
+        // COMMAND TIMEOUT — relay command not confirmed within 5s
+        case WS_EVENTS.COMMAND_TIMEOUT:
+          if (payload?.mac) {
+            console.log(`[WS] COMMAND_TIMEOUT: ${payload.mac} ch${payload.channel}`);
+            // Clear pending state
+            omniapiStore.clearPending(payload.mac);
+            // Rollback: revert the optimistic update by re-fetching from backend
+            const timeoutDisp = dispositiviStore.dispositivi.find(d => d.mac_address === payload.mac);
+            if (timeoutDisp) {
+              // Revert power_state to opposite of current (undo optimistic toggle)
+              dispositiviStore.updatePowerState(timeoutDisp.id, !timeoutDisp.power_state);
+            }
+          }
+          break;
+
         case WS_EVENTS.LED_UPDATED:
           if (payload?.mac) {
             omniapiStore.updateLedDevice(payload);

@@ -13,6 +13,9 @@ interface OmniapiState {
   isLoading: boolean;
   error: string | null;
 
+  // Pending relay commands (MAC_channel keys, e.g. "AA:BB:CC:DD:EE:FF_1")
+  pendingCommands: Set<string>;
+
   // Actions
   fetchGateway: () => Promise<void>;
   fetchNodes: () => Promise<void>;
@@ -21,6 +24,11 @@ interface OmniapiState {
   // LED Strip Actions
   fetchLedDevices: () => Promise<void>;
   sendLedCommand: (mac: string, action: string, params?: { r?: number; g?: number; b?: number; brightness?: number; effect?: number; speed?: number }) => Promise<boolean>;
+
+  // Pending commands management
+  setPending: (mac: string, channel: number) => void;
+  clearPending: (mac: string) => void;
+  isDevicePending: (mac: string) => boolean;
 
   // WebSocket updates
   updateGateway: (gateway: OmniapiGateway) => void;
@@ -37,6 +45,7 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
   ledDevices: [],
   isLoading: false,
   error: null,
+  pendingCommands: new Set<string>(),
 
   fetchGateway: async () => {
     try {
@@ -84,16 +93,51 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
     }
   },
 
+  // Pending commands management
+  setPending: (mac, channel) => {
+    const key = `${mac}_${channel}`;
+    set((state) => {
+      const next = new Set(state.pendingCommands);
+      next.add(key);
+      return { pendingCommands: next };
+    });
+  },
+
+  clearPending: (mac) => {
+    set((state) => {
+      const next = new Set(state.pendingCommands);
+      // Clear all channels for this MAC
+      for (const key of next) {
+        if (key.startsWith(mac)) next.delete(key);
+      }
+      return { pendingCommands: next };
+    });
+  },
+
+  isDevicePending: (mac) => {
+    const { pendingCommands } = get();
+    for (const key of pendingCommands) {
+      if (key.startsWith(mac)) return true;
+    }
+    return false;
+  },
+
   // WebSocket handlers
   updateGateway: (gateway) => {
     set({ gateway });
   },
 
   updateNode: (updatedNode) => {
+    // Clear pending state when we get a confirmed update from backend
+    const next = new Set(get().pendingCommands);
+    for (const key of next) {
+      if (key.startsWith(updatedNode.mac)) next.delete(key);
+    }
     set((state) => ({
       nodes: state.nodes.map((node) =>
         node.mac === updatedNode.mac ? { ...node, ...updatedNode } : node
       ),
+      pendingCommands: next,
     }));
   },
 
@@ -144,6 +188,6 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
   },
 
   clear: () => {
-    set({ gateway: null, nodes: [], ledDevices: [], isLoading: false, error: null });
+    set({ gateway: null, nodes: [], ledDevices: [], isLoading: false, error: null, pendingCommands: new Set() });
   },
 }));

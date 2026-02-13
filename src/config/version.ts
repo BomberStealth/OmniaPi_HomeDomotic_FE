@@ -2,11 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.9.0';
+export const APP_VERSION = 'v2.10.0';
 
-// Changelog v2.9.0:
-// - Log operazioni critiche (admin/installatore)
-// - Pagina Log Operazioni in Impostazioni Impianto
+// Changelog v2.10.0:
+// - Feedback bidirezionale toggle relay (pending + timeout rollback)
+// - COMMAND_TIMEOUT WebSocket event
+// - Loading spinner su toggle dispositivi OmniaPi
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)
