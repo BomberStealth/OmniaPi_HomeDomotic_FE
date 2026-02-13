@@ -2,13 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.8.0';
+export const APP_VERSION = 'v2.9.0';
 
-// Changelog v2.8.0:
-// - Banner gateway offline (rosso fisso, tutte le pagine)
-// - Banner connessione WebSocket persa (arancione)
-// - Toggle disabilitato quando gateway offline
-// - Riconciliazione deferred (no factory-reset immediato)
+// Changelog v2.9.0:
+// - Log operazioni critiche (admin/installatore)
+// - Pagina Log Operazioni in Impostazioni Impianto
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

@@ -26,6 +26,7 @@ import {
   RiDeleteBinLine,
   RiAlertLine,
   RiCpuLine,
+  RiFileListLine,
 } from 'react-icons/ri';
 
 // ============================================
@@ -495,6 +496,16 @@ export const ImpiantoSettings = () => {
               title="Gestione Firmware"
               subtitle="Aggiorna gateway e nodi"
               onClick={() => navigate(`/impianto/${impiantoCorrente.id}/firmware`)}
+            />
+          )}
+
+          {canManageFirmware && (
+            <SettingRow
+              icon={RiFileListLine}
+              iconBg={`${colors.accent}20`}
+              title="Log Operazioni"
+              subtitle="Storico operazioni critiche"
+              onClick={() => navigate(`/impianto/${impiantoCorrente.id}/operations`)}
             />
           )}
         </div>

@@ -254,6 +254,16 @@ export const omniapiApi = {
     return data;
   },
 
+  // Log operazioni (admin/installatore)
+  getOperations: async (params?: { tipo?: string; limit?: number; impianto_id?: number }): Promise<{
+    success: boolean;
+    operations: any[];
+    count: number;
+  }> => {
+    const { data } = await api.get('/api/admin/operations', { params });
+    return data;
+  },
+
   // Stato gateway + busy lock
   getGatewayStatus: async (): Promise<{
     busy: boolean;
