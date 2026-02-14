@@ -2,12 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.10.0';
+export const APP_VERSION = 'v2.11.1';
 
-// Changelog v2.10.0:
-// - Feedback bidirezionale toggle relay (pending + timeout rollback)
-// - COMMAND_TIMEOUT WebSocket event
-// - Loading spinner su toggle dispositivi OmniaPi
+// Changelog v2.11.1:
+// - FIX: Backend marca nodo offline in memoria su COMMAND_TIMEOUT
+// - FIX: GATEWAY_UPDATED include lista nodi per clearing unreachable
+// - Backup: GATEWAY_UPDATED handler controlla nodi online e cancella unreachable
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

@@ -6,6 +6,10 @@ import { omniapiApi, OmniapiGateway, OmniapiNode, LedDevice } from '@/services/o
 // Gateway ESP-NOW e Node state
 // ============================================
 
+/** Normalize MAC: uppercase, no colons/dashes → "AABBCCDDEEFF" */
+const normalizeMac = (mac: string): string =>
+  mac.toUpperCase().replace(/[:-]/g, '');
+
 interface OmniapiState {
   gateway: OmniapiGateway | null;
   nodes: OmniapiNode[];
@@ -13,7 +17,7 @@ interface OmniapiState {
   isLoading: boolean;
   error: string | null;
 
-  // Pending relay commands (MAC_channel keys, e.g. "AA:BB:CC:DD:EE:FF_1")
+  // Pending relay commands (normalized MAC_channel keys, e.g. "ACA704BE48B0_1")
   pendingCommands: Set<string>;
 
   // Actions
@@ -93,31 +97,36 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
     }
   },
 
-  // Pending commands management
+  // Pending commands management (all MACs normalized for consistent matching)
   setPending: (mac, channel) => {
-    const key = `${mac}_${channel}`;
+    const key = `${normalizeMac(mac)}_${channel}`;
+    console.log(`[PENDING] setPending: mac=${mac} → key=${key}`);
     set((state) => {
       const next = new Set(state.pendingCommands);
       next.add(key);
+      console.log(`[PENDING] pendingCommands after set:`, Array.from(next));
       return { pendingCommands: next };
     });
   },
 
   clearPending: (mac) => {
+    const norm = normalizeMac(mac);
+    console.log(`[PENDING] clearPending: mac=${mac} → norm=${norm}`);
     set((state) => {
       const next = new Set(state.pendingCommands);
-      // Clear all channels for this MAC
       for (const key of next) {
-        if (key.startsWith(mac)) next.delete(key);
+        if (key.startsWith(norm)) next.delete(key);
       }
+      console.log(`[PENDING] pendingCommands after clear:`, Array.from(next));
       return { pendingCommands: next };
     });
   },
 
   isDevicePending: (mac) => {
+    const norm = normalizeMac(mac);
     const { pendingCommands } = get();
     for (const key of pendingCommands) {
-      if (key.startsWith(mac)) return true;
+      if (key.startsWith(norm)) return true;
     }
     return false;
   },
@@ -129,13 +138,15 @@ export const useOmniapiStore = create<OmniapiState>((set, get) => ({
 
   updateNode: (updatedNode) => {
     // Clear pending state when we get a confirmed update from backend
+    // Normalize MAC: MQTT sends AABBCCDDEEFF, DB stores AA:BB:CC:DD:EE:FF
+    const norm = normalizeMac(updatedNode.mac);
     const next = new Set(get().pendingCommands);
     for (const key of next) {
-      if (key.startsWith(updatedNode.mac)) next.delete(key);
+      if (key.startsWith(norm)) next.delete(key);
     }
     set((state) => ({
       nodes: state.nodes.map((node) =>
-        node.mac === updatedNode.mac ? { ...node, ...updatedNode } : node
+        normalizeMac(node.mac) === norm ? { ...node, ...updatedNode } : node
       ),
       pendingCommands: next,
     }));

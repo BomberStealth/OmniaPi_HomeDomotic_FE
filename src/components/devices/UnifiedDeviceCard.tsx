@@ -73,6 +73,9 @@ export interface UnifiedDeviceCardProps {
   temperature?: number;
   humidity?: number;
 
+  // Node status
+  isOffline?: boolean;       // node offline → disabled, gray
+
   // Display variants
   variant?: CardVariant;
   showDelete?: boolean;
@@ -1396,6 +1399,7 @@ const UnifiedDeviceCardComponent = ({
   onLedCustomEffect,
   temperature,
   humidity,
+  isOffline = false,
   variant = 'compact',
   showDelete = false,
   onDelete,
@@ -1441,7 +1445,7 @@ const UnifiedDeviceCardComponent = ({
 
   const isLed = normalizedType === 'led';
   const isSensor = normalizedType === 'sensor';
-  const isDisabled = bloccato || isLoading || !canControl || gatewayOffline;
+  const isDisabled = bloccato || isLoading || !canControl || gatewayOffline || isOffline;
 
   // Dynamic colors based on theme
   const colors = useMemo(() => ({
@@ -1556,19 +1560,21 @@ const UnifiedDeviceCardComponent = ({
   return (
     <motion.div
       style={{
-        background: bloccato
-          ? colors.bgCard
-          : isOn
-            ? `${activeColor}12`
-            : colors.bgCard,
-        border: `1px solid ${bloccato ? 'rgba(100, 100, 100, 0.3)' : isOn ? activeColor : colors.border}`,
+        background: isOffline
+          ? 'rgba(50, 50, 50, 0.4)'
+          : bloccato
+            ? colors.bgCard
+            : isOn
+              ? `${activeColor}12`
+              : colors.bgCard,
+        border: `1px solid ${isOffline ? 'rgba(80, 80, 80, 0.4)' : bloccato ? 'rgba(100, 100, 100, 0.3)' : isOn ? activeColor : colors.border}`,
         borderRadius: variant === 'mini' ? '16px' : '20px',
-        boxShadow: bloccato
+        boxShadow: isOffline || bloccato
           ? 'none'
           : isOn
             ? `0 4px 20px ${activeColor}20, ${colors.cardShadow}`
             : colors.cardShadow,
-        opacity: bloccato ? 0.6 : 1,
+        opacity: isOffline ? 0.45 : bloccato ? 0.6 : 1,
         position: 'relative',
         overflow: 'hidden',
         width: '100%',
@@ -1604,17 +1610,17 @@ const UnifiedDeviceCardComponent = ({
 
       {/* Main clickable area */}
       <motion.button
-        onClick={bloccato ? undefined : onToggle}
+        onClick={isDisabled ? undefined : onToggle}
         disabled={isDisabled}
         style={{
           width: '100%',
           padding: cardPadding,
           background: 'transparent',
           border: 'none',
-          cursor: bloccato ? 'not-allowed' : 'pointer',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
           textAlign: 'left',
         }}
-        whileTap={bloccato ? undefined : { scale: 0.98 }}
+        whileTap={isDisabled ? undefined : { scale: 0.98 }}
       >
         {/* FIXED LAYOUT: Icon left, Toggle right - ALWAYS */}
         <div style={{
@@ -1645,8 +1651,7 @@ const UnifiedDeviceCardComponent = ({
             {isLoading ? (
               <RiLoader4Line
                 size={iconSize}
-                className="animate-spin"
-                style={{ color: isLed && isOn ? '#fff' : colors.accent }}
+                style={{ color: isLed && isOn ? '#fff' : colors.accent, animation: 'spin 1s linear infinite' }}
               />
             ) : bloccato ? (
               <RiLock2Line size={iconSize} style={{ color: 'rgba(150, 150, 150, 0.7)' }} />
@@ -1705,18 +1710,20 @@ const UnifiedDeviceCardComponent = ({
         <p style={{
           fontSize: statusSize,
           fontWeight: 500,
-          color: bloccato || !canControl ? 'rgba(239, 68, 68, 0.7)' : colors.textMuted,
+          color: isOffline || bloccato || !canControl ? 'rgba(239, 68, 68, 0.7)' : colors.textMuted,
           margin: '2px 0 0 0',
         }}>
-          {bloccato
-            ? 'Bloccato'
-            : !canControl
-              ? 'Non autorizzato'
-              : !canViewState
-                ? '---'
-                : isLed && isOn
-                  ? `${Math.round((ledBrightness / 255) * 100)}% luminosità`
-                  : isOn ? 'Acceso' : 'Spento'}
+          {isOffline
+            ? 'Offline'
+            : bloccato
+              ? 'Bloccato'
+              : !canControl
+                ? 'Non autorizzato'
+                : !canViewState
+                  ? '---'
+                  : isLed && isOn
+                    ? `${Math.round((ledBrightness / 255) * 100)}% luminosità`
+                    : isOn ? 'Acceso' : 'Spento'}
         </p>
       </motion.button>
 

@@ -182,12 +182,7 @@ class SocketService {
   // ============================================
 
   joinImpianto(impiantoId: number) {
-    // Evita join duplicati per lo stesso impianto
-    if (this.currentImpiantoId === impiantoId) {
-      console.log('[WS] Already in impianto:', impiantoId);
-      return;
-    }
-
+    // Leave previous room if switching impianto
     if (this.currentImpiantoId && this.currentImpiantoId !== impiantoId) {
       this.leaveImpianto(this.currentImpiantoId);
     }
@@ -195,10 +190,8 @@ class SocketService {
     this.currentImpiantoId = impiantoId;
 
     if (this.socket?.connected) {
-      // Emit in new format
+      // Always emit join — server-side socket.join() is idempotent
       this.socket.emit('join-impianto', { impiantoId });
-      // Also emit in old format for backward compat
-      this.socket.emit('join-impianto', impiantoId);
       console.log('[WS] 📍 Joined impianto:', impiantoId);
     } else {
       console.log('[WS] 📍 Will join impianto on connect:', impiantoId);

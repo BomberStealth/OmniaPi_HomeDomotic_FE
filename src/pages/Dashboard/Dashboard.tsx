@@ -208,6 +208,12 @@ export const Dashboard = () => {
       updateLedState(dispositivo.id, { led_power: newState });
     }
 
+    // Set pending IMMEDIATELY for spinner (before debounce)
+    if (dispositivo.device_type === 'omniapi_node' && dispositivo.mac_address) {
+      console.log('[TOGGLE] setPending Dashboard:', dispositivo.mac_address, 'type:', dispositivo.device_type);
+      setPending(dispositivo.mac_address, 1);
+    }
+
     // Cancel previous timer for this device
     const existing = debounceTimers.current.get(dispositivo.id);
     if (existing) clearTimeout(existing);
@@ -223,8 +229,6 @@ export const Dashboard = () => {
         if (dispositivo.device_type === 'omniapi_led') {
           await omniapiApi.sendLedCommand(dispositivo.mac_address!, targetState ? 'on' : 'off');
         } else if (dispositivo.device_type === 'omniapi_node') {
-          // Set pending state for spinner feedback
-          if (dispositivo.mac_address) setPending(dispositivo.mac_address, 1);
           await omniapiApi.controlNode(dispositivo.id, 1, targetState ? 'on' : 'off');
         } else {
           await tasmotaApi.controlDispositivo(dispositivo.id, targetState ? 'ON' : 'OFF');
@@ -856,6 +860,8 @@ export const Dashboard = () => {
                               bloccato={!!dispositivo.bloccato}
                               canControl={canControl}
                               canViewState={canViewState}
+                              isOffline={dispositivo.stato === 'offline'}
+
                               onToggle={() => toggleDevice(dispositivo)}
                               deviceType={dispositivo.device_type || 'relay'}
                               variant="full"
@@ -957,6 +963,7 @@ export const Dashboard = () => {
                             bloccato={!!dispositivo.bloccato}
                             canControl={canControl}
                             canViewState={canViewState}
+                            isOffline={dispositivo.stato === 'offline'}
                             onToggle={() => toggleDevice(dispositivo)}
                             deviceType={dispositivo.device_type || 'relay'}
                             variant="full"

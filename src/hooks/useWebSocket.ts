@@ -7,6 +7,7 @@ import { useOmniapiStore } from '@/store/omniapiStore';
 import { useCondivisioniStore } from '@/store/condivisioniStore';
 import { useAuthStore } from '@/store/authStore';
 import { useUpdateTrigger } from '@/store/updateTriggerStore';
+import { toast } from '@/utils/toast';
 
 // ============================================
 // WEBSOCKET HOOK - Simplified Architecture
@@ -46,6 +47,9 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
       useSceneStore.getState().fetchScene(impiantoId);
       useDispositiviStore.getState().fetchDispositivi(impiantoId);
       useCondivisioniStore.getState().fetchCondivisioni(impiantoId);
+      // Fetch fresh gateway/nodes status immediately (don't wait for heartbeat)
+      useOmniapiStore.getState().fetchGateway();
+      useOmniapiStore.getState().fetchNodes();
     }
 
     // Event handler
@@ -113,23 +117,91 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
         case WS_EVENTS.GATEWAY_ASSOCIATED:
         case WS_EVENTS.GATEWAY_DISASSOCIATED:
           if (payload) {
-            omniapiStore.updateGateway(payload);
+            useOmniapiStore.getState().updateGateway(payload);
+            // Sync dispositivo.stato from heartbeat nodes
+            if (payload.nodes && Array.isArray(payload.nodes)) {
+              const gwNorm = (m: string) => m.toUpperCase().replace(/[:-]/g, '');
+              const onlineMacs = new Set<string>();
+              payload.nodes.forEach((n: any) => {
+                if (n.mac && n.online) {
+                  onlineMacs.add(gwNorm(n.mac));
+                }
+              });
+
+              if (onlineMacs.size > 0) {
+                useDispositiviStore.setState(state => {
+                  let changed = false;
+                  const next = state.dispositivi.map(d => {
+                    if (!d.mac_address) return d;
+                    if (onlineMacs.has(gwNorm(d.mac_address)) && d.stato === 'offline') {
+                      changed = true;
+                      return { ...d, stato: 'online' };
+                    }
+                    return d;
+                  });
+                  return changed ? { dispositivi: next } : state;
+                });
+              }
+            }
             opts.onGatewayUpdate?.(type, payload);
           }
           break;
 
         case WS_EVENTS.NODE_UPDATED:
           if (payload) {
+            const normMac = (m: string) => m.toUpperCase().replace(/[:-]/g, '');
+
             if (Array.isArray(payload)) {
-              omniapiStore.updateNodes(payload);
+              useOmniapiStore.getState().updateNodes(payload);
+              // Collect updates for a single atomic setState
+              const nodeUpdates = new Map<string, { online: boolean; powerState: boolean }>();
               payload.forEach((node: any) => {
-                const disp = dispositiviStore.dispositivi.find(d => d.mac_address === node.mac);
-                if (disp) dispositiviStore.updatePowerState(disp.id, node.relay1 || node.relay2);
+                if (!node.mac) return;
+                useOmniapiStore.getState().clearPending(node.mac);
+                nodeUpdates.set(normMac(node.mac), {
+                  online: node.online !== false,
+                  powerState: !!(node.relay1 || node.relay2),
+                });
               });
+
+              // ATOMIC setState — fresh state, no stale snapshot
+              useDispositiviStore.setState(state => {
+                let changed = false;
+                const next = state.dispositivi.map(d => {
+                  if (!d.mac_address) return d;
+                  const update = nodeUpdates.get(normMac(d.mac_address));
+                  if (!update) return d;
+                  const newStato = update.online ? 'online' : 'offline';
+                  if (d.power_state !== update.powerState || d.stato !== newStato) {
+                    changed = true;
+                    return { ...d, power_state: update.powerState, stato: newStato };
+                  }
+                  return d;
+                });
+                return changed ? { dispositivi: next } : state;
+              });
+
             } else if (payload.mac) {
-              omniapiStore.updateNode(payload);
-              const disp = dispositiviStore.dispositivi.find(d => d.mac_address === payload.mac);
-              if (disp) dispositiviStore.updatePowerState(disp.id, payload.relay1 || payload.relay2);
+              useOmniapiStore.getState().updateNode(payload);
+              useOmniapiStore.getState().clearPending(payload.mac);
+              const payloadMac = normMac(payload.mac);
+              const newStato = payload.online === false ? 'offline' : 'online';
+              const newPower = !!(payload.relay1 || payload.relay2);
+
+              // ATOMIC setState — fresh state, no stale snapshot
+              useDispositiviStore.setState(state => {
+                let changed = false;
+                const next = state.dispositivi.map(d => {
+                  if (!d.mac_address) return d;
+                  if (normMac(d.mac_address) !== payloadMac) return d;
+                  if (d.power_state !== newPower || d.stato !== newStato) {
+                    changed = true;
+                    return { ...d, power_state: newPower, stato: newStato };
+                  }
+                  return d;
+                });
+                return changed ? { dispositivi: next } : state;
+              });
             }
           }
           break;
@@ -137,15 +209,21 @@ export function useWebSocket(impiantoId: number | null, options: UseWebSocketOpt
         // COMMAND TIMEOUT — relay command not confirmed within 5s
         case WS_EVENTS.COMMAND_TIMEOUT:
           if (payload?.mac) {
-            console.log(`[WS] COMMAND_TIMEOUT: ${payload.mac} ch${payload.channel}`);
-            // Clear pending state
+            console.log(`[WS] COMMAND_TIMEOUT: mac=${payload.mac} ch=${payload.channel}`);
             omniapiStore.clearPending(payload.mac);
-            // Rollback: revert the optimistic update by re-fetching from backend
-            const timeoutDisp = dispositiviStore.dispositivi.find(d => d.mac_address === payload.mac);
-            if (timeoutDisp) {
-              // Revert power_state to opposite of current (undo optimistic toggle)
-              dispositiviStore.updatePowerState(timeoutDisp.id, !timeoutDisp.power_state);
-            }
+            // Rollback optimistic update + mark offline
+            const normTimeout = (m: string) => m.toUpperCase().replace(/[:-]/g, '');
+            const timeoutMac = normTimeout(payload.mac);
+            useDispositiviStore.setState(state => {
+              let changed = false;
+              const next = state.dispositivi.map(d => {
+                if (!d.mac_address || normTimeout(d.mac_address) !== timeoutMac) return d;
+                changed = true;
+                return { ...d, power_state: !d.power_state, stato: 'offline' };
+              });
+              return changed ? { dispositivi: next } : state;
+            });
+            toast.error('Nodo non raggiungibile');
           }
           break;
 
