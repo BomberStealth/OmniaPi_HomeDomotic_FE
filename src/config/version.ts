@@ -2,11 +2,10 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.11.5';
+export const APP_VERSION = 'v2.11.6';
 
-// Changelog v2.11.5:
-// - Fix cascade delete: cleanup operation_log + FK SET NULL
-// - UI: Stile card/bottone gateway wizard coerente col tema
+// Changelog v2.11.6:
+// - Fix: svuota tutti gli store Zustand dopo elimina impianto
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

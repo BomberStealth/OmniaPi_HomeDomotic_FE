@@ -5,6 +5,11 @@ import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useAuthStore } from '@/store/authStore';
 import { useImpiantiStore } from '@/store/impiantiStore';
+import { useDispositiviStore } from '@/store/dispositiviStore';
+import { useSceneStore } from '@/store/sceneStore';
+import { useStanzeStore } from '@/store/stanzeStore';
+import { useOmniapiStore } from '@/store/omniapiStore';
+import { useCondivisioniStore } from '@/store/condivisioniStore';
 import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { impiantiApi } from '@/services/api';
 import { toast } from '@/utils/toast';
@@ -249,6 +254,13 @@ export const ImpiantoSettings = () => {
 
       await impiantiApi.delete(impiantoId);
       removeImpianto(impiantoId);
+
+      // Svuota tutti gli store per evitare dati stale del vecchio impianto
+      useDispositiviStore.getState().clear();
+      useSceneStore.getState().clear();
+      useStanzeStore.getState().clear();
+      useOmniapiStore.getState().clear();
+      useCondivisioniStore.getState().clear();
 
       toast.success('Impianto eliminato con successo');
 
