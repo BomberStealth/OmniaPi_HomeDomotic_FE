@@ -5,7 +5,7 @@ import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
-import { RiArrowLeftLine, RiUserLine, RiMailLine, RiSaveLine, RiDownloadLine, RiDeleteBinLine, RiAlertLine, RiCloseLine } from 'react-icons/ri';
+import { RiArrowLeftLine, RiUserLine, RiMailLine, RiSaveLine, RiDownloadLine, RiDeleteBinLine, RiAlertLine, RiCloseLine, RiMailCheckLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/utils/toast';
 import { api } from '@/services/api';
@@ -45,6 +45,7 @@ export const Profilo = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteEmailSent, setDeleteEmailSent] = useState(false);
 
   const colors = {
     ...baseColors,
@@ -131,9 +132,11 @@ export const Profilo = () => {
     setDeleteLoading(true);
     try {
       const response = await api.post('/api/auth/delete-account', { password: deletePassword });
-      if (response.data.success) {
+      if (response.data.requiresConfirmation) {
+        setShowDeleteModal(false);
+        setDeleteEmailSent(true);
+      } else if (response.data.success) {
         toast.success('Account eliminato con successo');
-        // Logout and redirect
         localStorage.removeItem('token');
         window.location.href = '/login';
       }
@@ -287,6 +290,29 @@ export const Profilo = () => {
         </motion.div>
 
         {/* Danger Zone - Elimina account */}
+        {deleteEmailSent ? (
+          <motion.div style={{ ...cardStyle, padding: '32px' }}>
+            <div style={topHighlight} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', textAlign: 'center' }}>
+              <div style={{ padding: '20px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)' }}>
+                <RiMailCheckLine size={40} style={{ color: '#ef4444' }} />
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
+                Email di conferma inviata
+              </h2>
+              <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0, lineHeight: 1.6 }}>
+                Controlla la tua casella di posta e clicca il link per confermare l'eliminazione del tuo account. Il link scade tra 1 ora.
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/settings')}
+                className="w-full mt-2"
+              >
+                Torna alle Impostazioni
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
         <motion.div
           style={{
             ...cardStyle,
@@ -339,6 +365,7 @@ export const Profilo = () => {
             Elimina il mio account
           </motion.button>
         </motion.div>
+        )}
       </div>
 
       {/* Delete Account Modal */}

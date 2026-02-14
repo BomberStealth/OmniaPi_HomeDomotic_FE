@@ -27,7 +27,10 @@ import {
   RiAlertLine,
   RiCpuLine,
   RiFileListLine,
+  RiDownloadLine,
+  RiUploadLine,
 } from 'react-icons/ri';
+import { api } from '@/services/api';
 
 // ============================================
 // IMPIANTO SETTINGS PAGE - v1.4.15
@@ -77,6 +80,13 @@ export const ImpiantoSettings = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Backup/Restore state
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restoreFile, setRestoreFile] = useState<any>(null);
+  const [restoreFileName, setRestoreFileName] = useState('');
 
   // Permesso firmware: admin o installatore
   const canManageFirmware = user?.ruolo === UserRole.ADMIN || user?.ruolo === UserRole.INSTALLATORE;
@@ -258,6 +268,77 @@ export const ImpiantoSettings = () => {
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
     setDeleteConfirmText('');
+  };
+
+  // Esporta Backup
+  const handleExportBackup = async () => {
+    setExporting(true);
+    try {
+      const { data } = await api.get(`/api/impianti/${impiantoCorrente.id}/backup`);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${impiantoCorrente.nome.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Backup esportato con successo');
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante l\'esportazione');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Importa Backup - apri file picker
+  const handleImportBackup = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target?.result as string);
+          if (!parsed.version || !parsed.impianto) {
+            toast.error('Formato backup non valido');
+            return;
+          }
+          setRestoreFile(parsed);
+          setRestoreFileName(file.name);
+          setShowRestoreModal(true);
+        } catch {
+          toast.error('File JSON non valido');
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  // Conferma Restore
+  const handleConfirmRestore = async () => {
+    if (!restoreFile) return;
+    setImporting(true);
+    try {
+      await api.post(`/api/impianti/${impiantoCorrente.id}/restore`, restoreFile);
+      toast.success('Backup ripristinato con successo');
+      setShowRestoreModal(false);
+      setRestoreFile(null);
+      setRestoreFileName('');
+      // Ricarica i dati dell'impianto
+      await fetchImpianti();
+      const updated = useImpiantiStore.getState().impianti.find(i => i.id === impiantoCorrente.id);
+      if (updated) setImpiantoCorrente(updated);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Errore durante il ripristino');
+    } finally {
+      setImporting(false);
+    }
   };
 
   // Setting Row Component
@@ -507,6 +588,32 @@ export const ImpiantoSettings = () => {
               subtitle="Storico operazioni critiche"
               onClick={() => navigate(`/impianto/${impiantoCorrente.id}/operations`)}
             />
+          )}
+
+          {canManageFirmware && (
+            <>
+              {/* Esporta Backup */}
+              <SettingRow
+                icon={RiDownloadLine}
+                iconBg={`${colors.accent}20`}
+                title="Esporta Backup"
+                subtitle="Scarica un backup JSON dell'impianto"
+                onClick={exporting ? undefined : handleExportBackup}
+                showArrow={!exporting}
+                rightElement={exporting ? (
+                  <RiLoader4Line size={18} style={{ color: colors.accent, animation: 'spin 1s linear infinite' }} />
+                ) : undefined}
+              />
+
+              {/* Ripristina Backup */}
+              <SettingRow
+                icon={RiUploadLine}
+                iconBg={`${colors.accent}20`}
+                title="Ripristina Backup"
+                subtitle="Carica un file di backup JSON"
+                onClick={handleImportBackup}
+              />
+            </>
           )}
         </div>
 
@@ -857,6 +964,138 @@ export const ImpiantoSettings = () => {
                       <>
                         <RiDeleteBinLine size={18} />
                         Elimina
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Conferma Ripristino */}
+      <AnimatePresence>
+        {showRestoreModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0,0,0,0.6)',
+              }}
+              onClick={() => { setShowRestoreModal(false); setRestoreFile(null); setRestoreFileName(''); }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '400px',
+                background: colors.bgCard,
+                borderRadius: '20px',
+                padding: '20px',
+                border: `1px solid ${colors.border}`,
+                boxShadow: colors.cardShadow
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: colors.textPrimary, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <RiUploadLine size={20} />
+                  Ripristina Backup
+                </h3>
+                <motion.button
+                  onClick={() => { setShowRestoreModal(false); setRestoreFile(null); setRestoreFileName(''); }}
+                  style={{ padding: '8px', borderRadius: '10px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                  whileHover={{ background: `${colors.textMuted}20` }}
+                >
+                  <RiCloseLine size={20} color={colors.textMuted} />
+                </motion.button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0 }}>
+                  Stai per ripristinare il backup dal file:
+                </p>
+                <div style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  background: `${colors.accent}10`,
+                  border: `1px solid ${colors.accent}30`,
+                }}>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: colors.textPrimary, margin: 0, wordBreak: 'break-all' }}>
+                    {restoreFileName}
+                  </p>
+                  {restoreFile && (
+                    <p style={{ fontSize: '11px', color: colors.textMuted, margin: '6px 0 0 0' }}>
+                      Impianto: {restoreFile.impianto?.nome || 'N/A'} | Stanze: {restoreFile.stanze?.length || 0} | Dispositivi: {restoreFile.dispositivi?.length || 0} | Scene: {restoreFile.scene?.length || 0}
+                    </p>
+                  )}
+                </div>
+                <p style={{ fontSize: '12px', color: colors.error, margin: 0, fontWeight: 500 }}>
+                  I dati attuali dell'impianto verranno sovrascritti.
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <motion.button
+                    onClick={() => { setShowRestoreModal(false); setRestoreFile(null); setRestoreFileName(''); }}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: colors.bgCard,
+                      border: `1px solid ${colors.border}`,
+                      color: colors.textSecondary,
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Annulla
+                  </motion.button>
+                  <motion.button
+                    onClick={handleConfirmRestore}
+                    disabled={importing}
+                    style={{
+                      flex: 1,
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark})`,
+                      border: 'none',
+                      color: '#fff',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: importing ? 'not-allowed' : 'pointer',
+                      opacity: importing ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                    whileHover={!importing ? { scale: 1.02 } : {}}
+                    whileTap={!importing ? { scale: 0.98 } : {}}
+                  >
+                    {importing ? (
+                      <RiLoader4Line size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <>
+                        <RiUploadLine size={18} />
+                        Ripristina
                       </>
                     )}
                   </motion.button>

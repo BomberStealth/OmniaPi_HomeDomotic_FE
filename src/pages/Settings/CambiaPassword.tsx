@@ -4,7 +4,7 @@ import { Layout } from '@/components/layout/Layout';
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
-import { RiArrowLeftLine, RiLockLine, RiEyeLine, RiEyeOffLine, RiShieldCheckLine } from 'react-icons/ri';
+import { RiArrowLeftLine, RiLockLine, RiEyeLine, RiEyeOffLine, RiShieldCheckLine, RiMailCheckLine } from 'react-icons/ri';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/utils/toast';
 import { api } from '@/services/api';
@@ -44,6 +44,7 @@ export const CambiaPassword = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const colors = {
     ...baseColors,
@@ -98,12 +99,16 @@ export const CambiaPassword = () => {
 
     setLoading(true);
     try {
-      await api.post('/api/auth/change-password', {
+      const response = await api.post('/api/auth/change-password', {
         currentPassword,
         newPassword,
       });
-      toast.success('Password aggiornata con successo');
-      navigate('/settings');
+      if (response.data.requiresConfirmation) {
+        setEmailSent(true);
+      } else {
+        toast.success('Password aggiornata con successo');
+        navigate('/settings');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Errore durante l\'aggiornamento');
     } finally {
@@ -166,6 +171,31 @@ export const CambiaPassword = () => {
           </div>
         </div>
 
+        {/* Email sent confirmation */}
+        {emailSent ? (
+          <div style={{ ...cardStyle, padding: '32px' }}>
+            <div style={topHighlight} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', textAlign: 'center' }}>
+              <div style={{ padding: '20px', borderRadius: '50%', background: `${colors.accent}15` }}>
+                <RiMailCheckLine size={40} style={{ color: colors.accent }} />
+              </div>
+              <h2 style={{ fontSize: '20px', fontWeight: 600, color: colors.textPrimary, margin: 0 }}>
+                Email di conferma inviata
+              </h2>
+              <p style={{ fontSize: '14px', color: colors.textSecondary, margin: 0, lineHeight: 1.6 }}>
+                Controlla la tua casella di posta e clicca il link per confermare il cambio password. Il link scade tra 1 ora.
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/settings')}
+                className="w-full mt-2"
+              >
+                Torna alle Impostazioni
+              </Button>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Icon Card */}
         <div style={{ ...cardStyle, padding: '24px' }}>
           <div style={topHighlight} />
@@ -291,6 +321,8 @@ export const CambiaPassword = () => {
             </Button>
           </div>
         </div>
+        </>
+        )}
       </div>
     </Layout>
   );

@@ -20,6 +20,8 @@ const Register = lazy(() => import('@/pages/Auth/Register').then(m => ({ default
 const VerifyEmail = lazy(() => import('@/pages/Auth/VerifyEmail').then(m => ({ default: m.VerifyEmail })));
 const ForgotPassword = lazy(() => import('@/pages/Auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword = lazy(() => import('@/pages/Auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const ConfirmChangePassword = lazy(() => import('@/pages/Auth/ConfirmChangePassword').then(m => ({ default: m.ConfirmChangePassword })));
+const ConfirmDeleteAccount = lazy(() => import('@/pages/Auth/ConfirmDeleteAccount').then(m => ({ default: m.ConfirmDeleteAccount })));
 const Dashboard = lazy(() => import('@/pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
 const Impianti = lazy(() => import('@/pages/Impianti/Impianti').then(m => ({ default: m.Impianti })));
 const ImpiantoDettaglio = lazy(() => import('@/pages/Impianti/ImpiantoDettaglio').then(m => ({ default: m.ImpiantoDettaglio })));
@@ -165,6 +167,8 @@ function App() {
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/confirm-change-password" element={<ConfirmChangePassword />} />
+                <Route path="/confirm-delete-account" element={<ConfirmDeleteAccount />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<TermsOfService />} />
                 <Route path="/style-preview" element={<StylePreview />} />

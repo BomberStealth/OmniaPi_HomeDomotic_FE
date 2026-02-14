@@ -2,12 +2,13 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.11.1';
+export const APP_VERSION = 'v2.11.3';
 
-// Changelog v2.11.1:
-// - FIX: Backend marca nodo offline in memoria su COMMAND_TIMEOUT
-// - FIX: GATEWAY_UPDATED include lista nodi per clearing unreachable
-// - Backup: GATEWAY_UPDATED handler controlla nodi online e cancella unreachable
+// Changelog v2.11.3:
+// - FEATURE: Conferma email per cambio password e eliminazione account
+// - Pagine di conferma /confirm-change-password e /confirm-delete-account
+// - Fix Firebase service account path
+// - SMTP verify on startup
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)
