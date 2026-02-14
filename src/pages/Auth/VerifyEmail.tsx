@@ -145,7 +145,7 @@ export const VerifyEmail = () => {
         }
       `}</style>
 
-      <FloatingParticles count={isMobile ? 8 : 15} />
+      <FloatingParticles count={isMobile ? 20 : 40} />
 
       {/* Ambient glow */}
       <div

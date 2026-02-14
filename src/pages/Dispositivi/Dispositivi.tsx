@@ -15,6 +15,7 @@ import {
   RiAddLine,
   RiRefreshLine,
   RiDeleteBinLine,
+  RiLoader4Line,
 } from 'react-icons/ri';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -482,34 +483,44 @@ export const Dispositivi = () => {
                   }}
                 >
                   {ledDevices.map((dispositivo) => (
-                    <UnifiedDeviceCard
-                      key={dispositivo.id}
-                      nome={dispositivo.nome}
-                      isOn={!!dispositivo.led_power || !!dispositivo.power_state}
-                      isLoading={false}
-                      bloccato={!!dispositivo.bloccato}
-                      canControl={canControl}
-                      canViewState={canViewState}
-                      isOffline={dispositivo.stato === 'offline'}
-                      onToggle={() => toggleDevice(dispositivo)}
-                      showDelete={canControl}
-                      onDelete={() => setDeleteTarget(dispositivo)}
-                      deviceType="omniapi_led"
-                      variant="full"
-                      ledColor={{
-                        r: dispositivo.led_r ?? 255,
-                        g: dispositivo.led_g ?? 255,
-                        b: dispositivo.led_b ?? 255
-                      }}
-                      ledBrightness={dispositivo.led_brightness ?? 255}
-                      ledEffect={dispositivo.led_effect ?? 0}
-                      ledSpeed={dispositivo.led_speed ?? 128}
-                      onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
-                      onLedEffectChange={(effect) => handleLedEffectChange(dispositivo, effect)}
-                      onLedSpeedChange={(speed) => handleLedSpeedChange(dispositivo, speed)}
-                      onLedNumLedsChange={(numLeds) => handleLedNumLedsChange(dispositivo, numLeds)}
-                      onLedCustomEffect={(colors) => handleLedCustomEffect(dispositivo, colors)}
-                    />
+                    <div key={dispositivo.id} style={{ position: 'relative' }}>
+                      <UnifiedDeviceCard
+                        nome={dispositivo.nome}
+                        isOn={!!dispositivo.led_power || !!dispositivo.power_state}
+                        isLoading={false}
+                        bloccato={!!dispositivo.bloccato}
+                        canControl={canControl}
+                        canViewState={canViewState}
+                        isOffline={dispositivo.stato === 'offline'}
+                        onToggle={() => toggleDevice(dispositivo)}
+                        showDelete={canControl}
+                        onDelete={() => setDeleteTarget(dispositivo)}
+                        deviceType="omniapi_led"
+                        variant="full"
+                        ledColor={{
+                          r: dispositivo.led_r ?? 255,
+                          g: dispositivo.led_g ?? 255,
+                          b: dispositivo.led_b ?? 255
+                        }}
+                        ledBrightness={dispositivo.led_brightness ?? 255}
+                        ledEffect={dispositivo.led_effect ?? 0}
+                        ledSpeed={dispositivo.led_speed ?? 128}
+                        onLedChange={(color, brightness) => handleLedChange(dispositivo, color, brightness)}
+                        onLedEffectChange={(effect) => handleLedEffectChange(dispositivo, effect)}
+                        onLedSpeedChange={(speed) => handleLedSpeedChange(dispositivo, speed)}
+                        onLedNumLedsChange={(numLeds) => handleLedNumLedsChange(dispositivo, numLeds)}
+                        onLedCustomEffect={(colors) => handleLedCustomEffect(dispositivo, colors)}
+                      />
+                      {deleting && deleteTarget?.id === dispositivo.id && (
+                        <div style={{
+                          position: 'absolute', inset: 0, borderRadius: '16px',
+                          background: 'rgba(0,0,0,0.6)', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', zIndex: 10,
+                        }}>
+                          <RiLoader4Line size={28} className="animate-spin" style={{ color: '#fff' }} />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -535,21 +546,31 @@ export const Dispositivi = () => {
                   }}
                 >
                   {relayDevices.map((dispositivo) => (
-                    <UnifiedDeviceCard
-                      key={dispositivo.id}
-                      nome={dispositivo.nome}
-                      isOn={!!dispositivo.power_state}
-                      isLoading={dispositivo.device_type === 'omniapi_node' && !!dispositivo.mac_address && isDevicePending(dispositivo.mac_address)}
-                      bloccato={!!dispositivo.bloccato}
-                      canControl={canControl}
-                      canViewState={canViewState}
-                      isOffline={dispositivo.stato === 'offline'}
-                      onToggle={() => toggleDevice(dispositivo)}
-                      showDelete={canControl}
-                      onDelete={() => setDeleteTarget(dispositivo)}
-                      deviceType={dispositivo.device_type || 'relay'}
-                      variant="full"
-                    />
+                    <div key={dispositivo.id} style={{ position: 'relative' }}>
+                      <UnifiedDeviceCard
+                        nome={dispositivo.nome}
+                        isOn={!!dispositivo.power_state}
+                        isLoading={dispositivo.device_type === 'omniapi_node' && !!dispositivo.mac_address && isDevicePending(dispositivo.mac_address)}
+                        bloccato={!!dispositivo.bloccato}
+                        canControl={canControl}
+                        canViewState={canViewState}
+                        isOffline={dispositivo.stato === 'offline'}
+                        onToggle={() => toggleDevice(dispositivo)}
+                        showDelete={canControl}
+                        onDelete={() => setDeleteTarget(dispositivo)}
+                        deviceType={dispositivo.device_type || 'relay'}
+                        variant="full"
+                      />
+                      {deleting && deleteTarget?.id === dispositivo.id && (
+                        <div style={{
+                          position: 'absolute', inset: 0, borderRadius: '16px',
+                          background: 'rgba(0,0,0,0.6)', display: 'flex',
+                          alignItems: 'center', justifyContent: 'center', zIndex: 10,
+                        }}>
+                          <RiLoader4Line size={28} className="animate-spin" style={{ color: '#fff' }} />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

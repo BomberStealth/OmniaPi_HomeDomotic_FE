@@ -111,7 +111,7 @@ export const SetupWizard = () => {
     background: { color: { value: 'transparent' } },
     fpsLimit: 60,
     particles: {
-      number: { value: 40, density: { enable: true } },
+      number: { value: 100, density: { enable: true } },
       color: { value: colors.accent },
       opacity: { value: { min: 0.1, max: 0.5 } },
       size: { value: { min: 1, max: 4 } },

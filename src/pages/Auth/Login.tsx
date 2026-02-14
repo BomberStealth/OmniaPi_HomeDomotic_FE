@@ -241,7 +241,7 @@ export const Login = () => {
   };
 
   // Particle count based on device
-  const particleCount = isSmallMobile ? 5 : isMobile ? 8 : 20;
+  const particleCount = isSmallMobile ? 12 : isMobile ? 20 : 50;
 
   return (
     <div

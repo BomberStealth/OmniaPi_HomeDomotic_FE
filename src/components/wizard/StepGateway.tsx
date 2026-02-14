@@ -169,27 +169,38 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
           {gateways.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm, marginBottom: spacing.md }}>
               {gateways.map((gw) => (
-                <Card
+                <div
                   key={gw.mac}
-                  variant="glass-dark"
                   style={{
                     padding: spacing.md,
                     background: gw.available
-                      ? 'rgba(34, 197, 94, 0.08)'
-                      : 'rgba(239, 68, 68, 0.08)',
+                      ? `${colors.accent}10`
+                      : 'rgba(239, 68, 68, 0.06)',
                     border: `1px solid ${
                       gw.available
-                        ? 'rgba(34, 197, 94, 0.3)'
-                        : 'rgba(239, 68, 68, 0.3)'
+                        ? `${colors.accent}30`
+                        : 'rgba(239, 68, 68, 0.2)'
                     }`,
+                    borderRadius: radius.lg,
                     opacity: gw.available ? 1 : 0.7,
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (gw.available) {
+                      e.currentTarget.style.borderColor = `${colors.accent}60`;
+                      e.currentTarget.style.boxShadow = `0 0 12px ${colors.accent}20`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = gw.available ? `${colors.accent}30` : 'rgba(239, 68, 68, 0.2)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   <div className="flex items-center justify-between">
                     <div style={{ flex: 1 }}>
                       <div className="flex items-center" style={{ gap: spacing.xs, marginBottom: spacing.xs }}>
                         {gw.available ? (
-                          <RiCheckLine style={{ width: 16, height: 16, color: '#22c55e' }} />
+                          <RiCheckLine style={{ width: 16, height: 16, color: colors.accent }} />
                         ) : (
                           <RiCloseLine style={{ width: 16, height: 16, color: '#ef4444' }} />
                         )}
@@ -197,7 +208,7 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
                           style={{
                             fontSize: fontSize.sm,
                             fontWeight: 600,
-                            color: gw.available ? '#22c55e' : '#ef4444',
+                            color: gw.available ? colors.accent : '#ef4444',
                           }}
                         >
                           {gw.available ? 'Disponibile' : 'GIA\' CONFIGURATO'}
@@ -259,18 +270,41 @@ export const StepGateway = ({ onGatewaySelected, onBack }: StepGatewayProps) => 
                     </div>
 
                     {gw.available && (
-                      <Button
-                        variant="primary"
-                        size="sm"
+                      <button
                         onClick={() => handleSelect(gw)}
-                        style={{ flexShrink: 0, marginLeft: spacing.sm }}
+                        style={{
+                          flexShrink: 0,
+                          marginLeft: spacing.sm,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '8px 16px',
+                          background: `${colors.accent}20`,
+                          color: colors.accent,
+                          border: `1px solid ${colors.accent}40`,
+                          borderRadius: radius.md,
+                          fontSize: fontSize.sm,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = colors.accent;
+                          e.currentTarget.style.color = '#fff';
+                          e.currentTarget.style.boxShadow = `0 4px 12px ${colors.accent}40`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `${colors.accent}20`;
+                          e.currentTarget.style.color = colors.accent;
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       >
                         <RiLinkM size={14} />
-                        <span style={{ marginLeft: 4 }}>Seleziona</span>
-                      </Button>
+                        Seleziona
+                      </button>
                     )}
                   </div>
-                </Card>
+                </div>
               ))}
             </div>
           ) : (

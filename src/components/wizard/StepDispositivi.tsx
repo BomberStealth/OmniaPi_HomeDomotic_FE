@@ -13,7 +13,6 @@ import {
   RiCheckLine,
   RiAddLine,
   RiDeleteBinLine,
-  RiEditLine,
 } from 'react-icons/ri';
 
 // ============================================
@@ -55,8 +54,6 @@ export const StepDispositivi = ({
   const [countdown, setCountdown] = useState(SCAN_COUNTDOWN);
   const [scannedNodes, setScannedNodes] = useState<ScannedNode[]>([]);
   const [error, setError] = useState('');
-  const [editingMac, setEditingMac] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
   const mountedRef = useRef(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -151,12 +148,6 @@ export const StepDispositivi = ({
         : `Nodo ${node.mac.slice(-5)}`;
       onUpdateNodes([...selectedNodes, { mac: node.mac, name: defaultName, type: node.device_type }]);
     }
-  };
-
-  const updateNodeName = (mac: string, name: string) => {
-    onUpdateNodes(selectedNodes.map(n => n.mac === mac ? { ...n, name } : n));
-    setEditingMac(null);
-    setEditName('');
   };
 
   const removeNode = (mac: string) => {
@@ -304,56 +295,15 @@ export const StepDispositivi = ({
             >
               <RiCheckLine size={16} className="text-success flex-shrink-0" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                {editingMac === node.mac ? (
-                  <div className="flex items-center" style={{ gap: spacing.xs }}>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && editName.trim()) updateNodeName(node.mac, editName.trim());
-                        if (e.key === 'Escape') { setEditingMac(null); setEditName(''); }
-                      }}
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        height: 30,
-                        padding: '0 8px',
-                        borderRadius: radius.sm,
-                        background: isDarkMode ? modeColors.bgSecondary : '#f0f0f0',
-                        border: `1px solid ${modeColors.border}`,
-                        color: modeColors.textPrimary,
-                        fontSize: fontSize.xs,
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { if (editName.trim()) updateNodeName(node.mac, editName.trim()); }}
-                    >
-                      OK
-                    </Button>
-                  </div>
-                ) : (
-                  <div
-                    className="flex items-center"
-                    style={{ gap: spacing.xs, cursor: 'pointer' }}
-                    onClick={() => { setEditingMac(node.mac); setEditName(node.name); }}
-                  >
-                    <span
-                      style={{
-                        fontSize: fontSize.sm,
-                        color: modeColors.textPrimary,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {node.name}
-                    </span>
-                    <RiEditLine size={12} style={{ color: modeColors.textMuted, flexShrink: 0 }} />
-                  </div>
-                )}
+                <span
+                  style={{
+                    fontSize: fontSize.sm,
+                    color: modeColors.textPrimary,
+                    fontWeight: 500,
+                  }}
+                >
+                  {node.type === 'omniapi_led' ? 'LED Strip' : 'Nodo OmniaPi'}
+                </span>
                 <span
                   className="font-mono"
                   style={{ fontSize: '10px', color: modeColors.textMuted, display: 'block' }}

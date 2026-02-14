@@ -498,9 +498,28 @@ export const StepCompleto = ({
 
         {/* Bottone Completa Setup */}
         <div className="flex justify-center">
-          <Button variant="primary" onClick={startSetup} style={{ padding: '14px 32px', fontSize: fontSize.md }}>
+          <motion.button
+            onClick={startSetup}
+            whileHover={{ scale: 1.03, boxShadow: `0 6px 30px ${colors.accent}50` }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark || colors.accent}dd)`,
+              color: '#fff',
+              padding: '14px 32px',
+              borderRadius: '14px',
+              border: 'none',
+              fontSize: fontSize.md,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: `0 4px 20px ${colors.accent}40`,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <RiCheckboxCircleLine size={20} />
             Completa Setup
-          </Button>
+          </motion.button>
         </div>
       </Card>
     );
