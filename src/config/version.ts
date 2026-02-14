@@ -2,10 +2,10 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.11.6';
+export const APP_VERSION = 'v2.11.7';
 
-// Changelog v2.11.6:
-// - Fix: svuota tutti gli store Zustand dopo elimina impianto
+// Changelog v2.11.7:
+// - Fix: wizard parte sempre da step 1, rimossa persistenza localStorage
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

@@ -79,17 +79,7 @@ export const SetupWizard = () => {
   const [particlesInit, setParticlesInit] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [state, setState] = useState<WizardState>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return initialState;
-      }
-    }
-    return initialState;
-  });
+  const [state, setState] = useState<WizardState>(initialState);
 
   // Inizializza tsParticles
   useEffect(() => {
@@ -100,10 +90,10 @@ export const SetupWizard = () => {
     });
   }, []);
 
-  // Salva stato in localStorage
+  // Pulisci eventuale stato vecchio in localStorage al mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    localStorage.removeItem(STORAGE_KEY);
+  }, []);
 
   // Configurazione particelle
   const particlesOptions = useMemo(() => ({
