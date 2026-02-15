@@ -2,10 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.11.7';
+export const APP_VERSION = 'v2.14.0';
 
-// Changelog v2.11.7:
-// - Fix: wizard parte sempre da step 1, rimossa persistenza localStorage
+// Changelog v2.14.0:
+// - Feature: MQTT config via custom BLE endpoint durante provisioning
+// - Auto-detect broker URL dal hostname corrente
 export const APP_NAME = 'OmniaPi Home Domotica';
 
 // Svuota tutte le cache e ricarica (solo manuale da Settings)

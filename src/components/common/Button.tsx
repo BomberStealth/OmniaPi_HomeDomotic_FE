@@ -31,6 +31,7 @@ export const Button = ({
   fullWidth = false,
   className = '',
   disabled,
+  style: styleProp,
   ...props
 }: ButtonProps) => {
   const { colors: themeColors, modeColors, isDarkMode, useGradients } = useThemeColor();
@@ -103,6 +104,7 @@ export const Button = ({
     gap: '8px',
     ...sizeStyles[size],
     ...getVariantStyles(),
+    ...styleProp,
   };
 
   return (
