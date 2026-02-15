@@ -363,8 +363,10 @@ export const Dashboard = () => {
     d.tipo === 'led_strip' ||
     d.device_type === 'omniapi_led'
   );
-  const luciOn = luci.filter(d => d.power_state || d.led_power).length;
-  const totLuci = luci.length;
+  // Only count online lights for toggle logic — offline nodes are completely ignored
+  const luciOnline = luci.filter(d => d.stato !== 'offline');
+  const luciOn = luciOnline.filter(d => d.power_state || d.led_power).length;
+  const totLuci = luciOnline.length;
   const termostatiList = dispositiviValidi.filter(d => d.tipo === 'termostato');
   const termostati = termostatiList.length;
 
