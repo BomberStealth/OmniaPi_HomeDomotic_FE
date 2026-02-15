@@ -10,8 +10,9 @@ import { useDispositiviStore } from '@/store/dispositiviStore';
 import { useUpdateTrigger } from '@/store/updateTriggerStore';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
 import { stanzeApi, tasmotaApi } from '@/services/api';
+import { omniapiApi } from '@/services/omniapiApi';
 import { motion } from 'framer-motion';
-import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line } from 'react-icons/ri';
+import { RiDoorOpenLine, RiAddLine, RiLoader4Line, RiSettings4Line, RiDeleteBinLine, RiLightbulbLine, RiArrowRightLine, RiEditLine, RiBox3Line, RiFlashlightLine } from 'react-icons/ri';
 import { Trash2 } from 'lucide-react';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
@@ -72,6 +73,7 @@ export const Stanze = () => {
   const [showDeleteDeviceConfirm, setShowDeleteDeviceConfirm] = useState(false);
   const [dispositivoIdToDelete, setDispositivoIdToDelete] = useState<number | null>(null);
   const [showDeleteStanzaConfirm, setShowDeleteStanzaConfirm] = useState(false);
+  const [testingDeviceId, setTestingDeviceId] = useState<number | null>(null);
   const [stanzaIdToDelete, setStanzaIdToDelete] = useState<number | null>(null);
 
   const impiantoId = impiantoCorrente?.id || 0;
@@ -240,6 +242,27 @@ export const Stanze = () => {
   const openDeviceAction = (dispositivo: any) => {
     setSelectedDispositivo(dispositivo);
     setDeviceActionModalOpen(true);
+  };
+
+  // Test relay: blink on-off to physically identify a node
+  const handleTestRelay = async (e: React.MouseEvent, disp: any) => {
+    e.stopPropagation();
+    if (testingDeviceId || disp.stato === 'offline') return;
+    if (disp.device_type !== 'omniapi_node') return;
+    setTestingDeviceId(disp.id);
+    try {
+      const wasOn = !!disp.power_state;
+      // Toggle to opposite state
+      await omniapiApi.controlNode(disp.id, 1, wasOn ? 'off' : 'on');
+      // Wait 1 second
+      await new Promise(r => setTimeout(r, 1000));
+      // Restore original state
+      await omniapiApi.controlNode(disp.id, 1, wasOn ? 'on' : 'off');
+    } catch {
+      toast.error('Errore test relay');
+    } finally {
+      setTestingDeviceId(null);
+    }
   };
 
   const openMoveModal = () => {
@@ -619,11 +642,37 @@ export const Stanze = () => {
                       style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer' }}
                       whileHover={{ background: 'rgba(255,255,255,0.1)' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted }} />
-                        <span style={{ fontSize: '14px', color: colors.textPrimary }}>{disp.nome}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                        <RiLightbulbLine size={16} style={{ color: disp.power_state ? colors.success : colors.textMuted, flexShrink: 0 }} />
+                        <span style={{ fontSize: '14px', color: colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{disp.nome}</span>
                       </div>
-                      <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        {disp.device_type === 'omniapi_node' && (
+                          <motion.div
+                            onClick={(e) => handleTestRelay(e, disp)}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: disp.stato === 'offline' ? 'rgba(255,255,255,0.03)' : `${colors.accent}15`,
+                              cursor: disp.stato === 'offline' || testingDeviceId ? 'not-allowed' : 'pointer',
+                              opacity: disp.stato === 'offline' ? 0.3 : 1,
+                            }}
+                            whileHover={disp.stato !== 'offline' && !testingDeviceId ? { background: `${colors.accent}30` } : undefined}
+                            whileTap={disp.stato !== 'offline' && !testingDeviceId ? { scale: 0.9 } : undefined}
+                          >
+                            {testingDeviceId === disp.id ? (
+                              <RiLoader4Line size={14} style={{ color: colors.accent, animation: 'spin 1s linear infinite' }} />
+                            ) : (
+                              <RiFlashlightLine size={14} style={{ color: disp.stato === 'offline' ? colors.textMuted : colors.accent }} />
+                            )}
+                          </motion.div>
+                        )}
+                        <RiArrowRightLine size={14} style={{ color: colors.textMuted }} />
+                      </div>
                     </motion.button>
                   ))
                 )}

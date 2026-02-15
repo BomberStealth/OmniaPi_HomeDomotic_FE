@@ -394,6 +394,10 @@ body {
   animation: vt-fade-in 0.25s ease-in forwards;
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes vt-fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
