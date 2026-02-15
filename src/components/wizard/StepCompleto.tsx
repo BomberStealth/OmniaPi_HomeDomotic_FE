@@ -12,6 +12,7 @@ import {
   RiLoader4Line,
   RiAlertLine,
   RiCheckboxCircleLine,
+  RiCloseCircleLine,
   RiCpuLine,
   RiWifiLine,
   RiMapPinLine,
@@ -52,6 +53,7 @@ interface StepCompletoProps {
 
 type SetupPhase = 'summary' | 'creating' | 'error' | 'success';
 type AnimPhase = 'gathering' | 'exploding' | 'complete';
+type NodeCommissionStatus = 'waiting' | 'in_progress' | 'success' | 'failed' | 'timeout';
 
 export const StepCompleto = ({
   impianto,
@@ -68,6 +70,11 @@ export const StepCompleto = ({
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
   const [commissionFailures, setCommissionFailures] = useState<string[]>([]);
+
+  // Commission state
+  const [nodeStatuses, setNodeStatuses] = useState<Record<string, NodeCommissionStatus>>({});
+  const [isCommissioning, setIsCommissioning] = useState(false);
+  const cancelRef = useRef(false);
 
   // Animation state
   const [animPhase, setAnimPhase] = useState<AnimPhase>('gathering');
@@ -169,89 +176,132 @@ export const StepCompleto = ({
       let commissionedNodes: SelectedNode[] = [];
       let failures: string[] = [];
 
-      // ========== FASE 1-2: Commissioning nodi (solo se presenti) ==========
+      // ========== FASE 1-2: Commissioning SEQUENZIALE nodi ==========
       if (hasNodes) {
-        const targetMacs = selectedNodes.map(n => normalizeMac(n.mac));
+        setIsCommissioning(true);
+        cancelRef.current = false;
 
-        // 1. Invia tutti i comandi commissioning in parallelo (0-5%)
-        setStatusMessage('Invio comandi commissioning...');
+        const targetMacs = selectedNodes.map(n => normalizeMac(n.mac));
+        const statusMap: Record<string, NodeCommissionStatus> = {};
+        selectedNodes.forEach(n => { statusMap[normalizeMac(n.mac)] = 'waiting'; });
+        setNodeStatuses({ ...statusMap });
         setProgress(2);
 
-        const commissionWithRetry = async (mac: string, name: string) => {
-          const MAX_RETRIES = 3;
-          const RETRY_DELAY = 5000;
-          for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        for (let i = 0; i < selectedNodes.length; i++) {
+          if (cancelRef.current) break;
+
+          const node = selectedNodes[i];
+          const mac = normalizeMac(node.mac);
+
+          statusMap[mac] = 'in_progress';
+          setNodeStatuses({ ...statusMap });
+          setStatusMessage(`Commissioning nodo ${i + 1}/${selectedNodes.length}...`);
+
+          // Send commission with retry on 409
+          let commandSent = false;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            if (cancelRef.current) break;
             try {
-              await gatewayApi.commissionNode(mac, name);
-              return;
+              await gatewayApi.commissionNode(node.mac, node.name);
+              commandSent = true;
+              break;
             } catch (err: any) {
               const is409 = err?.response?.status === 409;
-              if (is409 && attempt < MAX_RETRIES) {
-                console.warn(`[StepCompleto] Commission ${mac}: gateway occupato, tentativo ${attempt}/${MAX_RETRIES} — riprovo tra 5s`);
-                setStatusMessage(`Gateway occupato, riprovo tra qualche secondo... (${attempt}/${MAX_RETRIES})`);
-                await new Promise(r => setTimeout(r, RETRY_DELAY));
+              if (is409 && attempt < 3) {
+                console.warn(`[StepCompleto] Commission ${mac}: gateway occupato, tentativo ${attempt}/3`);
+                setStatusMessage(`Gateway occupato, riprovo... (${attempt}/3)`);
+                await new Promise(r => setTimeout(r, 5000));
               } else {
                 console.error(`[StepCompleto] Commission failed for ${mac} (attempt ${attempt}):`, err);
               }
             }
           }
-        };
 
-        await Promise.all(
-          selectedNodes.map(node => commissionWithRetry(node.mac, node.name))
-        );
-        console.log(`[StepCompleto] ${selectedNodes.length} commission commands sent`);
-        setProgress(5);
+          if (cancelRef.current) break;
 
-        // 2. Poll GET /api/omniapi/nodes ogni 4s (5-60%)
-        const POLL_INTERVAL = 4000;
-        const TIMEOUT = 45000 + (selectedNodes.length * 5000);
-        const startTime = Date.now();
-        const commissionedMacs = new Set<string>();
-
-        setStatusMessage(`Commissioning nodi... (0/${selectedNodes.length} completati)`);
-
-        while (Date.now() - startTime < TIMEOUT) {
-          await new Promise(r => setTimeout(r, POLL_INTERVAL));
-
-          try {
-            const res = await omniapiApi.getNodes();
-            const onlineMacs = new Set(
-              res.nodes.map(n => normalizeMac(n.mac))
-            );
-
-            for (const mac of targetMacs) {
-              if (onlineMacs.has(mac) && !commissionedMacs.has(mac)) {
-                commissionedMacs.add(mac);
-                console.log(`[StepCompleto] Node ${mac} found on production mesh`);
-              }
-            }
-
-            const ratio = commissionedMacs.size / targetMacs.length;
-            setProgress(Math.round(5 + ratio * 55));
-            setStatusMessage(
-              `Commissioning nodi... (${commissionedMacs.size}/${selectedNodes.length} completati)`
-            );
-
-            if (commissionedMacs.size === targetMacs.length) {
-              console.log('[StepCompleto] All nodes commissioned!');
-              break;
-            }
-          } catch (pollErr) {
-            console.warn('[StepCompleto] Poll error (will retry):', pollErr);
+          if (!commandSent) {
+            statusMap[mac] = 'failed';
+            setNodeStatuses({ ...statusMap });
+            continue;
           }
+
+          // Poll commission result with 30s timeout
+          const COMMISSION_TIMEOUT = 30000;
+          const POLL_INTERVAL = 3000;
+          const pollStart = Date.now();
+          let nodeResult: NodeCommissionStatus = 'timeout';
+
+          while (Date.now() - pollStart < COMMISSION_TIMEOUT) {
+            if (cancelRef.current) break;
+            await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+            try {
+              const res = await gatewayApi.getCommissionResult(node.mac);
+              if (res.commissioned === true) {
+                nodeResult = 'success';
+                break;
+              } else if (res.commissioned === false) {
+                nodeResult = 'failed';
+                break;
+              }
+              // commissioned === null → still waiting
+            } catch {}
+          }
+
+          if (cancelRef.current) break;
+
+          statusMap[mac] = nodeResult;
+          setNodeStatuses({ ...statusMap });
+          console.log(`[StepCompleto] Node ${mac}: ${nodeResult}`);
+
+          // Update progress (2% to 55%)
+          const ratio = (i + 1) / selectedNodes.length;
+          setProgress(Math.round(2 + ratio * 53));
+        }
+
+        // If cancelled, abort setup
+        if (cancelRef.current) {
+          setIsCommissioning(false);
+          hasCreatedRef.current = false;
+          setPhase('summary');
+          return;
+        }
+
+        setIsCommissioning(false);
+
+        // Final verification: check which nodes appear on production mesh
+        setStatusMessage('Verifica nodi sulla rete...');
+        setProgress(58);
+
+        try {
+          const nodesRes = await omniapiApi.getNodes();
+          const onlineMacs = new Set(
+            nodesRes.nodes.map(n => normalizeMac(n.mac))
+          );
+          // Upgrade timeout/failed nodes if they're actually online
+          for (const mac of targetMacs) {
+            if ((statusMap[mac] === 'timeout' || statusMap[mac] === 'failed') && onlineMacs.has(mac)) {
+              statusMap[mac] = 'success';
+            }
+          }
+          setNodeStatuses({ ...statusMap });
+        } catch (verifyErr) {
+          console.warn('[StepCompleto] Mesh verification failed:', verifyErr);
         }
 
         setProgress(60);
 
-        // 3. Valuta risultati
+        // Determine results
         commissionedNodes = selectedNodes.filter(n =>
-          commissionedMacs.has(normalizeMac(n.mac))
+          statusMap[normalizeMac(n.mac)] === 'success'
         );
         const failedNodes = selectedNodes.filter(n =>
-          !commissionedMacs.has(normalizeMac(n.mac))
+          statusMap[normalizeMac(n.mac)] !== 'success'
         );
-        failures = failedNodes.map(n => n.name);
+        failures = failedNodes.map(n => {
+          const s = statusMap[normalizeMac(n.mac)];
+          return `${n.name} (${s === 'timeout' ? 'timeout' : 'fallito'})`;
+        });
 
         console.log(`[StepCompleto] Commissioned: ${commissionedNodes.length}, Failed: ${failedNodes.length}`);
 
@@ -352,6 +402,10 @@ export const StepCompleto = ({
   const handleRetry = () => {
     hasCreatedRef.current = false;
     startSetup();
+  };
+
+  const handleCancel = () => {
+    cancelRef.current = true;
   };
 
   // ============================================
@@ -580,6 +634,80 @@ export const StepCompleto = ({
         <p style={{ fontSize: fontSize.xs, color: modeColors.textMuted }}>
           {progress}%
         </p>
+
+        {/* Per-node status list during commissioning */}
+        {isCommissioning && Object.keys(nodeStatuses).length > 0 && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 320,
+              marginTop: spacing.md,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}
+          >
+            {selectedNodes.map((node) => {
+              const mac = node.mac.toUpperCase().replace(/-/g, ':');
+              const status = nodeStatuses[mac] || 'waiting';
+              return (
+                <div
+                  key={mac}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    borderRadius: radius.md,
+                    background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  }}
+                >
+                  {status === 'waiting' && (
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: modeColors.textMuted, opacity: 0.4 }} />
+                  )}
+                  {status === 'in_progress' && (
+                    <RiLoader4Line size={16} className="animate-spin" style={{ color: colors.accent, flexShrink: 0 }} />
+                  )}
+                  {status === 'success' && (
+                    <RiCheckboxCircleLine size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
+                  )}
+                  {status === 'failed' && (
+                    <RiCloseCircleLine size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
+                  )}
+                  {status === 'timeout' && (
+                    <RiAlertLine size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontSize: fontSize.sm, color: modeColors.textPrimary, flex: 1 }}>
+                    {node.name}
+                  </span>
+                  <span style={{ fontSize: '10px', color: modeColors.textMuted }}>
+                    {status === 'waiting' ? 'In attesa' :
+                     status === 'in_progress' ? 'In corso...' :
+                     status === 'success' ? 'OK' :
+                     status === 'failed' ? 'Fallito' : 'Timeout'}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* Cancel button */}
+            <button
+              onClick={handleCancel}
+              style={{
+                marginTop: spacing.sm,
+                padding: '8px 16px',
+                borderRadius: radius.md,
+                border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}`,
+                background: 'transparent',
+                color: modeColors.textSecondary,
+                fontSize: fontSize.sm,
+                cursor: 'pointer',
+              }}
+            >
+              Annulla
+            </button>
+          </div>
+        )}
       </div>
     );
   }
