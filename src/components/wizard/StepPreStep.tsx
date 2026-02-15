@@ -106,15 +106,15 @@ export const StepPreStep = ({ onReady }: StepPreStepProps) => {
     }
   };
 
-  const getMqttBrokerUri = (): string => {
-    // Extract hostname from VITE_API_URL (e.g. "http://192.168.1.252:3001/api" → "192.168.1.252")
-    const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
-    if (apiUrl) {
-      try {
-        const url = new URL(apiUrl);
-        return `mqtt://${url.hostname}:1883`;
-      } catch { /* fall through */ }
-    }
+  const fetchMqttBrokerUri = async (): Promise<string> => {
+    const apiUrl = import.meta.env.VITE_API_URL as string || '';
+    try {
+      const resp = await fetch(`${apiUrl}/api/system/mqtt-broker`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.uri) return data.uri;
+      }
+    } catch { /* fall through */ }
     // Fallback: same host serving the frontend
     return `mqtt://${window.location.hostname}:1883`;
   };
@@ -124,7 +124,7 @@ export const StepPreStep = ({ onReady }: StepPreStepProps) => {
     const p = password ?? wifiPassword;
     if (!s) return;
 
-    const mqttBrokerUri = getMqttBrokerUri();
+    const mqttBrokerUri = await fetchMqttBrokerUri();
 
     const onProgress = (step: ProvProgress, msg: string) => {
       setBleStep(step);
