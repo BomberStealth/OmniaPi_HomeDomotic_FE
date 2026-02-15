@@ -151,71 +151,75 @@ export const GatewayCard = memo(({
           {/* Details Grid */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: '8px',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: '6px',
             marginTop: '10px',
           }}>
             {/* IP */}
             <div style={{
-              padding: '8px 10px',
+              padding: '6px 8px',
               borderRadius: '10px',
               background: colors.bgCard,
               border: `1px solid ${colors.border}`,
+              overflow: 'hidden',
             }}>
               <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 IP
               </p>
-              <p style={{ fontSize: '13px', fontWeight: 500, color: colors.textPrimary, margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '13px', fontWeight: 500, color: colors.textPrimary, margin: '2px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {ip || '-'}
               </p>
             </div>
 
             {/* Versione */}
             <div style={{
-              padding: '8px 10px',
+              padding: '6px 8px',
               borderRadius: '10px',
               background: colors.bgCard,
               border: `1px solid ${colors.border}`,
+              overflow: 'hidden',
             }}>
               <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Firmware
               </p>
-              <p style={{ fontSize: '13px', fontWeight: 500, color: colors.textPrimary, margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '13px', fontWeight: 500, color: colors.textPrimary, margin: '2px 0 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {version || '-'}
               </p>
             </div>
 
             {/* MAC */}
             <div style={{
-              padding: '8px 10px',
+              padding: '6px 8px',
               borderRadius: '10px',
               background: colors.bgCard,
               border: `1px solid ${colors.border}`,
+              overflow: 'hidden',
             }}>
               <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 MAC
               </p>
-              <p style={{ fontSize: '12px', fontWeight: 500, color: colors.textSecondary, margin: '2px 0 0 0', fontFamily: 'monospace' }}>
+              <p style={{ fontSize: 'clamp(10px, 2.8vw, 12px)', fontWeight: 500, color: colors.textSecondary, margin: '2px 0 0 0', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {mac}
               </p>
             </div>
 
             {/* Nodi connessi */}
             <div style={{
-              padding: '8px 10px',
+              padding: '6px 8px',
               borderRadius: '10px',
               background: colors.bgCard,
               border: `1px solid ${colors.border}`,
+              overflow: 'hidden',
             }}>
               <p style={{ fontSize: '10px', color: colors.textMuted, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Nodi
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                <RiCpuLine size={14} style={{ color: colors.accent }} />
+                <RiCpuLine size={14} style={{ color: colors.accent, flexShrink: 0 }} />
                 <span style={{ fontSize: '13px', fontWeight: 600, color: colors.accent }}>
                   {nodeCount}
                 </span>
-                <span style={{ fontSize: '12px', color: colors.textMuted }}>
+                <span style={{ fontSize: '12px', color: colors.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   connessi
                 </span>
               </div>

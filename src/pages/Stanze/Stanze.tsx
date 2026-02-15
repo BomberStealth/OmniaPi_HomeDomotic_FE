@@ -499,32 +499,31 @@ export const Stanze = () => {
           <Input label="Nome Stanza" value={newStanza.nome} onChange={(e) => setNewStanza({ ...newStanza, nome: e.target.value })} placeholder="es. Soggiorno" />
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px', overflow: 'hidden' }}>
               {ROOM_ICON_OPTIONS.map((opt) => {
                 const Icon = getRoomIcon(opt.id);
-                // Lista nomi predefiniti per auto-aggiornamento
                 const predefinedNames = ROOM_ICON_OPTIONS.map(o => o.label);
                 const shouldUpdateName = !newStanza.nome || predefinedNames.includes(newStanza.nome);
+                const isSelected = newStanza.icona === opt.id;
                 return (
                   <motion.button
                     key={opt.id}
                     onClick={() => setNewStanza({ nome: shouldUpdateName ? opt.label : newStanza.nome, icona: opt.id })}
+                    title={opt.label}
                     style={{
-                      padding: '12px 8px',
+                      aspectRatio: '1',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '4px',
+                      justifyContent: 'center',
                       borderRadius: '12px',
-                      border: newStanza.icona === opt.id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
-                      background: newStanza.icona === opt.id ? `${colors.accent}20` : 'transparent',
+                      border: isSelected ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                      background: isSelected ? `${colors.accent}20` : 'transparent',
                       cursor: 'pointer',
                     }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Icon size={22} style={{ color: newStanza.icona === opt.id ? colors.accent : colors.textMuted }} />
-                    <span style={{ fontSize: '10px', color: newStanza.icona === opt.id ? colors.accent : colors.textMuted }}>{opt.label}</span>
+                    <Icon size={22} style={{ color: isSelected ? colors.accent : colors.textMuted }} />
                   </motion.button>
                 );
               })}
@@ -739,32 +738,31 @@ export const Stanze = () => {
           <Input label="Nome Stanza" value={editStanza.nome} onChange={(e) => setEditStanza({ ...editStanza, nome: e.target.value })} placeholder="es. Soggiorno" autoFocus />
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.textMuted, marginBottom: '8px' }}>Icona</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(48px, 1fr))', gap: '8px', overflow: 'hidden' }}>
               {ROOM_ICON_OPTIONS.map((opt) => {
                 const Icon = getRoomIcon(opt.id);
-                // Lista nomi predefiniti per auto-aggiornamento
                 const predefinedNames = ROOM_ICON_OPTIONS.map(o => o.label);
                 const shouldUpdateName = !editStanza.nome || predefinedNames.includes(editStanza.nome);
+                const isSelected = editStanza.icona === opt.id;
                 return (
                   <motion.button
                     key={opt.id}
                     onClick={() => setEditStanza({ nome: shouldUpdateName ? opt.label : editStanza.nome, icona: opt.id })}
+                    title={opt.label}
                     style={{
-                      padding: '12px 8px',
+                      aspectRatio: '1',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '4px',
+                      justifyContent: 'center',
                       borderRadius: '12px',
-                      border: editStanza.icona === opt.id ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
-                      background: editStanza.icona === opt.id ? `${colors.accent}20` : 'transparent',
+                      border: isSelected ? `2px solid ${colors.accent}` : `2px solid ${colors.border}`,
+                      background: isSelected ? `${colors.accent}20` : 'transparent',
                       cursor: 'pointer',
                     }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Icon size={22} style={{ color: editStanza.icona === opt.id ? colors.accent : colors.textMuted }} />
-                    <span style={{ fontSize: '10px', color: editStanza.icona === opt.id ? colors.accent : colors.textMuted }}>{opt.label}</span>
+                    <Icon size={22} style={{ color: isSelected ? colors.accent : colors.textMuted }} />
                   </motion.button>
                 );
               })}
