@@ -383,6 +383,8 @@ export const Dashboard = () => {
 
     try {
       for (const luce of luci) {
+        // Skip offline nodes — don't send commands to unreachable devices
+        if (luce.stato === 'offline') continue;
         try {
           // LED Strip
           if (luce.device_type === 'omniapi_led') {
