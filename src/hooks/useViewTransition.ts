@@ -1,9 +1,12 @@
 import { useNavigate, NavigateOptions } from 'react-router-dom';
 import { useCallback } from 'react';
+import { flushSync } from 'react-dom';
 
 // ============================================
 // VIEW TRANSITIONS HOOK
 // Usa la View Transitions API per transizioni fluide
+// flushSync forces React to update the DOM synchronously
+// so the browser captures correct before/after snapshots
 // Fallback automatico per browser non supportati
 // ============================================
 
@@ -15,7 +18,7 @@ export const useViewTransitionNavigate = () => {
     if (typeof to === 'number') {
       if (document.startViewTransition) {
         document.startViewTransition(() => {
-          navigate(to);
+          flushSync(() => navigate(to));
         });
       } else {
         navigate(to);
@@ -26,7 +29,7 @@ export const useViewTransitionNavigate = () => {
     // Se è una stringa (path)
     if (document.startViewTransition) {
       document.startViewTransition(() => {
-        navigate(to, options);
+        flushSync(() => navigate(to, options));
       });
     } else {
       navigate(to, options);

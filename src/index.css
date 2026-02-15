@@ -387,11 +387,11 @@ body {
 
 /* Fade transition per tutte le pagine */
 ::view-transition-old(page-content) {
-  animation: vt-fade-out 0.25s ease-out forwards;
+  animation: vt-fade-out 0.15s ease-out forwards;
 }
 
 ::view-transition-new(page-content) {
-  animation: vt-fade-in 0.25s ease-in forwards;
+  animation: vt-fade-in 0.15s ease-in forwards;
 }
 
 @keyframes spin {
