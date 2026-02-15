@@ -269,18 +269,23 @@ export const StepCompleto = ({
 
         setIsCommissioning(false);
 
-        // Final verification: check which nodes appear on production mesh
+        // Final verification: check which nodes are ONLINE on production mesh
+        // Only upgrade timeout/failed nodes if they're confirmed online=true
+        // (a node can exist in gateway memory without being in the production mesh)
         setStatusMessage('Verifica nodi sulla rete...');
         setProgress(58);
 
         try {
           const nodesRes = await omniapiApi.getNodes();
           const onlineMacs = new Set(
-            nodesRes.nodes.map(n => normalizeMac(n.mac))
+            nodesRes.nodes
+              .filter(n => n.online === true)
+              .map(n => normalizeMac(n.mac))
           );
-          // Upgrade timeout/failed nodes if they're actually online
+          // Upgrade timeout/failed nodes ONLY if they're online on production mesh
           for (const mac of targetMacs) {
             if ((statusMap[mac] === 'timeout' || statusMap[mac] === 'failed') && onlineMacs.has(mac)) {
+              console.log(`[StepCompleto] Node ${mac}: upgraded to success (verified online on mesh)`);
               statusMap[mac] = 'success';
             }
           }
