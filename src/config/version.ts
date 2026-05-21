@@ -2,8 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.15.1';
+export const APP_VERSION = 'v2.15.2';
 
+// Changelog v2.15.2:
+// - Fix: Dashboard apriva solo 2 stanze per riga quando la grid ne mostrava 3+
+//
 // Changelog v2.15.1:
 // - Test deploy automatico via GitHub webhook
 //

@@ -90,6 +90,25 @@ export const Dashboard = () => {
   const [weather, setWeather] = useState<{ temp: number; icon: string } | null>(null);
   const [recentActivity] = useState<any[]>([]);  // Placeholder per futuro
 
+  // Numero di colonne effettive nella griglia stanze (dipende dalla larghezza).
+  // La grid usa minmax(280px, 1fr) con gap 12px → calcolato via ResizeObserver.
+  const stanzeGridRef = useRef<HTMLDivElement>(null);
+  const [columnsPerRow, setColumnsPerRow] = useState(2);
+  useEffect(() => {
+    const el = stanzeGridRef.current;
+    if (!el) return;
+    const MIN_ITEM_WIDTH = 280;
+    const GAP = 12;
+    const compute = (width: number) => {
+      const cols = Math.max(1, Math.floor((width + GAP) / (MIN_ITEM_WIDTH + GAP)));
+      setColumnsPerRow(cols);
+    };
+    compute(el.clientWidth);
+    const observer = new ResizeObserver(([entry]) => compute(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [stanzeFiltrate.length]);
+
   // Deriva sceneShortcuts dallo store
   const sceneShortcuts = useMemo(() => {
     const shortcuts = scene.filter((s: any) => s.is_shortcut !== false && s.is_shortcut !== 0);
@@ -175,9 +194,9 @@ export const Dashboard = () => {
         return { ...prev, [roomId]: newValue };
       }
 
-      // Calcola quali stanze sono sulla stessa riga (2 per riga su desktop)
-      const rowStart = Math.floor(stanzaIndex / 2) * 2;
-      const stanzeStessaRiga = stanzeFiltrate.slice(rowStart, rowStart + 2);
+      // Stanze sulla stessa riga: usa il numero effettivo di colonne (responsive)
+      const rowStart = Math.floor(stanzaIndex / columnsPerRow) * columnsPerRow;
+      const stanzeStessaRiga = stanzeFiltrate.slice(rowStart, rowStart + columnsPerRow);
 
       // Aggiorna TUTTE le stanze sulla stessa riga con lo stesso valore
       const newState = { ...prev };
@@ -778,7 +797,7 @@ export const Dashboard = () => {
               Stanze e Dispositivi
             </h2>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+            <div ref={stanzeGridRef} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
               {stanzeFiltrate.map((stanza) => {
                 const roomDevices = getDevicesByRoom(stanza.id);
                 const isExpanded = expandedRooms[stanza.id];
