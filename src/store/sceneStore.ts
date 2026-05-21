@@ -18,6 +18,26 @@ interface Scena {
   lastExecuted?: string;
 }
 
+// Il backend salva azioni/scheduling/conditions come stringhe JSON in DB
+// e a volte le restituisce non parsate. Normalizziamo qui per evitare bug
+// downstream (es. .length su stringa = numero di caratteri).
+const parseJsonField = (value: any, fallback: any) => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeScena = (s: any): Scena => ({
+  ...s,
+  azioni: parseJsonField(s?.azioni, []),
+  scheduling: parseJsonField(s?.scheduling, null),
+  conditions: parseJsonField(s?.conditions, null),
+});
+
 interface SceneState {
   scene: Scena[];
   loading: boolean;
@@ -42,7 +62,8 @@ export const useSceneStore = create<SceneState>((set) => ({
     set({ loading: true, error: null });
     try {
       const { data } = await api.get(`/api/impianti/${impiantoId}/scene`);
-      set({ scene: Array.isArray(data) ? data : [], loading: false });
+      const scene = Array.isArray(data) ? data.map(normalizeScena) : [];
+      set({ scene, loading: false });
     } catch (error: any) {
       console.error('Errore fetch scene:', error);
       set({ error: error.message, loading: false });
@@ -50,23 +71,25 @@ export const useSceneStore = create<SceneState>((set) => ({
   },
 
   addScena: (scena: Scena) => {
+    const normalized = normalizeScena(scena);
     set((state) => {
       // Previeni duplicati - se la scena esiste già, aggiornala invece di aggiungerla
-      const exists = state.scene.some((s) => s.id === scena.id);
+      const exists = state.scene.some((s) => s.id === normalized.id);
       if (exists) {
-        console.log('[SceneStore] addScena: scena già esiste, aggiorno invece', scena.id);
+        console.log('[SceneStore] addScena: scena già esiste, aggiorno invece', normalized.id);
         return {
-          scene: state.scene.map((s) => (s.id === scena.id ? { ...s, ...scena } : s)),
+          scene: state.scene.map((s) => (s.id === normalized.id ? { ...s, ...normalized } : s)),
         };
       }
-      console.log('[SceneStore] addScena: nuova scena aggiunta', scena.id, scena.nome);
-      return { scene: [...state.scene, scena] };
+      console.log('[SceneStore] addScena: nuova scena aggiunta', normalized.id, normalized.nome);
+      return { scene: [...state.scene, normalized] };
     });
   },
 
   updateScena: (scena: Scena) => {
+    const normalized = normalizeScena(scena);
     set((state) => ({
-      scene: state.scene.map((s) => (s.id === scena.id ? { ...s, ...scena } : s)),
+      scene: state.scene.map((s) => (s.id === normalized.id ? { ...s, ...normalized } : s)),
     }));
   },
 
@@ -77,7 +100,7 @@ export const useSceneStore = create<SceneState>((set) => ({
   },
 
   setScene: (scene: Scena[]) => {
-    set({ scene });
+    set({ scene: scene.map(normalizeScena) });
   },
 
   markExecuted: (scenaId: number) => {

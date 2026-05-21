@@ -2,8 +2,13 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.15.2';
+export const APP_VERSION = 'v2.15.3';
 
+// Changelog v2.15.3:
+// - Fix: contatore "X dispositivi" delle scene mostrava la lunghezza
+//   della stringa JSON invece del numero di azioni (sceneStore normalizza
+//   azioni/scheduling/conditions all'ingresso)
+//
 // Changelog v2.15.2:
 // - Fix: Dashboard apriva solo 2 stanze per riga quando la grid ne mostrava 3+
 //
