@@ -2,8 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.15.0';
+export const APP_VERSION = 'v2.15.1';
 
+// Changelog v2.15.1:
+// - Test deploy automatico via GitHub webhook
+//
 // Changelog v2.15.0:
 // - Bump versione di test
 //
