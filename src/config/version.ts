@@ -2,8 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.14.0';
+export const APP_VERSION = 'v2.15.0';
 
+// Changelog v2.15.0:
+// - Bump versione di test
+//
 // Changelog v2.14.0:
 // - Feature: MQTT config via custom BLE endpoint durante provisioning
 // - Auto-detect broker URL dal hostname corrente
