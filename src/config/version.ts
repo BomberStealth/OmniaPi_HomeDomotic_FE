@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.15.3';
+export const APP_VERSION = 'v2.16.0';
 
+// Changelog v2.16.0:
+// - Infra: base path spostato a /domotica/ (landing page hub a /)
+// - PWA scope e start_url aggiornati a /domotica/
+//
 // Changelog v2.15.3:
 // - Fix: contatore "X dispositivi" delle scene mostrava la lunghezza
 //   della stringa JSON invece del numero di azioni (sceneStore normalizza

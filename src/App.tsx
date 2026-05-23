@@ -159,7 +159,7 @@ function App() {
               },
             }}
           />
-          <BrowserRouter>
+          <BrowserRouter basename="/domotica">
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/login" element={<Login />} />
