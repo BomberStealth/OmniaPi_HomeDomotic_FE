@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { RiSearchLine, RiAdminLine, RiHome4Line, RiMapPinLine, RiMailLine, RiRadarLine } from 'react-icons/ri';
+import { RiSearchLine, RiAdminLine, RiHome4Line, RiMapPinLine, RiMailLine, RiRadarLine, RiDeleteBinLine } from 'react-icons/ri';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useAdminModeStore } from '@/store/adminModeStore';
 import { useAuthStore } from '@/store/authStore';
@@ -36,6 +36,7 @@ export const GestioneAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Solo admin può accedere
   if (user?.ruolo !== UserRole.ADMIN) {
@@ -76,6 +77,19 @@ export const GestioneAdmin = () => {
       setResults([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteImpianto = async (impianto: ImpiantoResult) => {
+    if (!window.confirm(`Eliminare definitivamente l'impianto "${impianto.nome}" (#${impianto.id})?\n\nQuesta azione è irreversibile.`)) return;
+    setDeletingId(impianto.id);
+    try {
+      await api.delete(`/api/impianti/${impianto.id}`);
+      setResults(prev => prev.filter(r => r.id !== impianto.id));
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Errore durante l\'eliminazione');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -272,23 +286,44 @@ export const GestioneAdmin = () => {
                   )}
                 </div>
 
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleEnterAdminMode(impianto)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    background: `${colors.accent}20`,
-                    color: colors.accent,
-                    border: `1px solid ${colors.accent}40`,
-                    borderRadius: '0.5rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    fontSize: '0.875rem',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  Accedi come Admin
-                </motion.button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleEnterAdminMode(impianto)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: `${colors.accent}20`,
+                      color: colors.accent,
+                      border: `1px solid ${colors.accent}40`,
+                      borderRadius: '0.5rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    Accedi come Admin
+                  </motion.button>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDeleteImpianto(impianto)}
+                    disabled={deletingId === impianto.id}
+                    title="Elimina impianto"
+                    style={{
+                      padding: '0.5rem',
+                      background: '#ef444420',
+                      color: '#ef4444',
+                      border: '1px solid #ef444440',
+                      borderRadius: '0.5rem',
+                      cursor: deletingId === impianto.id ? 'wait' : 'pointer',
+                      opacity: deletingId === impianto.id ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <RiDeleteBinLine size={16} />
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           ))}

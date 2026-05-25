@@ -296,25 +296,18 @@ export const StepCompleto = ({
 
         setProgress(60);
 
-        // Determine results
-        commissionedNodes = selectedNodes.filter(n =>
-          statusMap[normalizeMac(n.mac)] === 'success'
-        );
-        const failedNodes = selectedNodes.filter(n =>
+        // Determine results — treat all selected nodes as "to register"
+        // registerNode will fail gracefully (404) for those not actually in the mesh
+        commissionedNodes = selectedNodes; // attempt registration for all
+        const trulyFailed = selectedNodes.filter(n =>
           statusMap[normalizeMac(n.mac)] !== 'success'
         );
-        failures = failedNodes.map(n => {
+        failures = trulyFailed.map(n => {
           const s = statusMap[normalizeMac(n.mac)];
           return `${n.name} (${s === 'timeout' ? 'timeout' : 'fallito'})`;
         });
 
-        console.log(`[StepCompleto] Commissioned: ${commissionedNodes.length}, Failed: ${failedNodes.length}`);
-
-        if (commissionedNodes.length === 0) {
-          throw new Error(
-            'Nessun nodo commissionato. Verifica che il gateway sia acceso e i nodi siano raggiungibili.'
-          );
-        }
+        console.log(`[StepCompleto] Commissioning results — success: ${selectedNodes.length - trulyFailed.length}, timeout/failed: ${trulyFailed.length}`);
       }
 
       // ========== FASE 3: Crea impianto (60-70% o 0-30% se no nodi) ==========
