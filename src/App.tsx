@@ -43,6 +43,7 @@ const PrivacyPolicy = lazy(() => import('@/pages/Legal').then(m => ({ default: m
 const TermsOfService = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
 const Notifiche = lazy(() => import('@/pages/Notifiche').then(m => ({ default: m.Notifiche })));
 const GestioneAdmin = lazy(() => import('@/pages/Settings/GestioneAdmin').then(m => ({ default: m.GestioneAdmin })));
+const MonitoraggioGlobale = lazy(() => import('@/pages/Settings/MonitoraggioGlobale').then(m => ({ default: m.MonitoraggioGlobale })));
 const FirmwareManagement = lazy(() => import('@/pages/Settings/FirmwareManagement').then(m => ({ default: m.FirmwareManagement })));
 const OperationsLog = lazy(() => import('@/pages/Settings/OperationsLog').then(m => ({ default: m.OperationsLog })));
 
@@ -189,6 +190,7 @@ function App() {
                 <Route path="/settings/info" element={<ProtectedRoute><InfoApp /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifiche /></ProtectedRoute>} />
                 <Route path="/settings/admin" element={<RoleRoute allowedRoles={[UserRole.ADMIN]}><GestioneAdmin /></RoleRoute>} />
+                <Route path="/settings/admin/monitoraggio" element={<RoleRoute allowedRoles={[UserRole.ADMIN]}><MonitoraggioGlobale /></RoleRoute>} />
                 <Route path="/impianto/:id/firmware" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><FirmwareManagement /></RoleRoute>} />
                 <Route path="/impianto/:id/operations" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><OperationsLog /></RoleRoute>} />
                 <Route path="/setup" element={<RoleRoute allowedRoles={[UserRole.ADMIN, UserRole.INSTALLATORE]}><SetupWizard /></RoleRoute>} />

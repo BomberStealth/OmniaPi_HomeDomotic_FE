@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { RiSearchLine, RiAdminLine, RiHome4Line, RiMapPinLine, RiMailLine } from 'react-icons/ri';
+import { RiSearchLine, RiAdminLine, RiHome4Line, RiMapPinLine, RiMailLine, RiRadarLine } from 'react-icons/ri';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useAdminModeStore } from '@/store/adminModeStore';
 import { useAuthStore } from '@/store/authStore';
@@ -111,6 +111,40 @@ export const GestioneAdmin = () => {
             Cerca e accedi a qualsiasi impianto nel sistema
           </p>
         </div>
+
+        {/* Monitoraggio globale */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate('/settings/admin/monitoraggio')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '1rem',
+            background: colors.bgCard,
+            border: `1px solid ${colors.border}`,
+            borderRadius: '1rem',
+            cursor: 'pointer',
+            textAlign: 'left',
+            width: '100%',
+          }}
+        >
+          <div style={{
+            width: 40, height: 40, borderRadius: '0.75rem',
+            background: `${colors.accent}20`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <RiRadarLine size={20} color={colors.accent} />
+          </div>
+          <div>
+            <div style={{ color: colors.textPrimary, fontWeight: 600, fontSize: '0.95rem' }}>
+              Monitoraggio Globale
+            </div>
+            <div style={{ color: colors.textMuted, fontSize: '0.8rem', marginTop: '0.1rem' }}>
+              Tutti i gateway OmniaPi nel sistema
+            </div>
+          </div>
+        </motion.button>
 
         {/* Barra di ricerca */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
