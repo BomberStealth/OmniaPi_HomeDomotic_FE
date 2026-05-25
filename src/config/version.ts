@@ -2,8 +2,14 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.17.0';
+export const APP_VERSION = 'v2.17.1';
 
+// Changelog v2.17.1:
+// - Fix: scan wizard non mostra più nodi già registrati in altri impianti
+// - Fix: wizard non si blocca su timeout commissioning, tenta registrazione comunque
+// - Perf: commissioning da ~90s a ~15s (polling mesh parallelo invece di commission/result)
+// - Admin: pulsante elimina impianto direttamente da Gestione Admin (per impianti rotti)
+//
 // Changelog v2.17.0:
 // - Admin: pagina Monitoraggio Globale con lista mondiale gateway e accordion nodi
 // - Firmware: factory reset via GPIO4 (hold 5s), fix MQTT buffer, rimosso gateway legacy
