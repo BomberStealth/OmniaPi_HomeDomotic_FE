@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.16.0';
+export const APP_VERSION = 'v2.17.0';
 
+// Changelog v2.17.0:
+// - Admin: pagina Monitoraggio Globale con lista mondiale gateway e accordion nodi
+// - Firmware: factory reset via GPIO4 (hold 5s), fix MQTT buffer, rimosso gateway legacy
+//
 // Changelog v2.16.0:
 // - Infra: base path spostato a /domotica/ (landing page hub a /)
 // - PWA scope e start_url aggiornati a /domotica/
