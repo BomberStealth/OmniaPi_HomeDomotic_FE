@@ -176,7 +176,7 @@ export const StepCompleto = ({
       let commissionedNodes: SelectedNode[] = [];
       let failures: string[] = [];
 
-      // ========== FASE 1-2: Commissioning SEQUENZIALE nodi ==========
+      // ========== FASE 1: Invia comandi commissioning rapidamente ==========
       if (hasNodes) {
         setIsCommissioning(true);
         cancelRef.current = false;
@@ -185,81 +185,44 @@ export const StepCompleto = ({
         const statusMap: Record<string, NodeCommissionStatus> = {};
         selectedNodes.forEach(n => { statusMap[normalizeMac(n.mac)] = 'waiting'; });
         setNodeStatuses({ ...statusMap });
-        setProgress(2);
+        setProgress(5);
 
+        // Manda tutti i comandi in sequenza rapida (500ms tra l'uno e l'altro)
         for (let i = 0; i < selectedNodes.length; i++) {
           if (cancelRef.current) break;
-
           const node = selectedNodes[i];
           const mac = normalizeMac(node.mac);
 
           statusMap[mac] = 'in_progress';
           setNodeStatuses({ ...statusMap });
-          setStatusMessage(`Commissioning nodo ${i + 1}/${selectedNodes.length}...`);
+          setStatusMessage(`Commissioning ${i + 1}/${selectedNodes.length}...`);
 
-          // Send commission with retry on 409
-          let commandSent = false;
+          let sent = false;
           for (let attempt = 1; attempt <= 3; attempt++) {
             if (cancelRef.current) break;
             try {
               await gatewayApi.commissionNode(node.mac, node.name);
-              commandSent = true;
+              sent = true;
               break;
             } catch (err: any) {
-              const is409 = err?.response?.status === 409;
-              if (is409 && attempt < 3) {
-                console.warn(`[StepCompleto] Commission ${mac}: gateway occupato, tentativo ${attempt}/3`);
+              if (err?.response?.status === 409 && attempt < 3) {
                 setStatusMessage(`Gateway occupato, riprovo... (${attempt}/3)`);
-                await new Promise(r => setTimeout(r, 5000));
-              } else {
-                console.error(`[StepCompleto] Commission failed for ${mac} (attempt ${attempt}):`, err);
+                await new Promise(r => setTimeout(r, 2000));
               }
             }
           }
 
-          if (cancelRef.current) break;
-
-          if (!commandSent) {
+          if (!sent) {
             statusMap[mac] = 'failed';
             setNodeStatuses({ ...statusMap });
-            continue;
           }
 
-          // Poll commission result with 30s timeout
-          const COMMISSION_TIMEOUT = 30000;
-          const POLL_INTERVAL = 3000;
-          const pollStart = Date.now();
-          let nodeResult: NodeCommissionStatus = 'timeout';
-
-          while (Date.now() - pollStart < COMMISSION_TIMEOUT) {
-            if (cancelRef.current) break;
-            await new Promise(r => setTimeout(r, POLL_INTERVAL));
-
-            try {
-              const res = await gatewayApi.getCommissionResult(node.mac);
-              if (res.commissioned === true) {
-                nodeResult = 'success';
-                break;
-              } else if (res.commissioned === false) {
-                nodeResult = 'failed';
-                break;
-              }
-              // commissioned === null → still waiting
-            } catch {}
+          // Breve pausa tra comandi per rilasciare il lock gateway
+          if (i < selectedNodes.length - 1) {
+            await new Promise(r => setTimeout(r, 500));
           }
-
-          if (cancelRef.current) break;
-
-          statusMap[mac] = nodeResult;
-          setNodeStatuses({ ...statusMap });
-          console.log(`[StepCompleto] Node ${mac}: ${nodeResult}`);
-
-          // Update progress (2% to 55%)
-          const ratio = (i + 1) / selectedNodes.length;
-          setProgress(Math.round(2 + ratio * 53));
         }
 
-        // If cancelled, abort setup
         if (cancelRef.current) {
           setIsCommissioning(false);
           hasCreatedRef.current = false;
@@ -267,47 +230,72 @@ export const StepCompleto = ({
           return;
         }
 
-        setIsCommissioning(false);
+        // ========== FASE 2: Poll getNodes() finché tutti online o timeout ==========
+        // Il firmware non manda commission/result → usiamo la mesh come fonte di verità
+        setStatusMessage('Attesa nodi nella mesh...');
+        setProgress(15);
 
-        // Final verification: check which nodes are ONLINE on production mesh
-        // Only upgrade timeout/failed nodes if they're confirmed online=true
-        // (a node can exist in gateway memory without being in the production mesh)
-        setStatusMessage('Verifica nodi sulla rete...');
-        setProgress(58);
+        const POLL_INTERVAL = 2000;
+        const MESH_TIMEOUT = 20000;
+        const pollStart = Date.now();
 
-        try {
-          const nodesRes = await omniapiApi.getNodes();
-          const onlineMacs = new Set(
-            nodesRes.nodes
-              .filter(n => n.online === true)
-              .map(n => normalizeMac(n.mac))
-          );
-          // Upgrade timeout/failed nodes ONLY if they're online on production mesh
-          for (const mac of targetMacs) {
-            if ((statusMap[mac] === 'timeout' || statusMap[mac] === 'failed') && onlineMacs.has(mac)) {
-              console.log(`[StepCompleto] Node ${mac}: upgraded to success (verified online on mesh)`);
-              statusMap[mac] = 'success';
+        while (Date.now() - pollStart < MESH_TIMEOUT) {
+          if (cancelRef.current) break;
+          await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+          try {
+            const nodesRes = await omniapiApi.getNodes();
+            const onlineMacs = new Set(
+              nodesRes.nodes
+                .filter((n: any) => n.online === true)
+                .map((n: any) => normalizeMac(n.mac))
+            );
+
+            let allConfirmed = true;
+            for (const mac of targetMacs) {
+              if (statusMap[mac] === 'failed') continue;
+              if (statusMap[mac] !== 'success') {
+                if (onlineMacs.has(mac)) {
+                  statusMap[mac] = 'success';
+                  console.log(`[StepCompleto] Node ${mac}: confirmed in mesh`);
+                } else {
+                  allConfirmed = false;
+                }
+              }
             }
-          }
-          setNodeStatuses({ ...statusMap });
-        } catch (verifyErr) {
-          console.warn('[StepCompleto] Mesh verification failed:', verifyErr);
+            setNodeStatuses({ ...statusMap });
+
+            const doneCount = targetMacs.filter(m => statusMap[m] === 'success').length;
+            setProgress(Math.round(15 + (doneCount / targetMacs.length) * 43));
+
+            if (allConfirmed) break;
+          } catch { /* continua */ }
         }
 
+        if (cancelRef.current) {
+          setIsCommissioning(false);
+          hasCreatedRef.current = false;
+          setPhase('summary');
+          return;
+        }
+
+        // Segna i rimasti come timeout
+        for (const mac of targetMacs) {
+          if (statusMap[mac] === 'in_progress' || statusMap[mac] === 'waiting') {
+            statusMap[mac] = 'timeout';
+          }
+        }
+        setNodeStatuses({ ...statusMap });
+        setIsCommissioning(false);
         setProgress(60);
 
-        // Determine results — treat all selected nodes as "to register"
-        // registerNode will fail gracefully (404) for those not actually in the mesh
-        commissionedNodes = selectedNodes; // attempt registration for all
-        const trulyFailed = selectedNodes.filter(n =>
-          statusMap[normalizeMac(n.mac)] !== 'success'
+        // Tenta la registrazione per tutti — registerNode rifiuta quelli non in mesh (404)
+        commissionedNodes = selectedNodes;
+        const trulyFailed = selectedNodes.filter(n => statusMap[normalizeMac(n.mac)] !== 'success');
+        failures = trulyFailed.map(n =>
+          `${n.name} (${statusMap[normalizeMac(n.mac)] === 'failed' ? 'fallito' : 'timeout'})`
         );
-        failures = trulyFailed.map(n => {
-          const s = statusMap[normalizeMac(n.mac)];
-          return `${n.name} (${s === 'timeout' ? 'timeout' : 'fallito'})`;
-        });
-
-        console.log(`[StepCompleto] Commissioning results — success: ${selectedNodes.length - trulyFailed.length}, timeout/failed: ${trulyFailed.length}`);
+        console.log(`[StepCompleto] Commissioning: ${selectedNodes.length - trulyFailed.length} OK, ${trulyFailed.length} timeout/failed`);
       }
 
       // ========== FASE 3: Crea impianto (60-70% o 0-30% se no nodi) ==========
