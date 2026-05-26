@@ -464,6 +464,7 @@ export const SetupWizard = () => {
                   onNext={nextStep}
                   onSkip={nextStep}
                   onBack={prevStep}
+                  gatewayMac={state.selectedGateway?.mac ?? ''}
                 />
               )}
 

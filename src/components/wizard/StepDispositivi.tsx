@@ -40,6 +40,7 @@ interface StepDispositiviProps {
   onNext: () => void;
   onSkip: () => void;
   onBack: () => void;
+  gatewayMac: string;
 }
 
 export const StepDispositivi = ({
@@ -48,6 +49,7 @@ export const StepDispositivi = ({
   onNext,
   onSkip,
   onBack,
+  gatewayMac,
 }: StepDispositiviProps) => {
   const { modeColors, isDarkMode, colors } = useThemeColor();
   const [phase, setPhase] = useState<ScanPhase>('idle');
@@ -110,7 +112,7 @@ export const StepDispositivi = ({
     setCountdown(SCAN_COUNTDOWN);
 
     try {
-      await gatewayApi.startNodeScan();
+      await gatewayApi.startNodeScan(gatewayMac);
     } catch {
       if (mountedRef.current) {
         setError('Errore avvio scansione nodi');

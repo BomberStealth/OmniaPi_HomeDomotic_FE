@@ -189,7 +189,8 @@ export const StepCompleto = ({
 
         // Invia UN solo comando batch con tutti i nodi
         await gatewayApi.commissionNodesBatch(
-          selectedNodes.map(n => ({ mac: n.mac, name: n.name }))
+          selectedNodes.map(n => ({ mac: n.mac, name: n.name })),
+          gateway?.mac ?? ''
         );
 
         // Tutti i nodi in_progress mentre il firmware lavora

@@ -2,8 +2,14 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.18.0';
+export const APP_VERSION = 'v2.19.0';
 
+// Changelog v2.19.0:
+// - Fix: scan e commissioning su topic MQTT per-gateway (omniapi/gateway/{MAC}/...)
+//   invece di broadcast — ogni comando va SOLO al gateway target
+// - Fix: factory-reset per-gateway (non più broadcast a tutti i gateway)
+// - Firmware: pubblica risultati su topic per-gateway, iscrivibilit√† a topic MAC-specific
+//
 // Changelog v2.18.0:
 // - Firmware: batch commissioning - un solo switch mesh per tutti i nodi
 //   (da ~90s a ~15-20s per 3 nodi)
