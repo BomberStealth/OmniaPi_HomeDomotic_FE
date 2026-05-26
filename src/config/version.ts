@@ -2,8 +2,16 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.19.0';
+export const APP_VERSION = 'v2.20.0';
 
+// Changelog v2.20.0:
+// - Feature: Monitoraggio Globale ora mostra anche gateway senza impianto (LEFT JOIN)
+// - Feature: OTA gateway da Monitoraggio Globale (modal con firmware dropdown + upload)
+// - Feature: Firmware storage sul server BE (/api/admin/firmware) + serve statico a /firmware/
+// - Feature: Gateway DB lifecycle — impianto delete/disassocia lascia gateway in DB (storico)
+// - Fix: factory-reset impianto delete ora è per-gateway (non più broadcast)
+// - Firmware: gateway sottoscrive omniapi/gateway/{MAC}/ota/# per OTA per-gateway
+//
 // Changelog v2.19.0:
 // - Fix: scan e commissioning su topic MQTT per-gateway (omniapi/gateway/{MAC}/...)
 //   invece di broadcast — ogni comando va SOLO al gateway target
