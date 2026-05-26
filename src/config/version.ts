@@ -2,8 +2,14 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.1';
+export const APP_VERSION = 'v2.20.2';
 
+// Changelog v2.20.2:
+// - Feature: Firmware sul server — sezione dedicata in Monitoraggio Globale per caricare,
+//   visualizzare ed eliminare firmware .bin; OTA modal con dropdown selezione firmware server
+// - Feature: Gateway auto-registrazione su primo heartbeat MQTT (status: pending, impianto_id: NULL)
+// - Fix: gateway pending aggiornano ip/version/mqtt_connected ad ogni heartbeat
+//
 // Changelog v2.20.0:
 // - Feature: Monitoraggio Globale ora mostra anche gateway senza impianto (LEFT JOIN)
 // - Feature: OTA gateway da Monitoraggio Globale (modal con firmware dropdown + upload)
