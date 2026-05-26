@@ -2,8 +2,14 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.17.1';
+export const APP_VERSION = 'v2.18.0';
 
+// Changelog v2.18.0:
+// - Firmware: batch commissioning - un solo switch mesh per tutti i nodi
+//   (da ~90s a ~15-20s per 3 nodi)
+// - Firmware: verifica nodi su production mesh via routing table dopo batch
+// - Firmware: nuovo MQTT topic commission/batch e commission/batch/result
+//
 // Changelog v2.17.1:
 // - Fix: scan wizard non mostra più nodi già registrati in altri impianti
 // - Fix: wizard non si blocca su timeout commissioning, tenta registrazione comunque

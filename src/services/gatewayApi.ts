@@ -82,6 +82,14 @@ export interface CommissionResultResponse {
   message: string;
 }
 
+export interface BatchCommissionResultResponse {
+  success: boolean;
+  ready: boolean;
+  ok: string[];
+  failed: string[];
+  timestamp?: number;
+}
+
 export const gatewayApi = {
   /**
    * Lista gateway in attesa di associazione (pending)
@@ -186,6 +194,16 @@ export const gatewayApi = {
 
   getCommissionResult: async (mac: string): Promise<CommissionResultResponse> => {
     const { data } = await api.get<CommissionResultResponse>(`/api/gateway/commission/result/${encodeURIComponent(mac)}`);
+    return data;
+  },
+
+  commissionNodesBatch: async (nodes: { mac: string; name?: string }[]): Promise<{ success: boolean; message: string }> => {
+    const { data } = await api.post('/api/gateway/commission/batch', { nodes });
+    return data;
+  },
+
+  getBatchCommissionResult: async (): Promise<BatchCommissionResultResponse> => {
+    const { data } = await api.get<BatchCommissionResultResponse>('/api/gateway/commission/batch/result');
     return data;
   },
 };

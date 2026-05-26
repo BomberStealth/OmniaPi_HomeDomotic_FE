@@ -176,99 +176,47 @@ export const StepCompleto = ({
       let commissionedNodes: SelectedNode[] = [];
       let failures: string[] = [];
 
-      // ========== FASE 1: Invia comandi commissioning rapidamente ==========
+      // ========== FASE 1: Batch commissioning (un solo switch mesh) ==========
       if (hasNodes) {
         setIsCommissioning(true);
         cancelRef.current = false;
 
-        const targetMacs = selectedNodes.map(n => normalizeMac(n.mac));
         const statusMap: Record<string, NodeCommissionStatus> = {};
         selectedNodes.forEach(n => { statusMap[normalizeMac(n.mac)] = 'waiting'; });
         setNodeStatuses({ ...statusMap });
         setProgress(5);
+        setStatusMessage('Avvio batch commissioning...');
 
-        // Manda tutti i comandi in sequenza rapida (500ms tra l'uno e l'altro)
-        for (let i = 0; i < selectedNodes.length; i++) {
-          if (cancelRef.current) break;
-          const node = selectedNodes[i];
-          const mac = normalizeMac(node.mac);
+        // Invia UN solo comando batch con tutti i nodi
+        await gatewayApi.commissionNodesBatch(
+          selectedNodes.map(n => ({ mac: n.mac, name: n.name }))
+        );
 
-          statusMap[mac] = 'in_progress';
-          setNodeStatuses({ ...statusMap });
-          setStatusMessage(`Commissioning ${i + 1}/${selectedNodes.length}...`);
+        // Tutti i nodi in_progress mentre il firmware lavora
+        selectedNodes.forEach(n => { statusMap[normalizeMac(n.mac)] = 'in_progress'; });
+        setNodeStatuses({ ...statusMap });
+        setStatusMessage('Gateway in commissioning batch...');
+        setProgress(10);
 
-          let sent = false;
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            if (cancelRef.current) break;
-            try {
-              await gatewayApi.commissionNode(node.mac, node.name);
-              sent = true;
-              break;
-            } catch (err: any) {
-              if (err?.response?.status === 409 && attempt < 3) {
-                setStatusMessage(`Gateway occupato, riprovo... (${attempt}/3)`);
-                await new Promise(r => setTimeout(r, 2000));
-              }
-            }
-          }
-
-          if (!sent) {
-            statusMap[mac] = 'failed';
-            setNodeStatuses({ ...statusMap });
-          }
-
-          // Breve pausa tra comandi per rilasciare il lock gateway
-          if (i < selectedNodes.length - 1) {
-            await new Promise(r => setTimeout(r, 500));
-          }
-        }
-
-        if (cancelRef.current) {
-          setIsCommissioning(false);
-          hasCreatedRef.current = false;
-          setPhase('summary');
-          return;
-        }
-
-        // ========== FASE 2: Poll getNodes() finché tutti online o timeout ==========
-        // Il firmware non manda commission/result → usiamo la mesh come fonte di verità
-        setStatusMessage('Attesa nodi nella mesh...');
-        setProgress(15);
-
+        // ========== FASE 2: Poll batch/result fino a risposta o timeout ==========
         const POLL_INTERVAL = 2000;
-        const MESH_TIMEOUT = 20000;
+        const BATCH_TIMEOUT = 35000; // 35s — firmware impiega ~15-20s
         const pollStart = Date.now();
+        let batchResult: { ok: string[]; failed: string[] } | null = null;
 
-        while (Date.now() - pollStart < MESH_TIMEOUT) {
+        while (Date.now() - pollStart < BATCH_TIMEOUT) {
           if (cancelRef.current) break;
           await new Promise(r => setTimeout(r, POLL_INTERVAL));
 
+          const elapsed = Date.now() - pollStart;
+          setProgress(Math.round(10 + (elapsed / BATCH_TIMEOUT) * 45));
+
           try {
-            const nodesRes = await omniapiApi.getNodes();
-            const onlineMacs = new Set(
-              nodesRes.nodes
-                .filter((n: any) => n.online === true)
-                .map((n: any) => normalizeMac(n.mac))
-            );
-
-            let allConfirmed = true;
-            for (const mac of targetMacs) {
-              if (statusMap[mac] === 'failed') continue;
-              if (statusMap[mac] !== 'success') {
-                if (onlineMacs.has(mac)) {
-                  statusMap[mac] = 'success';
-                  console.log(`[StepCompleto] Node ${mac}: confirmed in mesh`);
-                } else {
-                  allConfirmed = false;
-                }
-              }
+            const res = await gatewayApi.getBatchCommissionResult();
+            if (res.ready) {
+              batchResult = { ok: res.ok, failed: res.failed };
+              break;
             }
-            setNodeStatuses({ ...statusMap });
-
-            const doneCount = targetMacs.filter(m => statusMap[m] === 'success').length;
-            setProgress(Math.round(15 + (doneCount / targetMacs.length) * 43));
-
-            if (allConfirmed) break;
           } catch { /* continua */ }
         }
 
@@ -279,23 +227,37 @@ export const StepCompleto = ({
           return;
         }
 
-        // Segna i rimasti come timeout
-        for (const mac of targetMacs) {
-          if (statusMap[mac] === 'in_progress' || statusMap[mac] === 'waiting') {
+        // Aggiorna status nodi in base al risultato verificato dal firmware
+        if (batchResult) {
+          const okSet = new Set(batchResult.ok.map(normalizeMac));
+          const failedSet = new Set(batchResult.failed.map(normalizeMac));
+          for (const mac of Object.keys(statusMap)) {
+            if (okSet.has(mac)) statusMap[mac] = 'success';
+            else if (failedSet.has(mac)) statusMap[mac] = 'failed';
+            else statusMap[mac] = 'timeout';
+          }
+          setNodeStatuses({ ...statusMap });
+          // Registra SOLO i nodi verificati dal firmware sulla production mesh
+          commissionedNodes = selectedNodes.filter(n => okSet.has(normalizeMac(n.mac)));
+          failures = selectedNodes
+            .filter(n => !okSet.has(normalizeMac(n.mac)))
+            .map(n => {
+              const mac = normalizeMac(n.mac);
+              return `${n.name} (${failedSet.has(mac) ? 'fallito' : 'timeout'})`;
+            });
+        } else {
+          // Timeout totale — nessun risultato ricevuto
+          for (const mac of Object.keys(statusMap)) {
             statusMap[mac] = 'timeout';
           }
+          setNodeStatuses({ ...statusMap });
+          commissionedNodes = [];
+          failures = selectedNodes.map(n => `${n.name} (timeout)`);
         }
-        setNodeStatuses({ ...statusMap });
+
         setIsCommissioning(false);
         setProgress(60);
-
-        // Tenta la registrazione per tutti — registerNode rifiuta quelli non in mesh (404)
-        commissionedNodes = selectedNodes;
-        const trulyFailed = selectedNodes.filter(n => statusMap[normalizeMac(n.mac)] !== 'success');
-        failures = trulyFailed.map(n =>
-          `${n.name} (${statusMap[normalizeMac(n.mac)] === 'failed' ? 'fallito' : 'timeout'})`
-        );
-        console.log(`[StepCompleto] Commissioning: ${selectedNodes.length - trulyFailed.length} OK, ${trulyFailed.length} timeout/failed`);
+        console.log(`[StepCompleto] Batch: ${commissionedNodes.length} OK, ${failures.length} falliti`);
       }
 
       // ========== FASE 3: Crea impianto (60-70% o 0-30% se no nodi) ==========
