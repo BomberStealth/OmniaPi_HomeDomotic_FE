@@ -5,15 +5,11 @@ import {
   RiArrowDownSLine, RiCpuLine, RiMapPinLine,
   RiUploadCloud2Line, RiFlashlightLine, RiCloseLine,
   RiCheckLine, RiLoader4Line, RiDeleteBinLine,
+  RiHardDriveLine,
 } from 'react-icons/ri';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { api } from '@/services/api';
 import { Layout } from '@/components/layout/Layout';
-
-// ============================================
-// MONITORAGGIO GLOBALE GATEWAY
-// Sezione admin: lista mondiale di tutti i gateway
-// ============================================
 
 interface GatewayRow {
   id: number;
@@ -43,17 +39,54 @@ interface FirmwareFile {
 
 type OtaPhase = 'idle' | 'sending' | 'success' | 'error';
 
-interface OtaModalState {
-  gateway: GatewayRow;
-  firmwares: FirmwareFile[];
-  selectedFirmware: string;
-  phase: OtaPhase;
-  errorMsg: string;
-}
+const formatBytes = (n: number) =>
+  n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(2)} MB` : `${Math.round(n / 1024)} KB`;
 
 export const MonitoraggioGlobale = () => {
   const { colors } = useThemeColors();
 
+  // ── Firmware server ──────────────────────────────────────────
+  const [firmwares, setFirmwares] = useState<FirmwareFile[]>([]);
+  const [firmwaresLoading, setFirmwaresLoading] = useState(true);
+  const [uploadingFw, setUploadingFw] = useState(false);
+  const fwFileRef = useRef<HTMLInputElement>(null);
+
+  const fetchFirmwares = useCallback(async () => {
+    try {
+      const res = await api.get('/api/admin/firmware');
+      setFirmwares(res.data?.files || []);
+    } catch {
+      setFirmwares([]);
+    } finally {
+      setFirmwaresLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchFirmwares(); }, [fetchFirmwares]);
+
+  const handleFwUpload = async (file: File) => {
+    setUploadingFw(true);
+    try {
+      const buf = await file.arrayBuffer();
+      await api.post(
+        `/api/admin/firmware?name=${encodeURIComponent(file.name)}`,
+        buf,
+        { headers: { 'Content-Type': 'application/octet-stream' } }
+      );
+      await fetchFirmwares();
+    } catch { /* ignore */ } finally {
+      setUploadingFw(false);
+    }
+  };
+
+  const handleFwDelete = async (filename: string) => {
+    try {
+      await api.delete(`/api/admin/firmware/${encodeURIComponent(filename)}`);
+      setFirmwares(prev => prev.filter(f => f.filename !== filename));
+    } catch { /* ignore */ }
+  };
+
+  // ── Gateway list ─────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [gateways, setGateways] = useState<GatewayRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,11 +94,6 @@ export const MonitoraggioGlobale = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [nodes, setNodes] = useState<Record<number, NodeRow[]>>({});
   const [nodesLoading, setNodesLoading] = useState<Record<number, boolean>>({});
-
-  // OTA modal
-  const [otaModal, setOtaModal] = useState<OtaModalState | null>(null);
-  const [uploadingFirmware, setUploadingFirmware] = useState(false);
-  const firmwareFileRef = useRef<HTMLInputElement>(null);
 
   const fetchGateways = useCallback(async (q = '') => {
     setLoading(true);
@@ -82,20 +110,12 @@ export const MonitoraggioGlobale = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchGateways();
-  }, [fetchGateways]);
-
-  const handleSearch = () => fetchGateways(searchQuery);
+  useEffect(() => { fetchGateways(); }, [fetchGateways]);
 
   const toggleExpand = async (gatewayId: number) => {
-    if (expandedId === gatewayId) {
-      setExpandedId(null);
-      return;
-    }
+    if (expandedId === gatewayId) { setExpandedId(null); return; }
     setExpandedId(gatewayId);
     if (nodes[gatewayId]) return;
-
     setNodesLoading(prev => ({ ...prev, [gatewayId]: true }));
     try {
       const res = await api.get(`/api/admin/gateways/${gatewayId}/nodes`);
@@ -109,102 +129,38 @@ export const MonitoraggioGlobale = () => {
 
   const isOnline = (gw: GatewayRow) => gw.status === 'online' || gw.mqttConnected;
 
-  // ============================================
-  // OTA Modal
-  // ============================================
+  // ── OTA modal ─────────────────────────────────────────────────
+  const [otaGateway, setOtaGateway] = useState<GatewayRow | null>(null);
+  const [otaSelected, setOtaSelected] = useState('');
+  const [otaPhase, setOtaPhase] = useState<OtaPhase>('idle');
+  const [otaError, setOtaError] = useState('');
 
-  const openOtaModal = async (gw: GatewayRow) => {
-    try {
-      const res = await api.get('/api/admin/firmware');
-      const firmwares: FirmwareFile[] = res.data?.files || [];
-      setOtaModal({
-        gateway: gw,
-        firmwares,
-        selectedFirmware: firmwares[0]?.filename || '',
-        phase: 'idle',
-        errorMsg: '',
-      });
-    } catch {
-      setOtaModal({
-        gateway: gw,
-        firmwares: [],
-        selectedFirmware: '',
-        phase: 'idle',
-        errorMsg: '',
-      });
-    }
+  const openOta = (gw: GatewayRow) => {
+    setOtaGateway(gw);
+    setOtaSelected(firmwares[0]?.filename || '');
+    setOtaPhase('idle');
+    setOtaError('');
   };
+  const closeOta = () => setOtaGateway(null);
 
-  const closeOtaModal = () => setOtaModal(null);
-
-  const handleFirmwareUpload = async (file: File) => {
-    if (!otaModal) return;
-    setUploadingFirmware(true);
+  const triggerOta = async () => {
+    if (!otaGateway || !otaSelected) return;
+    setOtaPhase('sending');
+    setOtaError('');
     try {
-      const buf = await file.arrayBuffer();
-      const res = await api.post(
-        `/api/admin/firmware?name=${encodeURIComponent(file.name)}`,
-        buf,
-        { headers: { 'Content-Type': 'application/octet-stream' } }
-      );
-      const newFile: FirmwareFile = {
-        filename: res.data.filename,
-        size: res.data.size,
-        uploadedAt: new Date().toISOString(),
-      };
-      setOtaModal(prev => prev ? {
-        ...prev,
-        firmwares: [newFile, ...prev.firmwares],
-        selectedFirmware: newFile.filename,
-      } : null);
+      const macNoColon = otaGateway.mac.replace(/[:-]/g, '').toUpperCase();
+      await api.post(`/api/admin/gateways/${macNoColon}/ota`, { filename: otaSelected });
+      setOtaPhase('success');
     } catch (err: any) {
-      setOtaModal(prev => prev ? {
-        ...prev,
-        errorMsg: err.response?.data?.error || 'Errore upload firmware',
-      } : null);
-    } finally {
-      setUploadingFirmware(false);
+      setOtaPhase('error');
+      setOtaError(err.response?.data?.error || 'Errore invio comando OTA');
     }
   };
-
-  const handleDeleteFirmware = async (filename: string) => {
-    if (!otaModal) return;
-    try {
-      await api.delete(`/api/admin/firmware/${encodeURIComponent(filename)}`);
-      const updated = otaModal.firmwares.filter(f => f.filename !== filename);
-      setOtaModal(prev => prev ? {
-        ...prev,
-        firmwares: updated,
-        selectedFirmware: prev.selectedFirmware === filename ? (updated[0]?.filename || '') : prev.selectedFirmware,
-      } : null);
-    } catch { /* ignore */ }
-  };
-
-  const handleTriggerOta = async () => {
-    if (!otaModal || !otaModal.selectedFirmware) return;
-    setOtaModal(prev => prev ? { ...prev, phase: 'sending', errorMsg: '' } : null);
-    try {
-      const macNoColon = otaModal.gateway.mac.replace(/[:-]/g, '').toUpperCase();
-      await api.post(`/api/admin/gateways/${macNoColon}/ota`, {
-        filename: otaModal.selectedFirmware,
-      });
-      setOtaModal(prev => prev ? { ...prev, phase: 'success' } : null);
-    } catch (err: any) {
-      setOtaModal(prev => prev ? {
-        ...prev,
-        phase: 'error',
-        errorMsg: err.response?.data?.error || 'Errore invio comando OTA',
-      } : null);
-    }
-  };
-
-  const formatBytes = (n: number) => n > 1024 * 1024
-    ? `${(n / 1024 / 1024).toFixed(2)} MB`
-    : `${Math.round(n / 1024)} KB`;
 
   return (
     <Layout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
         {/* Header */}
         <div>
           <h1 style={{ color: colors.textPrimary, fontSize: '1.4rem', fontWeight: 600, marginBottom: '0.25rem' }}>
@@ -215,16 +171,107 @@ export const MonitoraggioGlobale = () => {
           </p>
         </div>
 
-        {/* Search */}
+        {/* ── SEZIONE FIRMWARE SERVER ── */}
+        <div style={{
+          background: colors.bgCard,
+          borderRadius: '1rem',
+          border: `1px solid ${colors.border}`,
+          padding: '1rem 1.25rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+              <RiHardDriveLine size={18} color={colors.accent} />
+              <span style={{ color: colors.textPrimary, fontWeight: 600, fontSize: '0.95rem' }}>
+                Firmware sul server
+              </span>
+              <span style={{
+                fontSize: '0.72rem', padding: '0.1rem 0.5rem',
+                background: `${colors.accent}20`, color: colors.accent,
+                borderRadius: '1rem', fontWeight: 600,
+              }}>
+                {firmwares.length}
+              </span>
+            </div>
+
+            {/* Upload button */}
+            <input
+              ref={fwFileRef}
+              type="file"
+              accept=".bin"
+              style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFwUpload(f); e.target.value = ''; }}
+            />
+            <motion.button
+              whileTap={{ scale: 0.93 }}
+              onClick={() => fwFileRef.current?.click()}
+              disabled={uploadingFw}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.4rem 0.9rem',
+                background: `${colors.accent}15`,
+                border: `1px solid ${colors.accent}30`,
+                borderRadius: '0.625rem',
+                color: colors.accent, fontSize: '0.82rem', fontWeight: 600,
+                cursor: uploadingFw ? 'wait' : 'pointer',
+              }}
+            >
+              {uploadingFw
+                ? <RiLoader4Line size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                : <RiUploadCloud2Line size={14} />
+              }
+              Carica .bin
+            </motion.button>
+          </div>
+
+          {firmwaresLoading ? (
+            <p style={{ color: colors.textMuted, fontSize: '0.85rem' }}>Caricamento...</p>
+          ) : firmwares.length === 0 ? (
+            <div style={{
+              padding: '0.875rem', textAlign: 'center',
+              color: colors.textMuted, fontSize: '0.85rem',
+              background: `${colors.textMuted}08`,
+              borderRadius: '0.625rem',
+              border: `1px dashed ${colors.border}`,
+            }}>
+              Nessun firmware caricato — usa "Carica .bin" per aggiungere un file .bin
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+              {firmwares.map(fw => (
+                <div key={fw.filename} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                  padding: '0.5rem 0.75rem',
+                  background: `${colors.textMuted}06`,
+                  borderRadius: '0.625rem',
+                  border: `1px solid ${colors.border}`,
+                }}>
+                  <RiHardDriveLine size={14} color={colors.accent} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: colors.textPrimary, fontWeight: 500, wordBreak: 'break-all' }}>
+                      {fw.filename}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.72rem', color: colors.textMuted }}>
+                      {formatBytes(fw.size)} · {new Date(fw.uploadedAt).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleFwDelete(fw.filename)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.2rem', flexShrink: 0 }}
+                  >
+                    <RiDeleteBinLine size={15} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── RICERCA GATEWAY ── */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <div style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            background: colors.bgCard,
-            borderRadius: '0.75rem',
-            padding: '0 1rem',
-            border: `1px solid ${colors.border}`,
+            flex: 1, display: 'flex', alignItems: 'center',
+            background: colors.bgCard, borderRadius: '0.75rem',
+            padding: '0 1rem', border: `1px solid ${colors.border}`,
           }}>
             <RiSearchLine size={18} color={colors.textMuted} />
             <input
@@ -232,96 +279,68 @@ export const MonitoraggioGlobale = () => {
               placeholder="Cerca per nome impianto o MAC..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              onKeyDown={e => e.key === 'Enter' && fetchGateways(searchQuery)}
               style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                padding: '0.75rem',
-                color: colors.textPrimary,
-                fontSize: '0.95rem',
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                padding: '0.75rem', color: colors.textPrimary, fontSize: '0.95rem',
               }}
             />
           </div>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={handleSearch}
+            onClick={() => fetchGateways(searchQuery)}
             disabled={loading}
             style={{
-              padding: '0 1.25rem',
-              background: colors.accent,
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.75rem',
-              fontWeight: 500,
-              cursor: loading ? 'wait' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-              fontSize: '0.9rem',
+              padding: '0 1.25rem', background: colors.accent, color: 'white',
+              border: 'none', borderRadius: '0.75rem', fontWeight: 500,
+              cursor: loading ? 'wait' : 'pointer', opacity: loading ? 0.7 : 1, fontSize: '0.9rem',
             }}
           >
             {loading ? '...' : 'Cerca'}
           </motion.button>
         </div>
 
-        {/* Error */}
         {error && (
           <div style={{ padding: '0.875rem', background: '#ef444420', borderRadius: '0.75rem', color: '#ef4444', fontSize: '0.875rem' }}>
             {error}
           </div>
         )}
 
-        {/* Lista */}
         {!loading && gateways.length === 0 && !error && (
           <div style={{ textAlign: 'center', padding: '2rem', color: colors.textMuted }}>
             Nessun gateway trovato
           </div>
         )}
 
+        {/* ── LISTA GATEWAY ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           {gateways.map(gw => (
-            <div
-              key={gw.id}
-              style={{
-                background: colors.bgCard,
-                borderRadius: '1rem',
-                border: `1px solid ${colors.border}`,
-                overflow: 'hidden',
-              }}
-            >
-              {/* Gateway row */}
+            <div key={gw.id} style={{
+              background: colors.bgCard, borderRadius: '1rem',
+              border: `1px solid ${colors.border}`, overflow: 'hidden',
+            }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
+                {/* Row principale (expand) */}
                 <motion.button
                   whileTap={{ scale: 0.99 }}
                   onClick={() => toggleExpand(gw.id)}
                   style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.875rem 1rem',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    textAlign: 'left',
+                    flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.875rem 1rem', background: 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  {/* Status dot */}
                   <div style={{
                     width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
                     background: isOnline(gw) ? '#22c55e' : '#ef4444',
                     boxShadow: isOnline(gw) ? '0 0 6px #22c55e80' : 'none',
                   }} />
-
-                  {/* Info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <span style={{ color: colors.textPrimary, fontWeight: 600, fontSize: '0.95rem' }}>
                         {gw.impiantoNome || 'Senza impianto'}
                       </span>
-                      <span style={{ color: colors.textMuted, fontSize: '0.75rem' }}>
-                        {gw.mac}
-                      </span>
+                      <span style={{ color: colors.textMuted, fontSize: '0.75rem' }}>{gw.mac}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
                       {gw.ip && (
@@ -335,40 +354,32 @@ export const MonitoraggioGlobale = () => {
                         </span>
                       )}
                       <span style={{ color: colors.textMuted, fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        {isOnline(gw) ? <RiWifiLine size={12} color="#22c55e" /> : <RiWifiOffLine size={12} color="#ef4444" />}
+                        {isOnline(gw)
+                          ? <RiWifiLine size={12} color="#22c55e" />
+                          : <RiWifiOffLine size={12} color="#ef4444" />}
                         {gw.nodeCount} {gw.nodeCount === 1 ? 'nodo' : 'nodi'}
                       </span>
                     </div>
                   </div>
-
-                  {/* Arrow */}
-                  <motion.div
-                    animate={{ rotate: expandedId === gw.id ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    style={{ flexShrink: 0 }}
-                  >
+                  <motion.div animate={{ rotate: expandedId === gw.id ? 180 : 0 }} transition={{ duration: 0.2 }} style={{ flexShrink: 0 }}>
                     <RiArrowDownSLine size={20} color={colors.textMuted} />
                   </motion.div>
                 </motion.button>
 
-                {/* OTA button */}
+                {/* Bottone OTA */}
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => openOtaModal(gw)}
-                  title="Aggiorna firmware"
+                  onClick={() => openOta(gw)}
+                  disabled={firmwares.length === 0}
+                  title={firmwares.length === 0 ? 'Carica prima un firmware' : 'Aggiorna firmware'}
                   style={{
-                    flexShrink: 0,
-                    marginRight: '0.75rem',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '0.5rem',
-                    background: `${colors.accent}15`,
-                    border: `1px solid ${colors.accent}30`,
-                    color: colors.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
+                    flexShrink: 0, marginRight: '0.75rem',
+                    width: 32, height: 32, borderRadius: '0.5rem',
+                    background: firmwares.length > 0 ? `${colors.accent}15` : `${colors.textMuted}10`,
+                    border: `1px solid ${firmwares.length > 0 ? `${colors.accent}30` : colors.border}`,
+                    color: firmwares.length > 0 ? colors.accent : colors.textMuted,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: firmwares.length > 0 ? 'pointer' : 'not-allowed',
                   }}
                 >
                   <RiFlashlightLine size={16} />
@@ -379,18 +390,14 @@ export const MonitoraggioGlobale = () => {
               <AnimatePresence>
                 {expandedId === gw.id && (
                   <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
                     style={{ overflow: 'hidden' }}
                   >
                     <div style={{
                       borderTop: `1px solid ${colors.border}`,
                       padding: '0.625rem 1rem 0.75rem 2.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.375rem',
+                      display: 'flex', flexDirection: 'column', gap: '0.375rem',
                     }}>
                       {nodesLoading[gw.id] ? (
                         <span style={{ color: colors.textMuted, fontSize: '0.85rem' }}>Caricamento nodi...</span>
@@ -406,8 +413,7 @@ export const MonitoraggioGlobale = () => {
                             {node.tipo && (
                               <span style={{
                                 fontSize: '0.7rem', color: colors.textMuted,
-                                background: `${colors.accent}20`, borderRadius: '0.3rem',
-                                padding: '0.1rem 0.4rem',
+                                background: `${colors.accent}20`, borderRadius: '0.3rem', padding: '0.1rem 0.4rem',
                               }}>
                                 {node.tipo}
                               </span>
@@ -430,250 +436,135 @@ export const MonitoraggioGlobale = () => {
         )}
       </div>
 
-      {/* ==================== OTA MODAL ==================== */}
+      {/* ── OTA MODAL ── */}
       <AnimatePresence>
-        {otaModal && (
+        {otaGateway && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(0,0,0,0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000,
-              padding: '1rem',
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1000, padding: '1rem',
             }}
-            onClick={(e) => { if (e.target === e.currentTarget) closeOtaModal(); }}
+            onClick={e => { if (e.target === e.currentTarget) closeOta(); }}
           >
             <motion.div
-              initial={{ scale: 0.92, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.92, opacity: 0 }}
-              transition={{ duration: 0.18 }}
+              initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }} transition={{ duration: 0.18 }}
               style={{
-                background: colors.bgCard,
-                borderRadius: '1.25rem',
-                border: `1px solid ${colors.border}`,
-                padding: '1.5rem',
-                width: '100%',
-                maxWidth: '480px',
-                maxHeight: '90vh',
-                overflowY: 'auto',
+                background: colors.bgCard, borderRadius: '1.25rem',
+                border: `1px solid ${colors.border}`, padding: '1.5rem',
+                width: '100%', maxWidth: '420px',
               }}
             >
-              {/* Modal header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                 <div>
                   <h2 style={{ color: colors.textPrimary, fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
                     Aggiorna Firmware
                   </h2>
                   <p style={{ color: colors.textMuted, fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
-                    {otaModal.gateway.impiantoNome || 'Senza impianto'} · {otaModal.gateway.mac}
+                    {otaGateway.impiantoNome || 'Senza impianto'} · {otaGateway.mac}
                   </p>
-                  {otaModal.gateway.version && (
-                    <p style={{ color: colors.textMuted, fontSize: '0.75rem', margin: '0.15rem 0 0' }}>
-                      Versione attuale: v{otaModal.gateway.version}
+                  {otaGateway.version && (
+                    <p style={{ color: colors.textMuted, fontSize: '0.75rem', margin: '0.1rem 0 0' }}>
+                      Versione attuale: <strong>v{otaGateway.version}</strong>
                     </p>
                   )}
                 </div>
-                <button
-                  onClick={closeOtaModal}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: colors.textMuted, padding: '0.25rem',
-                  }}
-                >
+                <button onClick={closeOta} style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.textMuted }}>
                   <RiCloseLine size={22} />
                 </button>
               </div>
 
-              {/* Firmware list */}
-              <div style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ color: colors.textSecondary, fontSize: '0.85rem', fontWeight: 600 }}>
-                    Firmware disponibili
-                  </span>
-                  {/* Upload button */}
-                  <input
-                    ref={firmwareFileRef}
-                    type="file"
-                    accept=".bin"
-                    style={{ display: 'none' }}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFirmwareUpload(file);
-                      e.target.value = '';
-                    }}
-                  />
-                  <motion.button
-                    whileTap={{ scale: 0.93 }}
-                    onClick={() => firmwareFileRef.current?.click()}
-                    disabled={uploadingFirmware}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.4rem',
-                      padding: '0.35rem 0.75rem',
-                      background: `${colors.accent}15`,
-                      border: `1px solid ${colors.accent}30`,
-                      borderRadius: '0.5rem',
-                      color: colors.accent,
-                      fontSize: '0.78rem',
-                      fontWeight: 600,
-                      cursor: uploadingFirmware ? 'wait' : 'pointer',
-                    }}
-                  >
-                    {uploadingFirmware
-                      ? <RiLoader4Line size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                      : <RiUploadCloud2Line size={14} />
-                    }
-                    Carica .bin
-                  </motion.button>
-                </div>
-
-                {otaModal.firmwares.length === 0 ? (
-                  <div style={{
-                    padding: '1rem',
-                    textAlign: 'center',
-                    color: colors.textMuted,
-                    fontSize: '0.85rem',
-                    background: `${colors.textMuted}08`,
-                    borderRadius: '0.75rem',
-                    border: `1px dashed ${colors.border}`,
-                  }}>
-                    Nessun firmware caricato — usa "Carica .bin" per aggiungerne uno
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    {otaModal.firmwares.map(fw => (
-                      <div
-                        key={fw.filename}
-                        onClick={() => setOtaModal(prev => prev ? { ...prev, selectedFirmware: fw.filename } : null)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.625rem',
-                          padding: '0.625rem 0.75rem',
-                          borderRadius: '0.75rem',
-                          border: `1px solid ${otaModal.selectedFirmware === fw.filename ? colors.accent : colors.border}`,
-                          background: otaModal.selectedFirmware === fw.filename
-                            ? `${colors.accent}10`
-                            : `${colors.textMuted}05`,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <div style={{
-                          width: 18, height: 18,
-                          borderRadius: '50%',
-                          border: `2px solid ${otaModal.selectedFirmware === fw.filename ? colors.accent : colors.border}`,
-                          background: otaModal.selectedFirmware === fw.filename ? colors.accent : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          flexShrink: 0,
-                        }}>
-                          {otaModal.selectedFirmware === fw.filename && <RiCheckLine size={10} color="white" />}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: '0.85rem', color: colors.textPrimary, fontWeight: 500, wordBreak: 'break-all' }}>
-                            {fw.filename}
-                          </p>
-                          <p style={{ margin: 0, fontSize: '0.72rem', color: colors.textMuted }}>
-                            {formatBytes(fw.size)} · {new Date(fw.uploadedAt).toLocaleDateString('it-IT')}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteFirmware(fw.filename); }}
-                          style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: '#ef4444', padding: '0.2rem', flexShrink: 0,
-                          }}
-                        >
-                          <RiDeleteBinLine size={15} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Error */}
-              {otaModal.errorMsg && (
-                <div style={{
-                  padding: '0.625rem', background: '#ef444415', border: '1px solid #ef444430',
-                  borderRadius: '0.5rem', color: '#ef4444', fontSize: '0.8rem', marginBottom: '0.75rem',
-                }}>
-                  {otaModal.errorMsg}
-                </div>
-              )}
-
-              {/* Phase feedback */}
-              {otaModal.phase === 'success' && (
-                <div style={{
-                  padding: '0.75rem', background: '#22c55e15', border: '1px solid #22c55e30',
-                  borderRadius: '0.75rem', textAlign: 'center', marginBottom: '0.75rem',
-                }}>
-                  <RiCheckLine size={20} color="#22c55e" style={{ marginBottom: '0.25rem' }} />
-                  <p style={{ margin: 0, color: '#22c55e', fontWeight: 600, fontSize: '0.9rem' }}>
-                    Comando OTA inviato!
-                  </p>
-                  <p style={{ margin: '0.25rem 0 0', color: colors.textMuted, fontSize: '0.78rem' }}>
-                    Il gateway scaricherà il firmware e si aggiornerà automaticamente.
-                  </p>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: '0.625rem' }}>
-                <button
-                  onClick={closeOtaModal}
+              {/* Dropdown firmware */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', color: colors.textSecondary, fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                  Firmware disponibile sul server
+                </label>
+                <select
+                  value={otaSelected}
+                  onChange={e => setOtaSelected(e.target.value)}
+                  disabled={otaPhase === 'sending'}
                   style={{
-                    flex: 1,
-                    padding: '0.7rem',
-                    borderRadius: '0.75rem',
-                    background: `${colors.textMuted}12`,
+                    width: '100%',
+                    padding: '0.65rem 0.875rem',
+                    background: colors.bgCard,
                     border: `1px solid ${colors.border}`,
-                    color: colors.textSecondary,
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    borderRadius: '0.625rem',
+                    color: colors.textPrimary,
                     fontSize: '0.9rem',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    appearance: 'auto',
                   }}
                 >
-                  {otaModal.phase === 'success' ? 'Chiudi' : 'Annulla'}
+                  {firmwares.map(fw => (
+                    <option key={fw.filename} value={fw.filename}>
+                      {fw.filename} ({formatBytes(fw.size)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Feedback */}
+              {otaPhase === 'success' && (
+                <div style={{
+                  padding: '0.75rem', background: '#22c55e15', border: '1px solid #22c55e30',
+                  borderRadius: '0.75rem', textAlign: 'center', marginBottom: '1rem',
+                }}>
+                  <RiCheckLine size={20} color="#22c55e" />
+                  <p style={{ margin: '0.25rem 0 0', color: '#22c55e', fontWeight: 600, fontSize: '0.9rem' }}>
+                    Comando inviato!
+                  </p>
+                  <p style={{ margin: '0.2rem 0 0', color: colors.textMuted, fontSize: '0.78rem' }}>
+                    Il gateway scarica e si aggiorna automaticamente (~30-60s)
+                  </p>
+                </div>
+              )}
+              {otaPhase === 'error' && otaError && (
+                <div style={{
+                  padding: '0.625rem', background: '#ef444415', border: '1px solid #ef444430',
+                  borderRadius: '0.5rem', color: '#ef4444', fontSize: '0.82rem', marginBottom: '1rem',
+                }}>
+                  {otaError}
+                </div>
+              )}
+
+              {/* Azioni */}
+              <div style={{ display: 'flex', gap: '0.625rem' }}>
+                <button
+                  onClick={closeOta}
+                  style={{
+                    flex: 1, padding: '0.7rem', borderRadius: '0.75rem',
+                    background: `${colors.textMuted}12`, border: `1px solid ${colors.border}`,
+                    color: colors.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                  }}
+                >
+                  {otaPhase === 'success' ? 'Chiudi' : 'Annulla'}
                 </button>
-                {otaModal.phase !== 'success' && (
+                {otaPhase !== 'success' && (
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    onClick={handleTriggerOta}
-                    disabled={!otaModal.selectedFirmware || otaModal.phase === 'sending' || uploadingFirmware}
+                    onClick={triggerOta}
+                    disabled={!otaSelected || otaPhase === 'sending'}
                     style={{
-                      flex: 2,
-                      padding: '0.7rem',
-                      borderRadius: '0.75rem',
-                      background: !otaModal.selectedFirmware || otaModal.phase === 'sending'
+                      flex: 2, padding: '0.7rem', borderRadius: '0.75rem', border: 'none',
+                      background: !otaSelected || otaPhase === 'sending'
                         ? `${colors.accent}40`
                         : `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark || colors.accent})`,
-                      border: 'none',
-                      color: 'white',
-                      fontWeight: 600,
-                      cursor: !otaModal.selectedFirmware || otaModal.phase === 'sending' ? 'not-allowed' : 'pointer',
-                      fontSize: '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
+                      color: 'white', fontWeight: 600, fontSize: '0.9rem',
+                      cursor: !otaSelected || otaPhase === 'sending' ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                     }}
                   >
-                    {otaModal.phase === 'sending'
+                    {otaPhase === 'sending'
                       ? <><RiLoader4Line size={16} style={{ animation: 'spin 1s linear infinite' }} /> Invio...</>
                       : <><RiFlashlightLine size={16} /> Aggiorna gateway</>
                     }
                   </motion.button>
                 )}
               </div>
-
               <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </motion.div>
           </motion.div>
