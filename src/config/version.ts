@@ -2,7 +2,7 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.0';
+export const APP_VERSION = 'v2.20.1';
 
 // Changelog v2.20.0:
 // - Feature: Monitoraggio Globale ora mostra anche gateway senza impianto (LEFT JOIN)

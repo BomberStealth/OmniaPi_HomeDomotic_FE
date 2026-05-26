@@ -154,7 +154,16 @@ export const AddDeviceModal = ({
     setError('');
 
     try {
-      const res = await gatewayApi.startNodeScan();
+      const gwRes = await gatewayApi.getImpiantoGateway(impiantoId);
+      const gatewayMac = gwRes.gateway?.mac ?? '';
+      if (!gatewayMac) {
+        if (mountedRef.current) {
+          setError('Nessun gateway associato a questo impianto.');
+          setPhase('error');
+        }
+        return;
+      }
+      const res = await gatewayApi.startNodeScan(gatewayMac);
       if (!res.success) {
         if (mountedRef.current) {
           setError(res.message || 'Scansione non avviata. Il gateway potrebbe essere occupato.');
@@ -185,7 +194,7 @@ export const AddDeviceModal = ({
         startPolling();
       }
     }, 1000);
-  }, [cleanup, startPolling]);
+  }, [cleanup, startPolling, impiantoId]);
 
   // Auto-start scan when modal opens
   useEffect(() => {
