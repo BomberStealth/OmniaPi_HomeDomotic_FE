@@ -168,8 +168,8 @@ export const gatewayApi = {
   // SCAN NODI (via MQTT → gateway)
   // ============================================
 
-  startNodeScan: async (): Promise<{ success: boolean; message: string }> => {
-    const { data } = await api.post('/api/gateway/scan/start');
+  startNodeScan: async (gatewayMac: string): Promise<{ success: boolean; message: string }> => {
+    const { data } = await api.post('/api/gateway/scan/start', { gateway_mac: gatewayMac });
     return data;
   },
 
@@ -197,8 +197,8 @@ export const gatewayApi = {
     return data;
   },
 
-  commissionNodesBatch: async (nodes: { mac: string; name?: string }[]): Promise<{ success: boolean; message: string }> => {
-    const { data } = await api.post('/api/gateway/commission/batch', { nodes });
+  commissionNodesBatch: async (nodes: { mac: string; name?: string }[], gatewayMac: string): Promise<{ success: boolean; message: string }> => {
+    const { data } = await api.post('/api/gateway/commission/batch', { nodes, gateway_mac: gatewayMac });
     return data;
   },
 
