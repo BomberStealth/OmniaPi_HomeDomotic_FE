@@ -49,13 +49,15 @@ export const MonitoraggioGlobale = () => {
   const [firmwares, setFirmwares] = useState<FirmwareFile[]>([]);
   const [firmwaresLoading, setFirmwaresLoading] = useState(true);
   const [uploadingFw, setUploadingFw] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fwFileRef = useRef<HTMLInputElement>(null);
 
   const fetchFirmwares = useCallback(async () => {
     try {
       const res = await api.get('/api/admin/firmware');
       setFirmwares(res.data?.files || []);
-    } catch {
+    } catch (err: any) {
+      console.error('[firmware] fetch error:', err?.response?.data || err?.message);
       setFirmwares([]);
     } finally {
       setFirmwaresLoading(false);
@@ -66,6 +68,7 @@ export const MonitoraggioGlobale = () => {
 
   const handleFwUpload = async (file: File) => {
     setUploadingFw(true);
+    setUploadError(null);
     try {
       const buf = await file.arrayBuffer();
       await api.post(
@@ -74,7 +77,11 @@ export const MonitoraggioGlobale = () => {
         { headers: { 'Content-Type': 'application/octet-stream' } }
       );
       await fetchFirmwares();
-    } catch { /* ignore */ } finally {
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Errore upload firmware';
+      console.error('[firmware] upload error:', msg, err?.response?.status);
+      setUploadError(msg);
+    } finally {
       setUploadingFw(false);
     }
   };
@@ -222,6 +229,17 @@ export const MonitoraggioGlobale = () => {
               Carica .bin
             </motion.button>
           </div>
+
+          {uploadError && (
+            <div style={{
+              padding: '0.5rem 0.75rem', marginBottom: '0.5rem',
+              background: '#ff444420', color: '#ff6b6b',
+              borderRadius: '0.5rem', fontSize: '0.82rem',
+              border: '1px solid #ff444430',
+            }}>
+              Errore upload: {uploadError}
+            </div>
+          )}
 
           {firmwaresLoading ? (
             <p style={{ color: colors.textMuted, fontSize: '0.85rem' }}>Caricamento...</p>
