@@ -11,6 +11,7 @@ import {
   RiDoorOpenLine,
   RiNotification3Line,
   RiDownloadLine,
+  RiToolsLine,
 } from 'react-icons/ri';
 import { useAuthStore } from '@/store/authStore';
 import { ImpiantoSelector } from '@/components/shared/ImpiantoSelector';
@@ -86,6 +87,21 @@ export const Sidebar = () => {
       return; // Già su questa sezione, non fare nulla
     }
     navigate(path);
+  };
+
+  const handleConfiguratori = () => {
+    // Overlay bianco che copre il tema scuro prima di navigare verso il tema chiaro
+    const overlay = document.createElement('div');
+    overlay.style.cssText = [
+      'position:fixed', 'inset:0', 'z-index:99999',
+      'background:#F1F4FB', 'opacity:0',
+      'transition:opacity 0.30s ease', 'pointer-events:none',
+    ].join(';');
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      setTimeout(() => { window.location.href = '/configuratori'; }, 320);
+    });
   };
 
   return (
@@ -188,6 +204,28 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+
+      {/* Configuratori Button */}
+      <div
+        onClick={handleConfiguratori}
+        className="flex items-center gap-3 px-4 py-3 transition-all cursor-pointer mb-2"
+        style={{
+          borderRadius: '20px',
+          color: colors.textMuted,
+          background: 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLDivElement).style.background = `rgba(${hexToRgb(colors.accent)}, 0.1)`;
+          (e.currentTarget as HTMLDivElement).style.color = colors.accent;
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+          (e.currentTarget as HTMLDivElement).style.color = colors.textMuted;
+        }}
+      >
+        <RiToolsLine size={20} className="flex-shrink-0" />
+        <span style={{ fontSize: '14px', fontWeight: 500 }}>Configuratori</span>
+      </div>
 
       {/* Install PWA Button - solo se canInstall */}
       {canInstall && (
