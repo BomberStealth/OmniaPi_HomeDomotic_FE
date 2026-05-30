@@ -3,36 +3,29 @@ import { Card } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { spacing, fontSize, radius } from '@/styles/responsive';
-import { gatewayApi, ScannedNode } from '@/services/gatewayApi';
 import { SelectedNode } from '@/pages/Wizard/SetupWizard';
+import { socketService, WS_EVENTS } from '@/services/socket';
+import { useAuthStore } from '@/store/authStore';
 import {
   RiDeviceLine,
-  RiSearchLine,
+  RiLightbulbFlashLine,
   RiLoader4Line,
-  RiWifiLine,
-  RiCheckLine,
-  RiAddLine,
   RiDeleteBinLine,
+  RiCheckDoubleLine,
+  RiRadarLine,
 } from 'react-icons/ri';
 
-// ============================================
-// STEP 3: SCAN NODI via MQTT
-// Flusso reale del gateway (fw 1.7.x):
-//   0s:  riceve start scan, switch a discovery mesh
-//   ~4s: discovery mesh attiva
-//   ~10s: nodi trovati
-//   ~25s: timeout, torna in production mesh
-//   ~33s: MQTT resumed, pubblica risultati
-//
-// Frontend: countdown 45s → poll ogni 3s per 30s max
-// NON chiama stopNodeScan (il gateway si ferma da solo)
-// ============================================
+// firmware device_type values
+const DEVICE_TYPE_RELAY = 1;
+const DEVICE_TYPE_LED = 2;
 
-const SCAN_COUNTDOWN = 45;
-const POLL_INTERVAL = 3000;
-const POLL_MAX_DURATION = 30000;
-
-type ScanPhase = 'idle' | 'scanning' | 'polling' | 'done';
+interface DiscoveredNode {
+  mac: string;
+  device_type: number;
+  capabilities: number;
+  firmware_version: string;
+  name: string;
+}
 
 interface StepDispositiviProps {
   selectedNodes: SelectedNode[];
@@ -44,244 +37,152 @@ interface StepDispositiviProps {
 }
 
 export const StepDispositivi = ({
-  selectedNodes,
   onUpdateNodes,
   onNext,
   onSkip,
   onBack,
-  gatewayMac,
 }: StepDispositiviProps) => {
   const { modeColors, isDarkMode, colors } = useThemeColor();
-  const [phase, setPhase] = useState<ScanPhase>('idle');
-  const [countdown, setCountdown] = useState(SCAN_COUNTDOWN);
-  const [scannedNodes, setScannedNodes] = useState<ScannedNode[]>([]);
-  const [error, setError] = useState('');
+  const token = useAuthStore(state => state.token);
+  const [listening, setListening] = useState(false);
+  const [discoveredNodes, setDiscoveredNodes] = useState<DiscoveredNode[]>([]);
+  const [showConfirm, setShowConfirm] = useState(false);
   const mountedRef = useRef(true);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollStartRef = useRef<number>(0);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    return () => { mountedRef.current = false; };
   }, []);
 
-  const cleanup = useCallback(() => {
-    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-  }, []);
-
-  const startPolling = useCallback(() => {
-    if (!mountedRef.current) return;
-    setPhase('polling');
-    pollStartRef.current = Date.now();
-
-    const doPoll = async () => {
-      try {
-        const res = await gatewayApi.getNodeScanResults();
-        if (!mountedRef.current) return;
-        const uncommissioned = res.nodes.filter(n => !n.commissioned);
-        setScannedNodes(uncommissioned);
-        if (uncommissioned.length > 0) {
-          cleanup();
-          setPhase('done');
-          return;
-        }
-      } catch { /* continua polling */ }
-
-      // Timeout polling dopo POLL_MAX_DURATION
-      if (Date.now() - pollStartRef.current >= POLL_MAX_DURATION) {
-        cleanup();
-        if (mountedRef.current) setPhase('done');
-      }
-    };
-
-    doPoll();
-    pollRef.current = setInterval(doPoll, POLL_INTERVAL);
-  }, [cleanup]);
-
-  const startScan = useCallback(async () => {
-    cleanup();
-    setError('');
-    setScannedNodes([]);
-    setPhase('scanning');
-    setCountdown(SCAN_COUNTDOWN);
-
-    try {
-      await gatewayApi.startNodeScan(gatewayMac);
-    } catch {
-      if (mountedRef.current) {
-        setError('Errore avvio scansione nodi');
-        setPhase('idle');
-      }
-      return;
+  const startListening = useCallback(() => {
+    if (!socketService.isConnected() && token) {
+      socketService.connect(token);
     }
+    setDiscoveredNodes([]);
+    setShowConfirm(false);
+    setListening(true);
+  }, [token]);
 
-    // Countdown passivo - NON chiama stopNodeScan
-    let remaining = SCAN_COUNTDOWN;
-    timerRef.current = setInterval(() => {
-      remaining--;
+  const stopListening = useCallback(() => {
+    setListening(false);
+    setShowConfirm(false);
+  }, []);
+
+  // Subscribe to NODE_DISCOVERED while listening
+  useEffect(() => {
+    if (!listening) return;
+
+    const unsubscribe = socketService.onEvent((event) => {
+      if (event.type !== WS_EVENTS.NODE_DISCOVERED || !event.payload?.mac) return;
       if (!mountedRef.current) return;
-      setCountdown(remaining);
-      if (remaining <= 0) {
-        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-        startPolling();
-      }
-    }, 1000);
-  }, [cleanup, startPolling]);
 
-  const handleLeave = (cb: () => void) => {
-    cleanup();
-    cb();
-  };
+      const payload = event.payload;
+      const mac = (payload.mac as string).toUpperCase();
+      const deviceType = typeof payload.device_type === 'number' ? payload.device_type : DEVICE_TYPE_RELAY;
+      const defaultName = deviceType === DEVICE_TYPE_LED
+        ? `LED Strip ${mac.slice(-5)}`
+        : `Nodo ${mac.slice(-5)}`;
 
-  const isSelected = (mac: string) => selectedNodes.some(n => n.mac === mac);
+      setDiscoveredNodes(prev => {
+        if (prev.some(n => n.mac === mac)) return prev;
+        return [...prev, {
+          mac,
+          device_type: deviceType,
+          capabilities: payload.capabilities || 0,
+          firmware_version: payload.firmware_version || '',
+          name: defaultName,
+        }];
+      });
+    });
 
-  const toggleSelect = (node: ScannedNode) => {
-    if (isSelected(node.mac)) {
-      onUpdateNodes(selectedNodes.filter(n => n.mac !== node.mac));
-    } else {
-      const defaultName = node.device_type === 'omniapi_led'
-        ? `LED Strip ${node.mac.slice(-5)}`
-        : `Nodo ${node.mac.slice(-5)}`;
-      onUpdateNodes([...selectedNodes, { mac: node.mac, name: defaultName, type: node.device_type }]);
-    }
+    return unsubscribe;
+  }, [listening]);
+
+  const updateName = (mac: string, name: string) => {
+    setDiscoveredNodes(prev => prev.map(n => n.mac === mac ? { ...n, name } : n));
   };
 
   const removeNode = (mac: string) => {
-    onUpdateNodes(selectedNodes.filter(n => n.mac !== mac));
+    setDiscoveredNodes(prev => prev.filter(n => n.mac !== mac));
   };
 
-  const rssiToColor = (rssi: number): string => {
-    if (rssi >= -50) return '#22c55e';
-    if (rssi >= -60) return '#eab308';
-    if (rssi >= -70) return '#f97316';
-    return '#ef4444';
-  };
-
-  const rssiLabel = (rssi: number): string => {
-    if (rssi >= -50) return 'Ottimo';
-    if (rssi >= -60) return 'Buono';
-    if (rssi >= -70) return 'Discreto';
-    return 'Debole';
-  };
-
-  const availableNodes = scannedNodes.filter(n => !isSelected(n.mac));
-  const isWorking = phase === 'scanning' || phase === 'polling';
-
-  const phaseLabel = (): string => {
-    switch (phase) {
-      case 'idle': return 'Premi "Cerca dispositivi" per avviare la scansione';
-      case 'scanning': return `Scansione in corso... ${countdown}s`;
-      case 'polling': return 'Recupero risultati dal gateway...';
-      case 'done': return scannedNodes.length > 0
-        ? `Trovati ${scannedNodes.length} dispositivi`
-        : 'Nessun dispositivo trovato';
+  const handleFinito = () => {
+    if (discoveredNodes.length === 0) {
+      onSkip();
+      return;
     }
+    setShowConfirm(true);
   };
+
+  const handleConfirm = () => {
+    const selected: SelectedNode[] = discoveredNodes.map(n => ({
+      mac: n.mac,
+      name: n.name,
+      type: n.device_type === DEVICE_TYPE_LED ? 'omniapi_led' : 'omniapi_node',
+    }));
+    onUpdateNodes(selected);
+    onNext();
+  };
+
+  const count = discoveredNodes.length;
+  const countLabel = count === 1 ? '1 dispositivo trovato' : `${count} dispositivi trovati`;
 
   return (
     <Card variant="glass" style={{ padding: spacing.md }}>
       {/* Header */}
-      <div
-        className="flex items-center justify-between"
-        style={{ marginBottom: spacing.md }}
-      >
-        <div className="flex items-center" style={{ gap: spacing.sm }}>
-          <div
-            style={{
-              padding: spacing.sm,
-              borderRadius: radius.md,
-              background: 'rgba(234, 179, 8, 0.2)',
-            }}
-          >
-            <RiDeviceLine size={24} className="text-warning" />
-          </div>
-          <div>
-            <h2
-              style={{
-                fontSize: fontSize.lg,
-                fontWeight: 'bold',
-                color: modeColors.textPrimary,
-              }}
-            >
-              Cerca Dispositivi
-            </h2>
-            <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
-              {phaseLabel()}
-            </p>
-          </div>
+      <div className="flex items-center" style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+        <div style={{ padding: spacing.sm, borderRadius: radius.md, background: 'rgba(234,179,8,0.2)' }}>
+          <RiDeviceLine size={24} className="text-warning" />
         </div>
-        {isWorking && (
-          <RiLoader4Line
-            size={20}
-            className="animate-spin"
-            style={{ color: colors.accent }}
-          />
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontSize: fontSize.lg, fontWeight: 'bold', color: modeColors.textPrimary }}>
+            Cerca Dispositivi
+          </h2>
+          <p style={{ fontSize: fontSize.xs, color: modeColors.textSecondary }}>
+            {listening
+              ? count > 0 ? countLabel : 'In ascolto...'
+              : 'Premi il pulsante fisico su ogni nodo'}
+          </p>
+        </div>
+        {listening && (
+          <RiLoader4Line size={20} className="animate-spin" style={{ color: colors.accent }} />
         )}
       </div>
 
-      {/* Progress bar during scanning */}
-      {phase === 'scanning' && (
-        <div style={{ marginBottom: spacing.md }}>
-          <div
-            style={{
-              height: 6,
-              borderRadius: 3,
-              background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                borderRadius: 3,
-                background: colors.accent,
-                width: `${((SCAN_COUNTDOWN - countdown) / SCAN_COUNTDOWN) * 100}%`,
-                transition: 'width 1s linear',
-              }}
-            />
-          </div>
-          <p style={{ fontSize: '10px', color: modeColors.textMuted, marginTop: 4, textAlign: 'center' }}>
-            Il gateway cerca nodi e torna sulla rete principale...
+      {/* Idle: illustration + instruction */}
+      {!listening && (
+        <div style={{ textAlign: 'center', padding: `${spacing.lg} 0`, marginBottom: spacing.md }}>
+          <RiRadarLine size={48} style={{ color: colors.accent, marginBottom: spacing.sm, opacity: 0.6 }} />
+          <p style={{ fontSize: fontSize.sm, color: modeColors.textSecondary, marginBottom: spacing.xs }}>
+            Avvia la ricerca, poi premi il tasto fisico su ogni nodo.
+          </p>
+          <p style={{ fontSize: fontSize.xs, color: modeColors.textMuted }}>
+            Il dispositivo apparirà istantaneamente in questa schermata.
           </p>
         </div>
       )}
 
-      {/* Error */}
-      {error && (
-        <p style={{ color: '#ef4444', fontSize: fontSize.xs, marginBottom: spacing.sm }}>
-          {error}
-        </p>
-      )}
-
-      {/* Start / Retry button */}
-      {(phase === 'idle' || phase === 'done') && (
-        <div style={{ textAlign: 'center', marginBottom: spacing.md }}>
-          <Button variant="primary" onClick={startScan}>
-            <RiSearchLine size={16} style={{ marginRight: 6 }} />
-            {phase === 'idle' ? 'Cerca dispositivi' : 'Ripeti scansione'}
-          </Button>
+      {/* Listening: empty state */}
+      {listening && count === 0 && (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: spacing.lg,
+            border: `1px dashed ${modeColors.border}`,
+            borderRadius: radius.md,
+            marginBottom: spacing.md,
+          }}
+        >
+          <p style={{ fontSize: fontSize.sm, color: modeColors.textMuted }}>
+            Premi il tasto fisico sul nodo per farlo apparire qui
+          </p>
         </div>
       )}
 
-      {/* Selected nodes */}
-      {selectedNodes.length > 0 && (
+      {/* Discovered nodes */}
+      {count > 0 && (
         <div style={{ marginBottom: spacing.md }}>
-          <p
-            style={{
-              fontSize: fontSize.xs,
-              color: modeColors.textSecondary,
-              marginBottom: spacing.xs,
-            }}
-          >
-            Nodi selezionati ({selectedNodes.length}):
-          </p>
-          {selectedNodes.map((node) => (
+          {discoveredNodes.map(node => (
             <div
               key={node.mac}
               style={{
@@ -289,33 +190,42 @@ export const StepDispositivi = ({
                 alignItems: 'center',
                 padding: spacing.sm,
                 borderRadius: radius.md,
-                background: 'rgba(34, 197, 94, 0.1)',
-                border: '1px solid rgba(34, 197, 94, 0.2)',
+                background: isDarkMode ? 'rgba(106,212,160,0.07)' : 'rgba(106,212,160,0.10)',
+                border: '1px solid rgba(106,212,160,0.25)',
                 marginBottom: spacing.xs,
                 gap: spacing.sm,
               }}
             >
-              <RiCheckLine size={16} className="text-success flex-shrink-0" />
+              {node.device_type === DEVICE_TYPE_LED
+                ? <RiLightbulbFlashLine size={20} style={{ color: colors.accent, flexShrink: 0 }} />
+                : <RiDeviceLine size={20} style={{ color: colors.accent, flexShrink: 0 }} />
+              }
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span
+                <input
+                  type="text"
+                  value={node.name}
+                  onChange={e => updateName(node.mac, e.target.value)}
                   style={{
-                    fontSize: fontSize.sm,
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: `1px solid ${modeColors.border}`,
                     color: modeColors.textPrimary,
+                    fontSize: fontSize.sm,
                     fontWeight: 500,
+                    outline: 'none',
+                    padding: '2px 0',
+                    marginBottom: 2,
                   }}
-                >
-                  {node.type === 'omniapi_led' ? 'LED Strip' : 'Nodo OmniaPi'}
-                </span>
-                <span
-                  className="font-mono"
-                  style={{ fontSize: '10px', color: modeColors.textMuted, display: 'block' }}
-                >
+                />
+                <span className="font-mono" style={{ fontSize: '10px', color: modeColors.textMuted }}>
                   {node.mac}
+                  {node.firmware_version ? ` · fw ${node.firmware_version}` : ''}
                 </span>
               </div>
               <button
                 onClick={() => removeNode(node.mac)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, flexShrink: 0 }}
               >
                 <RiDeleteBinLine size={16} style={{ color: '#ef4444' }} />
               </button>
@@ -324,90 +234,49 @@ export const StepDispositivi = ({
         </div>
       )}
 
-      {/* Available (scanned but not yet selected) */}
-      {phase === 'done' && (
-        <div style={{ marginBottom: spacing.sm }}>
-          <p
-            style={{
-              fontSize: fontSize.xs,
-              color: modeColors.textSecondary,
-              marginBottom: spacing.xs,
-            }}
-          >
-            Nodi trovati ({availableNodes.length}):
+      {/* Inline confirm dialog */}
+      {showConfirm && (
+        <div
+          style={{
+            padding: spacing.md,
+            borderRadius: radius.md,
+            background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+            border: `1px solid ${modeColors.border}`,
+            marginBottom: spacing.md,
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ fontSize: fontSize.sm, color: modeColors.textPrimary, marginBottom: spacing.sm }}>
+            Sicuro? Hai trovato <strong>{count}</strong> dispositiv{count === 1 ? 'o' : 'i'}.
           </p>
-
-          {scannedNodes.length === 0 && (
-            <div style={{ textAlign: 'center', padding: spacing.lg, color: modeColors.textMuted }}>
-              <RiSearchLine size={32} style={{ marginBottom: spacing.xs, opacity: 0.5 }} />
-              <p style={{ fontSize: fontSize.sm }}>Nessun dispositivo trovato</p>
-              <p style={{ fontSize: fontSize.xs }}>
-                Assicurati che i nodi siano accesi e riprova
-              </p>
-            </div>
-          )}
-
-          {availableNodes.map((node) => (
-            <div
-              key={node.mac}
-              onClick={() => toggleSelect(node)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: spacing.sm,
-                borderRadius: radius.md,
-                background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${modeColors.border}`,
-                marginBottom: spacing.xs,
-                gap: spacing.sm,
-                cursor: 'pointer',
-              }}
-            >
-              <RiAddLine size={16} style={{ color: colors.accent, flexShrink: 0 }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span
-                  style={{
-                    fontSize: fontSize.sm,
-                    color: modeColors.textPrimary,
-                    fontWeight: 500,
-                  }}
-                >
-                  {node.device_type === 'omniapi_led' ? 'LED Strip' : 'Nodo OmniaPi'}
-                </span>
-                <span
-                  className="font-mono"
-                  style={{ fontSize: '10px', color: modeColors.textMuted, display: 'block' }}
-                >
-                  {node.mac}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <RiWifiLine size={14} style={{ color: rssiToColor(node.rssi) }} />
-                <span style={{ fontSize: '10px', color: rssiToColor(node.rssi) }}>
-                  {rssiLabel(node.rssi)}
-                </span>
-              </div>
-            </div>
-          ))}
+          <div className="flex justify-center" style={{ gap: spacing.sm }}>
+            <Button variant="glass" onClick={() => setShowConfirm(false)}>
+              No, continua
+            </Button>
+            <Button variant="primary" onClick={handleConfirm}>
+              <RiCheckDoubleLine size={16} style={{ marginRight: 6 }} />
+              Sì, procedi
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Navigation */}
-      <div
-        className="flex flex-wrap justify-between"
-        style={{ gap: spacing.sm, paddingTop: spacing.sm }}
-      >
-        <Button variant="glass" onClick={() => handleLeave(onBack)} disabled={isWorking}>
+      <div className="flex flex-wrap justify-between" style={{ gap: spacing.sm, paddingTop: spacing.sm }}>
+        <Button variant="glass" onClick={onBack}>
           Indietro
         </Button>
         <div className="flex flex-wrap" style={{ gap: spacing.sm }}>
-          <Button variant="glass" onClick={() => handleLeave(onSkip)} disabled={isWorking}>
-            Salta
-          </Button>
-          {selectedNodes.length > 0 && (
-            <Button variant="primary" onClick={() => handleLeave(onNext)} disabled={isWorking}>
-              Avanti ({selectedNodes.length})
-            </Button>
+          {!listening ? (
+            <>
+              <Button variant="glass" onClick={onSkip}>Salta</Button>
+              <Button variant="primary" onClick={startListening}>Avvia ricerca</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="glass" onClick={stopListening}>Annulla</Button>
+              <Button variant="primary" onClick={handleFinito}>Finito!</Button>
+            </>
           )}
         </div>
       </div>
