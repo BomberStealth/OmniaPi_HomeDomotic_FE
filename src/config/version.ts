@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.2';
+export const APP_VERSION = 'v2.20.3';
 
+// Changelog v2.20.3:
+// - Fix: wizard StepDispositivi ora avvia scan gateway (POST /api/gateway/scan/start)
+//   quando si preme "Avvia ricerca" — prima non veniva mai inviato il comando al gateway
+//
 // Changelog v2.20.2:
 // - Feature: Firmware sul server — sezione dedicata in Monitoraggio Globale per caricare,
 //   visualizzare ed eliminare firmware .bin; OTA modal con dropdown selezione firmware server

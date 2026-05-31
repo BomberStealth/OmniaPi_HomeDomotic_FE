@@ -6,6 +6,7 @@ import { spacing, fontSize, radius } from '@/styles/responsive';
 import { SelectedNode } from '@/pages/Wizard/SetupWizard';
 import { socketService, WS_EVENTS } from '@/services/socket';
 import { useAuthStore } from '@/store/authStore';
+import { gatewayApi } from '@/services/gatewayApi';
 import {
   RiDeviceLine,
   RiLightbulbFlashLine,
@@ -41,6 +42,7 @@ export const StepDispositivi = ({
   onNext,
   onSkip,
   onBack,
+  gatewayMac,
 }: StepDispositiviProps) => {
   const { modeColors, isDarkMode, colors } = useThemeColor();
   const token = useAuthStore(state => state.token);
@@ -54,14 +56,21 @@ export const StepDispositivi = ({
     return () => { mountedRef.current = false; };
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!socketService.isConnected() && token) {
       socketService.connect(token);
     }
     setDiscoveredNodes([]);
     setShowConfirm(false);
     setListening(true);
-  }, [token]);
+    if (gatewayMac) {
+      try {
+        await gatewayApi.startNodeScan(gatewayMac);
+      } catch {
+        // scan command failed — still listen for NODE_DISCOVERED in case gateway was already scanning
+      }
+    }
+  }, [token, gatewayMac]);
 
   const stopListening = useCallback(() => {
     setListening(false);
