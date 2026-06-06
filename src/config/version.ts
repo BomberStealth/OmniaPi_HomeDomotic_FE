@@ -2,8 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.3';
+export const APP_VERSION = 'v2.20.4';
 
+// Changelog v2.20.4:
+// - Fix: gateway senza impianto mostra 0 nodi in header (invece del conteggio mesh fisico)
+//
 // Changelog v2.20.3:
 // - Fix: wizard StepDispositivi ora avvia scan gateway (POST /api/gateway/scan/start)
 //   quando si preme "Avvia ricerca" — prima non veniva mai inviato il comando al gateway
