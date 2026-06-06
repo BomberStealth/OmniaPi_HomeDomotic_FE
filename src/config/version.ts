@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.21.1';
+export const APP_VERSION = 'v2.21.2';
 
+// Changelog v2.21.2:
+// - Feature: Monitoraggio Globale — OTA nodi: pulsante lightning su ogni nodo nell'accordion,
+//   modal selezione firmware nodo (filtrato per tipo), trigger via POST /api/admin/nodes/:mac/ota
+//
 // Changelog v2.21.1:
 // - Fix: Monitoraggio Globale — lista firmware filtrata per tipo (gateway/node) in base al dropdown
 //   conteggio e messaggio empty state contestuali al tipo selezionato
