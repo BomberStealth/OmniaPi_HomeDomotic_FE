@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.21.0';
+export const APP_VERSION = 'v2.21.1';
 
+// Changelog v2.21.1:
+// - Fix: Monitoraggio Globale — lista firmware filtrata per tipo (gateway/node) in base al dropdown
+//   conteggio e messaggio empty state contestuali al tipo selezionato
+//
 // Changelog v2.21.0:
 // - Feature: Gestione Firmware per impianto — selezione da server, OTA gateway (MQTT) e nodi (mesh)
 // - Feature: Firmware catalogati per tipo (gateway/node) — filtro intelligente per dispositivo

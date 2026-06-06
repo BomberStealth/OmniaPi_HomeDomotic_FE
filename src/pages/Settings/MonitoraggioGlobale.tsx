@@ -200,7 +200,7 @@ export const MonitoraggioGlobale = () => {
                 background: `${colors.accent}20`, color: colors.accent,
                 borderRadius: '1rem', fontWeight: 600,
               }}>
-                {firmwares.length}
+                {firmwares.filter(f => f.device_type === uploadDeviceType).length}
               </span>
             </div>
 
@@ -266,7 +266,7 @@ export const MonitoraggioGlobale = () => {
 
           {firmwaresLoading ? (
             <p style={{ color: colors.textMuted, fontSize: '0.85rem' }}>Caricamento...</p>
-          ) : firmwares.length === 0 ? (
+          ) : firmwares.filter(f => f.device_type === uploadDeviceType).length === 0 ? (
             <div style={{
               padding: '0.875rem', textAlign: 'center',
               color: colors.textMuted, fontSize: '0.85rem',
@@ -274,11 +274,11 @@ export const MonitoraggioGlobale = () => {
               borderRadius: '0.625rem',
               border: `1px dashed ${colors.border}`,
             }}>
-              Nessun firmware caricato — usa "Carica .bin" per aggiungere un file .bin
+              Nessun firmware {uploadDeviceType === 'gateway' ? 'gateway' : 'nodo'} caricato — seleziona il tipo e usa "Carica .bin"
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-              {firmwares.map(fw => (
+              {firmwares.filter(f => f.device_type === uploadDeviceType).map(fw => (
                 <div key={fw.filename} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
                   padding: '0.5rem 0.75rem',
