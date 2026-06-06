@@ -2,8 +2,12 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.21.2';
+export const APP_VERSION = 'v2.21.3';
 
+// Changelog v2.21.3:
+// - Fix: Node OTA ora via MQTT URL (gateway scarica e distribuisce via mesh)
+//   invece di HTTP binary push — risolve "fetch failed" da TCP overflow durante erase flash
+//
 // Changelog v2.21.2:
 // - Feature: Monitoraggio Globale — OTA nodi: pulsante lightning su ogni nodo nell'accordion,
 //   modal selezione firmware nodo (filtrato per tipo), trigger via POST /api/admin/nodes/:mac/ota
