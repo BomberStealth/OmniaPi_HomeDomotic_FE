@@ -375,7 +375,7 @@ export const MonitoraggioGlobale = () => {
                         {isOnline(gw)
                           ? <RiWifiLine size={12} color="#22c55e" />
                           : <RiWifiOffLine size={12} color="#ef4444" />}
-                        {gw.nodeCount} {gw.nodeCount === 1 ? 'nodo' : 'nodi'}
+                        {gw.impiantoId != null ? gw.nodeCount : 0} {(gw.impiantoId != null ? gw.nodeCount : 0) === 1 ? 'nodo' : 'nodi'}
                       </span>
                     </div>
                   </div>
