@@ -35,6 +35,7 @@ interface FirmwareFile {
   filename: string;
   size: number;
   uploadedAt: string;
+  device_type: string;
 }
 
 type OtaPhase = 'idle' | 'sending' | 'success' | 'error';
@@ -50,6 +51,7 @@ export const MonitoraggioGlobale = () => {
   const [firmwaresLoading, setFirmwaresLoading] = useState(true);
   const [uploadingFw, setUploadingFw] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadDeviceType, setUploadDeviceType] = useState<string>('gateway');
   const fwFileRef = useRef<HTMLInputElement>(null);
 
   const fetchFirmwares = useCallback(async () => {
@@ -72,7 +74,7 @@ export const MonitoraggioGlobale = () => {
     try {
       const buf = await file.arrayBuffer();
       await api.post(
-        `/api/admin/firmware?name=${encodeURIComponent(file.name)}`,
+        `/api/admin/firmware?name=${encodeURIComponent(file.name)}&device_type=${encodeURIComponent(uploadDeviceType)}`,
         buf,
         { headers: { 'Content-Type': 'application/octet-stream' } }
       );
@@ -142,9 +144,11 @@ export const MonitoraggioGlobale = () => {
   const [otaPhase, setOtaPhase] = useState<OtaPhase>('idle');
   const [otaError, setOtaError] = useState('');
 
+  const gatewayFirmwares = firmwares.filter(f => f.device_type === 'gateway');
+
   const openOta = (gw: GatewayRow) => {
     setOtaGateway(gw);
-    setOtaSelected(firmwares[0]?.filename || '');
+    setOtaSelected(gatewayFirmwares[0]?.filename || '');
     setOtaPhase('idle');
     setOtaError('');
   };
@@ -200,34 +204,53 @@ export const MonitoraggioGlobale = () => {
               </span>
             </div>
 
-            {/* Upload button */}
-            <input
-              ref={fwFileRef}
-              type="file"
-              accept=".bin"
-              style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFwUpload(f); e.target.value = ''; }}
-            />
-            <motion.button
-              whileTap={{ scale: 0.93 }}
-              onClick={() => fwFileRef.current?.click()}
-              disabled={uploadingFw}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                padding: '0.4rem 0.9rem',
-                background: `${colors.accent}15`,
-                border: `1px solid ${colors.accent}30`,
-                borderRadius: '0.625rem',
-                color: colors.accent, fontSize: '0.82rem', fontWeight: 600,
-                cursor: uploadingFw ? 'wait' : 'pointer',
-              }}
-            >
-              {uploadingFw
-                ? <RiLoader4Line size={14} style={{ animation: 'spin 1s linear infinite' }} />
-                : <RiUploadCloud2Line size={14} />
-              }
-              Carica .bin
-            </motion.button>
+            {/* Upload: tipo + pulsante */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <select
+                value={uploadDeviceType}
+                onChange={e => setUploadDeviceType(e.target.value)}
+                style={{
+                  padding: '0.35rem 0.6rem',
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: '0.5rem',
+                  color: colors.textSecondary,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                <option value="gateway">Gateway</option>
+                <option value="node">Nodo</option>
+              </select>
+              <input
+                ref={fwFileRef}
+                type="file"
+                accept=".bin"
+                style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleFwUpload(f); e.target.value = ''; }}
+              />
+              <motion.button
+                whileTap={{ scale: 0.93 }}
+                onClick={() => fwFileRef.current?.click()}
+                disabled={uploadingFw}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0.4rem 0.9rem',
+                  background: `${colors.accent}15`,
+                  border: `1px solid ${colors.accent}30`,
+                  borderRadius: '0.625rem',
+                  color: colors.accent, fontSize: '0.82rem', fontWeight: 600,
+                  cursor: uploadingFw ? 'wait' : 'pointer',
+                }}
+              >
+                {uploadingFw
+                  ? <RiLoader4Line size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <RiUploadCloud2Line size={14} />
+                }
+                Carica .bin
+              </motion.button>
+            </div>
           </div>
 
           {uploadError && (
@@ -265,9 +288,19 @@ export const MonitoraggioGlobale = () => {
                 }}>
                   <RiHardDriveLine size={14} color={colors.accent} style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: colors.textPrimary, fontWeight: 500, wordBreak: 'break-all' }}>
-                      {fw.filename}
-                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: colors.textPrimary, fontWeight: 500, wordBreak: 'break-all' }}>
+                        {fw.filename}
+                      </p>
+                      <span style={{
+                        fontSize: '0.65rem', padding: '0.1rem 0.4rem',
+                        background: fw.device_type === 'gateway' ? `${colors.accent}20` : '#8b5cf620',
+                        color: fw.device_type === 'gateway' ? colors.accent : '#8b5cf6',
+                        borderRadius: '0.4rem', fontWeight: 600, flexShrink: 0,
+                      }}>
+                        {fw.device_type === 'gateway' ? 'GW' : fw.device_type === 'node' ? 'Nodo' : fw.device_type}
+                      </span>
+                    </div>
                     <p style={{ margin: 0, fontSize: '0.72rem', color: colors.textMuted }}>
                       {formatBytes(fw.size)} · {new Date(fw.uploadedAt).toLocaleDateString('it-IT')}
                     </p>
@@ -388,16 +421,16 @@ export const MonitoraggioGlobale = () => {
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => openOta(gw)}
-                  disabled={firmwares.length === 0}
-                  title={firmwares.length === 0 ? 'Carica prima un firmware' : 'Aggiorna firmware'}
+                  disabled={gatewayFirmwares.length === 0}
+                  title={gatewayFirmwares.length === 0 ? 'Carica prima un firmware gateway' : 'Aggiorna firmware gateway'}
                   style={{
                     flexShrink: 0, marginRight: '0.75rem',
                     width: 32, height: 32, borderRadius: '0.5rem',
-                    background: firmwares.length > 0 ? `${colors.accent}15` : `${colors.textMuted}10`,
-                    border: `1px solid ${firmwares.length > 0 ? `${colors.accent}30` : colors.border}`,
-                    color: firmwares.length > 0 ? colors.accent : colors.textMuted,
+                    background: gatewayFirmwares.length > 0 ? `${colors.accent}15` : `${colors.textMuted}10`,
+                    border: `1px solid ${gatewayFirmwares.length > 0 ? `${colors.accent}30` : colors.border}`,
+                    color: gatewayFirmwares.length > 0 ? colors.accent : colors.textMuted,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: firmwares.length > 0 ? 'pointer' : 'not-allowed',
+                    cursor: gatewayFirmwares.length > 0 ? 'pointer' : 'not-allowed',
                   }}
                 >
                   <RiFlashlightLine size={16} />
@@ -517,7 +550,7 @@ export const MonitoraggioGlobale = () => {
                     appearance: 'auto',
                   }}
                 >
-                  {firmwares.map(fw => (
+                  {gatewayFirmwares.map(fw => (
                     <option key={fw.filename} value={fw.filename}>
                       {fw.filename} ({formatBytes(fw.size)})
                     </option>

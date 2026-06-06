@@ -281,4 +281,29 @@ export const omniapiApi = {
     const { data } = await api.get('/api/admin/gateway/status');
     return data;
   },
+
+  // Firmware sul server
+  getServerFirmware: async (deviceType?: string): Promise<{
+    files: Array<{ filename: string; size: number; uploadedAt: string; device_type: string }>;
+  }> => {
+    const params = deviceType ? `?device_type=${encodeURIComponent(deviceType)}` : '';
+    const { data } = await api.get(`/api/admin/firmware${params}`);
+    return data;
+  },
+
+  // Trigger OTA gateway via MQTT usando file sul server
+  triggerGatewayOtaMqtt: async (macNoColon: string, filename: string): Promise<{
+    success: boolean; firmware?: string; version?: string; url?: string; error?: string;
+  }> => {
+    const { data } = await api.post(`/api/admin/gateways/${macNoColon}/ota`, { filename });
+    return data;
+  },
+
+  // Trigger OTA nodo usando file sul server
+  triggerNodeOtaFromServer: async (mac: string, filename: string): Promise<{
+    success: boolean; message?: string; firmware_size?: number; target_mac?: string; error?: string;
+  }> => {
+    const { data } = await api.post(`/api/admin/nodes/${encodeURIComponent(mac)}/ota`, { filename });
+    return data;
+  },
 };

@@ -6,6 +6,8 @@ import { useImpiantoContext } from '@/contexts/ImpiantoContext';
 import { useDispositiviStore, Dispositivo } from '@/store/dispositiviStore';
 import { useOmniapiStore } from '@/store/omniapiStore';
 import { usePermessiImpianto } from '@/hooks/usePermessiImpianto';
+import { useAuthStore } from '@/store/authStore';
+import { useViewTransitionNavigate } from '@/hooks/useViewTransition';
 import { omniapiApi } from '@/services/omniapiApi';
 import { tasmotaApi } from '@/services/api';
 import { gatewayApi, Gateway } from '@/services/gatewayApi';
@@ -16,10 +18,12 @@ import {
   RiRefreshLine,
   RiDeleteBinLine,
   RiLoader4Line,
+  RiHardDriveLine,
 } from 'react-icons/ri';
 import { toast } from '@/utils/toast';
 import { useThemeColor } from '@/contexts/ThemeColorContext';
 import { ConfirmPopup } from '@/components/ui/ConfirmPopup';
+import { UserRole } from '@/types';
 
 // ============================================
 // DISPOSITIVI PAGE - Same system as Dashboard
@@ -39,6 +43,9 @@ const hexToRgb = (hex: string): string => {
 export const Dispositivi = () => {
   const { impiantoCorrente } = useImpiantoContext();
   const { colors: themeColors, modeColors } = useThemeColor();
+  const { user } = useAuthStore();
+  const navigate = useViewTransitionNavigate();
+  const canManageFirmware = user?.ruolo === UserRole.ADMIN || user?.ruolo === UserRole.INSTALLATORE;
 
   // Use the SAME store as Dashboard
   const { dispositivi, loading, updatePowerState, updateLedState, fetchDispositivi } = useDispositiviStore();
@@ -360,6 +367,26 @@ export const Dispositivi = () => {
                 className={refreshing ? 'animate-spin' : ''}
               />
             </motion.button>
+
+            {/* Firmware */}
+            {canManageFirmware && impiantoCorrente && (
+              <motion.button
+                onClick={() => navigate(`/impianto/${impiantoCorrente.id}/firmware`)}
+                style={{
+                  width: '44px', height: '44px', padding: 0,
+                  borderRadius: '16px',
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.border}`,
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                title="Gestione Firmware"
+              >
+                <RiHardDriveLine size={18} style={{ color: colors.textMuted }} />
+              </motion.button>
+            )}
 
             {/* Add Device */}
             <motion.button
