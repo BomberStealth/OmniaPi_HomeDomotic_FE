@@ -43,13 +43,17 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
 
-    // Log errore per debugging (solo in development)
+    // Chunk stale dopo un nuovo deploy: hard reload automatico
+    if (error.message?.includes('Failed to fetch dynamically imported module') ||
+        error.message?.includes('Importing a module script failed') ||
+        error.name === 'ChunkLoadError') {
+      window.location.reload();
+      return;
+    }
+
     if (import.meta.env.DEV) {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
-
-    // In produzione, potremmo inviare a un servizio di monitoring
-    // es. Sentry, LogRocket, etc.
   }
 
   handleReload = () => {
