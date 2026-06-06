@@ -2,8 +2,16 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.5';
+export const APP_VERSION = 'v2.21.0';
 
+// Changelog v2.21.0:
+// - Feature: Gestione Firmware per impianto — selezione da server, OTA gateway (MQTT) e nodi (mesh)
+// - Feature: Firmware catalogati per tipo (gateway/node) — filtro intelligente per dispositivo
+// - Feature: Monitoraggio Globale — upload con selezione tipo device, badge tipo in lista
+// - Feature: Dispositivi — pulsante accesso rapido Gestione Firmware (admin/installatore)
+// - BE: POST /api/admin/nodes/:mac/ota — trigger node OTA da file server
+// - BE: catalog.json per metadati firmware (device_type persistente)
+//
 // Changelog v2.20.5:
 // - Fix: chunk stale dopo deploy → auto hard-reload invece di error screen
 //
