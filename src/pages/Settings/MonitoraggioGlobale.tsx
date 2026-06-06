@@ -138,13 +138,14 @@ export const MonitoraggioGlobale = () => {
 
   const isOnline = (gw: GatewayRow) => gw.status === 'online' || gw.mqttConnected;
 
-  // ── OTA modal ─────────────────────────────────────────────────
+  // ── OTA gateway modal ──────────────────────────────────────────
   const [otaGateway, setOtaGateway] = useState<GatewayRow | null>(null);
   const [otaSelected, setOtaSelected] = useState('');
   const [otaPhase, setOtaPhase] = useState<OtaPhase>('idle');
   const [otaError, setOtaError] = useState('');
 
   const gatewayFirmwares = firmwares.filter(f => f.device_type === 'gateway');
+  const nodeFirmwares = firmwares.filter(f => f.device_type === 'node');
 
   const openOta = (gw: GatewayRow) => {
     setOtaGateway(gw);
@@ -165,6 +166,33 @@ export const MonitoraggioGlobale = () => {
     } catch (err: any) {
       setOtaPhase('error');
       setOtaError(err.response?.data?.error || 'Errore invio comando OTA');
+    }
+  };
+
+  // ── OTA nodo modal ─────────────────────────────────────────────
+  const [otaNode, setOtaNode] = useState<NodeRow | null>(null);
+  const [otaNodeSelected, setOtaNodeSelected] = useState('');
+  const [otaNodePhase, setOtaNodePhase] = useState<OtaPhase>('idle');
+  const [otaNodeError, setOtaNodeError] = useState('');
+
+  const openNodeOta = (node: NodeRow) => {
+    setOtaNode(node);
+    setOtaNodeSelected(nodeFirmwares[0]?.filename || '');
+    setOtaNodePhase('idle');
+    setOtaNodeError('');
+  };
+  const closeNodeOta = () => setOtaNode(null);
+
+  const triggerNodeOta = async () => {
+    if (!otaNode || !otaNodeSelected) return;
+    setOtaNodePhase('sending');
+    setOtaNodeError('');
+    try {
+      await api.post(`/api/admin/nodes/${encodeURIComponent(otaNode.mac)}/ota`, { filename: otaNodeSelected });
+      setOtaNodePhase('success');
+    } catch (err: any) {
+      setOtaNodePhase('error');
+      setOtaNodeError(err.response?.data?.error || 'Errore invio OTA nodo');
     }
   };
 
@@ -458,7 +486,7 @@ export const MonitoraggioGlobale = () => {
                         (nodes[gw.id] || []).map(node => (
                           <div key={node.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: colors.textMuted, flexShrink: 0 }} />
-                            <span style={{ color: colors.textSecondary, fontSize: '0.875rem' }}>
+                            <span style={{ color: colors.textSecondary, fontSize: '0.875rem', flex: 1 }}>
                               {node.nome || node.mac}
                             </span>
                             {node.tipo && (
@@ -469,6 +497,22 @@ export const MonitoraggioGlobale = () => {
                                 {node.tipo}
                               </span>
                             )}
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => openNodeOta(node)}
+                              disabled={nodeFirmwares.length === 0}
+                              title={nodeFirmwares.length === 0 ? 'Carica prima un firmware nodo' : `OTA nodo ${node.mac}`}
+                              style={{
+                                width: 24, height: 24, borderRadius: '0.35rem', flexShrink: 0,
+                                background: nodeFirmwares.length > 0 ? `${colors.accent}15` : `${colors.textMuted}10`,
+                                border: `1px solid ${nodeFirmwares.length > 0 ? `${colors.accent}30` : colors.border}`,
+                                color: nodeFirmwares.length > 0 ? colors.accent : colors.textMuted,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: nodeFirmwares.length > 0 ? 'pointer' : 'not-allowed',
+                              }}
+                            >
+                              <RiFlashlightLine size={12} />
+                            </motion.button>
                           </div>
                         ))
                       )}
@@ -612,6 +656,129 @@ export const MonitoraggioGlobale = () => {
                     {otaPhase === 'sending'
                       ? <><RiLoader4Line size={16} style={{ animation: 'spin 1s linear infinite' }} /> Invio...</>
                       : <><RiFlashlightLine size={16} /> Aggiorna gateway</>
+                    }
+                  </motion.button>
+                )}
+              </div>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── OTA NODO MODAL ── */}
+      <AnimatePresence>
+        {otaNode && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1000, padding: '1rem',
+            }}
+            onClick={e => { if (e.target === e.currentTarget) closeNodeOta(); }}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }} transition={{ duration: 0.18 }}
+              style={{
+                background: colors.bgCard, borderRadius: '1.25rem',
+                border: `1px solid ${colors.border}`, padding: '1.5rem',
+                width: '100%', maxWidth: '420px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                <div>
+                  <h2 style={{ color: colors.textPrimary, fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
+                    OTA Nodo
+                  </h2>
+                  <p style={{ color: colors.textMuted, fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
+                    {otaNode.nome || otaNode.mac}
+                  </p>
+                  <p style={{ color: colors.textMuted, fontSize: '0.72rem', margin: '0.1rem 0 0', fontFamily: 'monospace' }}>
+                    {otaNode.mac}
+                  </p>
+                </div>
+                <button onClick={closeNodeOta} style={{ background: 'none', border: 'none', cursor: 'pointer', color: colors.textMuted }}>
+                  <RiCloseLine size={22} />
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', color: colors.textSecondary, fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+                  Firmware nodo disponibile sul server
+                </label>
+                <select
+                  value={otaNodeSelected}
+                  onChange={e => setOtaNodeSelected(e.target.value)}
+                  disabled={otaNodePhase === 'sending'}
+                  style={{
+                    width: '100%', padding: '0.65rem 0.875rem',
+                    background: colors.bgCard, border: `1px solid ${colors.border}`,
+                    borderRadius: '0.625rem', color: colors.textPrimary,
+                    fontSize: '0.9rem', outline: 'none', cursor: 'pointer', appearance: 'auto',
+                  }}
+                >
+                  {nodeFirmwares.map(fw => (
+                    <option key={fw.filename} value={fw.filename}>
+                      {fw.filename} ({formatBytes(fw.size)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {otaNodePhase === 'success' && (
+                <div style={{
+                  padding: '0.75rem', marginBottom: '1rem', textAlign: 'center',
+                  background: '#4ade8015', border: '1px solid #4ade8030', borderRadius: '0.5rem',
+                }}>
+                  <RiCheckLine size={20} color="#22c55e" />
+                  <p style={{ margin: '0.25rem 0 0', color: '#22c55e', fontWeight: 600, fontSize: '0.9rem' }}>
+                    Firmware inviato!
+                  </p>
+                  <p style={{ margin: '0.2rem 0 0', color: colors.textMuted, fontSize: '0.78rem' }}>
+                    Il nodo si aggiorna via mesh (~30-60s)
+                  </p>
+                </div>
+              )}
+              {otaNodePhase === 'error' && otaNodeError && (
+                <div style={{
+                  padding: '0.625rem', background: '#ef444415', border: '1px solid #ef444430',
+                  borderRadius: '0.5rem', color: '#ef4444', fontSize: '0.82rem', marginBottom: '1rem',
+                }}>
+                  {otaNodeError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.625rem' }}>
+                <button
+                  onClick={closeNodeOta}
+                  style={{
+                    flex: 1, padding: '0.7rem', borderRadius: '0.75rem',
+                    background: `${colors.textMuted}12`, border: `1px solid ${colors.border}`,
+                    color: colors.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                  }}
+                >
+                  {otaNodePhase === 'success' ? 'Chiudi' : 'Annulla'}
+                </button>
+                {otaNodePhase !== 'success' && (
+                  <motion.button
+                    whileTap={{ scale: 0.97 }}
+                    onClick={triggerNodeOta}
+                    disabled={!otaNodeSelected || otaNodePhase === 'sending'}
+                    style={{
+                      flex: 2, padding: '0.7rem', borderRadius: '0.75rem', border: 'none',
+                      background: !otaNodeSelected || otaNodePhase === 'sending'
+                        ? `${colors.accent}40`
+                        : `linear-gradient(135deg, ${colors.accent}, ${colors.accentDark || colors.accent})`,
+                      color: 'white', fontWeight: 600, fontSize: '0.9rem',
+                      cursor: !otaNodeSelected || otaNodePhase === 'sending' ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                    }}
+                  >
+                    {otaNodePhase === 'sending'
+                      ? <><RiLoader4Line size={16} style={{ animation: 'spin 1s linear infinite' }} /> Invio...</>
+                      : <><RiFlashlightLine size={16} /> Aggiorna nodo</>
                     }
                   </motion.button>
                 )}
