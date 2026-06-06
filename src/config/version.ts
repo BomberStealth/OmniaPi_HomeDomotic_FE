@@ -2,8 +2,11 @@
 // VERSION CONFIG
 // ============================================
 
-export const APP_VERSION = 'v2.20.4';
+export const APP_VERSION = 'v2.20.5';
 
+// Changelog v2.20.5:
+// - Fix: chunk stale dopo deploy → auto hard-reload invece di error screen
+//
 // Changelog v2.20.4:
 // - Fix: gateway senza impianto mostra 0 nodi in header (invece del conteggio mesh fisico)
 //
